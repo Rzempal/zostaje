@@ -84,8 +84,8 @@ sposób, w jaki wydajemy:
 ```
 
 ```
-[0/5] kontrola   gałąź main, token GitHuba, poprzedni release opublikowany,
-                 flutter analyze, flutter test
+[0/5] kontrola   gałąź (PROD tylko z main), token GitHuba, poprzedni release
+                 opublikowany, flutter analyze, flutter test
 [1/5] deploy     build + wysyłka na serwer (podbija pubspec, changelog, version.json)
 [2/5] commit
 [3/5] push
@@ -112,6 +112,16 @@ gdy nie przechodzą, wydania nie ma.
   DEV tylko ostrzega (bywa wypuszczany kilka razy pod rząd i tak nadpisuje sam siebie).
 - **„GitHub nieosiągalny" ≠ „release nieopublikowany"** — skrypt rozróżnia te
   stany, bo mylenie ich albo blokuje wydanie bez powodu, albo przepuszcza rozjazd.
+  „Nieopublikowany" to wyłącznie odpowiedź 404; brak odpowiedzi w limicie czasu
+  jest ponawiany (3 próby), a gdy dalej nic — to „nieosiągalny". Do 2026-10-06
+  pojedynczy przestój łącza blokował PROD komunikatem o braku release'u.
+- **PROD tylko z `main`, DEV także z gałęzi roboczej.** Na gałęzi trwa większa
+  przebudowa (Faza 16), a telefon testowy (osobna aplikacja „Zostaje DEV") musi
+  dostawać jej wersje bez scalania do `main`, który w tym czasie zostaje wersją
+  PROD. Push idzie na bieżącą gałąź, tag `dev-v…` wskazuje commit gałęzi.
+  Uwaga na licznik dnia w numerze wersji: gałąź ma własną kopię
+  `releases/version-internal.json`, więc DEV z `main` i z gałęzi tego samego dnia
+  dostałyby ten sam numer — w czasie przebudowy DEV wydajemy tylko z gałęzi.
 - **`publish-release.ps1` odmawia przy niezacommitowanych zmianach** — tag musi
   wskazywać commit, który zawiera wydaną wersję.
 - **`deploy.ps1` przerywa, gdy `versionCode` przekroczyłby limit Androida**
