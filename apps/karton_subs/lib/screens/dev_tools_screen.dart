@@ -10,6 +10,7 @@ import '../services/notification_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/settings_widgets.dart';
+import 'plan_conversion_report_screen.dart';
 
 /// Narzedzia deweloperskie (tylko kanal internal): override daty + testy powiadomien.
 class DevToolsScreen extends StatelessWidget {
@@ -98,6 +99,24 @@ class DevToolsScreen extends StatelessWidget {
                   notifications,
                   title: 'Adobe CC — nieużywana od 30 dni',
                   body: 'Płacisz 239 zł/mies za coś, czego nie używasz.',
+                ),
+              ),
+            ],
+          ),
+          const SettingsSectionLabel('Przebudowa: plan roczny'),
+          SettingsGroup(
+            children: [
+              ListTile(
+                leading: const Icon(LucideIcons.gitCompare),
+                title: const Text('Raport konwersji planu'),
+                subtitle: const Text(
+                  'Stary model budżetu vs nowy plan — sumy roku i różnice',
+                ),
+                trailing: const Icon(LucideIcons.chevronRight),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const PlanConversionReportScreen(),
+                  ),
                 ),
               ),
             ],

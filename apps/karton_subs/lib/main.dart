@@ -23,6 +23,7 @@ import 'models/budget_entry.dart';
 import 'services/backup_service.dart';
 import 'services/cloud_backup_service.dart';
 import 'services/excel_service.dart';
+import 'services/plan_conversion.dart';
 import 'services/storage_service.dart';
 import 'services/sync_service.dart';
 import 'services/text_ocr_service.dart';
@@ -49,6 +50,17 @@ void main() async {
   // Dev-only: restore date override
   if (AppConfig.isInternal) {
     Subscription.devDateOverride = storage.getDevDateOverride();
+  }
+
+  // Plan roczny (ADR-035): jednorazowa konwersja starych pozycji budżetu.
+  // Stare dane zostają nietknięte, więc błąd konwersji nie może zablokować
+  // startu — aplikacja działa dalej na starym zapisie, a błąd ląduje w logu.
+  try {
+    await PlanConversionRunner(storage)
+        .ensureConverted(Subscription.devDateOverride ?? DateTime.now());
+  } catch (e, st) {
+    AppLogger.get('PlanConversion')
+        .severe('Konwersja planu nie powiodla sie', e, st);
   }
 
   // Synchronizacja budzetu domowego (relay E2E, ADR-009) — wczytaj sparowanie.

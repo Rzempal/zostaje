@@ -52,6 +52,7 @@ Future<void> resetStorage(StorageService storage) async {
     budgetHousehold: true,
     paymentDone: true,
     spendingAllocation: true,
+    planPositions: true,
   );
   for (final id in storage.getReceiptPhotoPaths().keys.toList()) {
     await storage.removeReceiptPhotoPath(id);

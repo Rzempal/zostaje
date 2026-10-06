@@ -77,6 +77,7 @@ lib/
 │   ├── category.dart            # Kategorie subskrypcji
 │   ├── usage_event.dart         # Logowanie uzycia
 │   ├── budget_entry.dart        # Pozycja budzetu (wplyw/cykliczny/biezacy/rata/przelew) — ADR-018
+│   ├── plan_position.dart       # Plan roczny: pozycja z miesiacami „RRRR-MM → kwota" (ADR-035, Faza 16 w toku)
 │   └── pending_receipt_scan.dart # Paragon rozpoznany ze zdjecia, czeka na zatwierdzenie (lokalny, poza bilansem)
 ├── utils/
 │   ├── cycle_math.dart          # Wspolna normalizacja cyklu -> kwota/mies + projekcja wystapien (ADR-020)
@@ -90,6 +91,7 @@ lib/
 │   ├── storage_service.dart     # Hive + cache + CRUD
 │   ├── analytics_service.dart   # Obliczenia subskrypcji: totale, trendy, breakdown
 │   ├── budget_service.dart      # Agregacja budzetu (wplywy/koszty/surplus/bilans)
+│   ├── plan_conversion.dart     # Konwersja starych pozycji na plan roczny + raport zgodnosci (ADR-035); stare dane nietkniete
 │   ├── excel_service.dart       # Import/eksport .xlsx (subskrypcje + budzet)
 │   ├── ai_engine_service.dart   # Mostek do Lokalnego Silnika AI (kanal platformowy -> usluga AIDL silnika)
 │   ├── receipt_scan_service.dart # Parser odpowiedzi silnika (JSON paragonow) + dopasowanie kategorii
@@ -116,7 +118,8 @@ lib/
 │   ├── receipt_archive_screen.dart # Archiwum zdjec paragonow (osobna sekcja Ustawien)
 │   ├── data_export_screen.dart  # Eksport/import XLSX (subskrypcje, budzet) + raport PDF — Ustawienia -> Dane
 │   ├── settings_screen.dart     # Ustawienia, backup, OTA, synchronizacja domowego
-│   └── dev_tools_screen.dart    # Developer Tools (tylko DEV): override daty, testy powiadomien, podglad surowego odczytu OCR
+│   ├── dev_tools_screen.dart    # Developer Tools (tylko DEV): override daty, testy powiadomien, podglad surowego odczytu OCR
+│   └── plan_conversion_report_screen.dart # Developer Tools: raport konwersji na plan roczny (stary model vs nowy plan)
 ├── widgets/
 │   ├── aurora_background.dart    # Tlo: gradient + 2 statyczne poswiaty (Aurora)
 │   ├── frost_card.dart           # Karta „frost" (przezroczystosc + border, BEZ blur)

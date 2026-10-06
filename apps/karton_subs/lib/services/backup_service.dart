@@ -378,6 +378,13 @@ class BackupService {
       await _storage.importSettings(settingsRaw);
     }
 
+    // Plan roczny (ADR-035) powstaje ze starych pozycji, a te właśnie się
+    // zmieniły — przy następnym starcie konwersja przeliczy go od nowa.
+    // Kopia w formacie planu (v8, etap E4) będzie go niosła sama.
+    if (budgetImported > 0 || removed > 0) {
+      await _storage.setPlanConversionVersion(0);
+    }
+
     _log.info(
         'Import (${replace ? "odtworzenie" : "scalenie"}): $subsImported subs, '
         '$catsImported cats, $pmsImported payment methods, '

@@ -1,5 +1,10 @@
 {
+  "releaseNotes": "- Przebudowa, etap 1: nowy plan roczny liczony w tle ze starych pozycji (stare dane bez zmian)\n- Developer Tools: raport konwersji planu (stary model vs nowy plan)",
   "changelog": [
+    {
+      "version": "0.26.26100601",
+      "notes": "- Przebudowa, etap 1: nowy plan roczny liczony w tle ze starych pozycji (stare dane bez zmian)\n- Developer Tools: raport konwersji planu (stary model vs nowy plan)"
+    },
     {
       "version": "0.26.26100600",
       "notes": "- Cykliczne i Wplywy: przy wybranym miesiacu suma grupy uwzglednia korekty kwot, tak jak pozycje pod nia"
@@ -35,15 +40,10 @@
     {
       "version": "0.25.26081401",
       "notes": "- Pigulka Anuluj / Zapisz ma teraz to samo rozmyte szklo co pasek nawigacji — wczesniej tresc pod nia przeswitywala\n- W arkuszach pigulka plywa nad trescia zamiast zajmowac caly wiersz, wiec przy edycji kategorii nie zaslania juz siatki ikon"
-    },
-    {
-      "version": "0.25.26081400",
-      "notes": "- Zapis w stalym miejscu na dole ekranu zamiast przycisku na koncu przewijanej listy\n- Pigulka Anuluj / Zapisz jedzie nad klawiatura, wiec jest widoczna caly czas\n- Dotyczy dodawania i edycji wydatku biezacego, pozycji budzetu i subskrypcji oraz arkuszy metody platnosci i kategorii\n- Zapis znika z paska tytulu, gdzie przy edycji dublowal przycisk z dolu"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026100600",
-  "version": "0.26.26100600",
-  "versionCode": 2026100600,
-  "releaseDate": "2026-10-06T15:40:12Z",
-  "releaseNotes": "- Cykliczne i Wplywy: przy wybranym miesiacu suma grupy uwzglednia korekty kwot, tak jak pozycje pod nia"
+  "versionCode": 2026100601,
+  "version": "0.26.26100601",
+  "releaseDate": "2026-10-06T17:35:49Z",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026100601"
 }

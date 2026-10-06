@@ -4,6 +4,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../models/subscription.dart';
 import '../models/category.dart';
 import '../models/budget_entry.dart';
+import '../models/plan_position.dart';
 import '../models/spending_allocation_item.dart';
 import '../models/pending_receipt_scan.dart';
 import '../utils/money_format.dart';
@@ -25,6 +26,7 @@ class StorageService {
   late Box<String> _paymentMethodsBox;
   late Box<String> _budgetEntriesBox;
   late Box<String> _householdBudgetEntriesBox;
+  late Box<String> _planPositionsBox;
   late Box<bool> _paymentDoneBox;
   late Box<dynamic> _settingsBox;
 
@@ -34,6 +36,7 @@ class StorageService {
   final Map<String, PaymentMethod> _paymentMethodsCache = {};
   final Map<String, BudgetEntry> _budgetEntriesCache = {};
   final Map<String, BudgetEntry> _householdBudgetEntriesCache = {};
+  final Map<String, PlanPosition> _planPositionsCache = {};
   bool _initialized = false;
 
   /// Otwiera pudełka na już zainicjalizowanym Hive — do testów, które robią
@@ -58,6 +61,7 @@ class StorageService {
     _householdBudgetEntriesBox = await Hive.openBox<String>(
       'household_budget_entries',
     );
+    _planPositionsBox = await Hive.openBox<String>('plan_positions');
     _paymentDoneBox = await Hive.openBox<bool>('payment_done');
     _settingsBox = await Hive.openBox('settings');
     setAppDefaultCurrency(
@@ -67,6 +71,7 @@ class StorageService {
     _loadCategoriesCache();
     _loadPaymentMethodsCache();
     _loadBudgetEntriesCache();
+    _loadPlanPositionsCache();
     _seedDefaultCategories();
     _seedDefaultPaymentMethods();
     _initialized = true;
@@ -262,6 +267,63 @@ class StorageService {
     _log.info('Saved budget entry ($scope): ${entry.name}');
   }
 
+  // ── Plan roczny (ADR-035) ───────────────────────────────────────────────────
+  // Osobny box — stare pozycje budżetu zostają nietknięte, więc wcześniejsza
+  // wersja aplikacji (zbudowana z wyższym numerem) widzi swoje dane bez zmian.
+
+  void _loadPlanPositionsCache() {
+    _planPositionsCache.clear();
+    for (final key in _planPositionsBox.keys) {
+      try {
+        final json = jsonDecode(_planPositionsBox.get(key as String)!);
+        _planPositionsCache[key] = PlanPosition.fromJson(
+          json as Map<String, dynamic>,
+        );
+      } catch (e) {
+        _log.warning('Failed to parse plan position $key: $e');
+      }
+    }
+  }
+
+  /// Pozycje planu — wszystkie albo jednego budżetu.
+  List<PlanPosition> getPlanPositions([String? budgetId]) => List.unmodifiable(
+    budgetId == null
+        ? _planPositionsCache.values
+        : _planPositionsCache.values.where((p) => p.budgetId == budgetId),
+  );
+
+  PlanPosition? getPlanPosition(String id) => _planPositionsCache[id];
+
+  Future<void> savePlanPosition(PlanPosition position) async {
+    await _planPositionsBox.put(position.id, jsonEncode(position.toJson()));
+    _planPositionsCache[position.id] = position;
+    _log.info('Saved plan position: ${position.name}');
+  }
+
+  Future<void> deletePlanPosition(String id) async {
+    await _planPositionsBox.delete(id);
+    _planPositionsCache.remove(id);
+    _log.info('Deleted plan position: $id');
+  }
+
+  /// Zastępuje cały plan (konwersja ze starego modelu).
+  Future<void> replacePlanPositions(List<PlanPosition> positions) async {
+    await _planPositionsBox.clear();
+    _planPositionsCache.clear();
+    for (final p in positions) {
+      await _planPositionsBox.put(p.id, jsonEncode(p.toJson()));
+      _planPositionsCache[p.id] = p;
+    }
+    _log.info('Replaced plan: ${positions.length} positions');
+  }
+
+  /// Wersja reguł, którą powstał zapisany plan (0 = konwersji jeszcze nie było).
+  int getPlanConversionVersion() =>
+      _settingsBox.get('planConversionVersion', defaultValue: 0) as int;
+
+  Future<void> setPlanConversionVersion(int version) =>
+      _settingsBox.put('planConversionVersion', version);
+
   // ── Ustawienia w backupie (format v7) ──────────────────────────────────────
   //
   // Tylko preferencje UZYTKOWNIKA, ktore zmieniaja liczby albo dzialanie apki.
@@ -318,8 +380,14 @@ class StorageService {
     bool budgetHousehold = false,
     bool paymentDone = false,
     bool spendingAllocation = false,
+    bool planPositions = false,
   }) async {
     if (subscriptions) await _subscriptionsBox.clear();
+    if (planPositions) {
+      await _planPositionsBox.clear();
+      _planPositionsCache.clear();
+      await setPlanConversionVersion(0);
+    }
     if (budgetPersonal) {
       await _budgetEntriesBox.clear();
       _budgetEntriesCache.clear();
