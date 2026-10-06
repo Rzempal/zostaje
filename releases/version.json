@@ -1,7 +1,12 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026082300",
-  "versionCode": 2026082300,
+  "version": "0.26.26100600",
+  "releaseDate": "2026-10-06T17:01:37Z",
+  "versionCode": 2026100600,
   "changelog": [
+    {
+      "version": "0.26.26100600",
+      "notes": "- Cykliczne i Wplywy: przy wybranym miesiacu suma grupy uwzglednia korekty kwot, tak jak pozycje pod nia"
+    },
     {
       "version": "0.26.26082300",
       "notes": "- Potwierdzenie platnosci z portfela telefonu (Samsung Wallet) czytane w okolo sekunde, bez silnika AI\n- Nazwa sklepu, kwota i data prosto z dokumentu, bez zgadywania roku\n- Odczyt nie wymaga obracania zdjecia, wiec jest szybszy"
@@ -37,13 +42,8 @@
     {
       "version": "0.22.26080800",
       "notes": "- Zakladka Rachunki nazywa sie teraz Biezace, a Wydatki - Cykliczne. Nazwy mowia, czym te sekcje sie roznia: biezace to wydatek z konkretna data, cykliczne to koszt usredniany na miesiac\n- Koperta Plannera: Na biezace wydatki\n- Ikona pozycji bez kategorii pokazuje, do ktorej zakladki nalezy; subskrypcje maja wlasna ikone\n- Menu Dodaj na Cyklicznych: Dodaj wydatek cykliczny zamiast Dodaj recznie\n- Eksport Excela pisze Wydatek biezacy; stare arkusze importuja sie bez zmian\n- Zmiana nie rusza zapisanych danych: synchronizacja z telefonem na starszej wersji dziala dalej"
-    },
-    {
-      "version": "0.21.26080400",
-      "notes": "- Pokaz kod QR na sparowanym telefonie: kolejne urzadzenie dolacza do tego samego gospodarstwa\n- wymiana telefonu nie wymaga juz rozlaczania drugiej osoby"
     }
   ],
-  "releaseNotes": "- Potwierdzenie platnosci z portfela telefonu (Samsung Wallet) czytane w okolo sekunde, bez silnika AI\n- Nazwa sklepu, kwota i data prosto z dokumentu, bez zgadywania roku\n- Odczyt nie wymaga obracania zdjecia, wiec jest szybszy",
-  "releaseDate": "2026-08-23T14:19:26Z",
-  "version": "0.26.26082300"
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026100600",
+  "releaseNotes": "- Cykliczne i Wplywy: przy wybranym miesiacu suma grupy uwzglednia korekty kwot, tak jak pozycje pod nia"
 }
