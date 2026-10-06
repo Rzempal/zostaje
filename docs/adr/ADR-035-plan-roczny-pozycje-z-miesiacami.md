@@ -69,6 +69,20 @@ w miesiącu wynikającym z okresu bezodsetkowego karty (kwotę spłaty można
 zmienić osobno, np. o prowizję). Automat w Bieżących (lustro zakupu + spłata,
 ADR-033) zostaje wyłączony — zakup kartą to zwykły wydatek.
 
+Zapis: dwie pozycje planu rodzajów `cardLoan` i `cardRepayment`, każda
+z jednym miesiącem, spięte wspólnym `linkId` (usunięcie jednej usuwa drugą).
+Liczone OSOBNO od wpływów i wydatków — jako „karta netto" w „Zostaje" — bo
+w skali roku para się znosi, a wliczona do wpływów i wydatków zawyżałaby obie
+średnie.
+
+### 3a. Zakładka „Budżet" po przebudowie
+
+Dwie pod-zakładki: **Statystyki** (wybrany rok: średnio miesięcznie, wykres
+12 miesięcy, kategorie, limity i okresy próbne subskrypcji) i **Kalendarz**
+(dawny „Bilans miesiąca" bez realnego bilansu). Kalendarz bierze dane z planu
+(miesiące pozycji z dniem płatności), z odnowień subskrypcji i z Bieżących.
+Pozycja bez dnia płatności nie ma miejsca na kalendarzu.
+
 ### 5. Konwersja danych i powrót
 
 - Konwersja jest automatyczna (przy starcie i po odtworzeniu starej kopii)

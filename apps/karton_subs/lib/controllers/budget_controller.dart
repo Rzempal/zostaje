@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/budget_entry.dart';
+import '../models/plan_position.dart';
 import '../models/spending_allocation_item.dart';
 import '../models/subscription.dart';
 import '../utils/dictionary_usage.dart';
@@ -303,6 +304,11 @@ class BudgetController extends ChangeNotifier {
         categoryId,
       );
     }
+    // Plan roczny (ADR-035) — pozycje wszystkich budżetów.
+    n += _storage
+        .getPlanPositions()
+        .where((p) => p.categoryId == categoryId)
+        .length;
     return n;
   }
 
@@ -320,7 +326,26 @@ class BudgetController extends ChangeNotifier {
         name,
       );
     }
+    n += _storage
+        .getPlanPositions()
+        .where((p) => p.paymentMethod == name)
+        .length;
     return n;
+  }
+
+  /// Zmiana pozycji planu rocznego przy kaskadzie słownika (ADR-035).
+  /// Zwraca liczbę zmienionych pozycji.
+  Future<int> _updatePlanPositions(
+    bool Function(PlanPosition) where,
+    PlanPosition Function(PlanPosition) change,
+  ) async {
+    final hits = _storage.getPlanPositions().where(where).toList();
+    for (final p in hits) {
+      await _storage.savePlanPosition(
+        change(p).copyWith(updatedAt: DateTime.now()),
+      );
+    }
+    return hits.length;
   }
 
   /// Przenosi pozycje budżetu (oba zakresy) oraz pozycje koperty „Na bieżące wydatki"
@@ -356,6 +381,10 @@ class BudgetController extends ChangeNotifier {
         affected += hit;
       }
     }
+    affected += await _updatePlanPositions(
+      (p) => p.categoryId == fromId,
+      (p) => p.copyWith(categoryId: toId),
+    );
     if (affected > 0) _notifyMutation(touchedHousehold: touchedHousehold);
     return affected;
   }
@@ -398,6 +427,10 @@ class BudgetController extends ChangeNotifier {
         affected += hit;
       }
     }
+    affected += await _updatePlanPositions(
+      (p) => p.paymentMethod == oldName,
+      (p) => p.copyWith(paymentMethod: newName),
+    );
     if (affected > 0) _notifyMutation(touchedHousehold: touchedHousehold);
     return affected;
   }
@@ -435,6 +468,10 @@ class BudgetController extends ChangeNotifier {
         affected += hit;
       }
     }
+    affected += await _updatePlanPositions(
+      (p) => p.paymentMethod == name,
+      (p) => p.copyWith(clearPaymentMethod: true),
+    );
     if (affected > 0) _notifyMutation(touchedHousehold: touchedHousehold);
     return affected;
   }

@@ -10,6 +10,13 @@ enum PlanKind {
 
   /// Wydatek: koszt stały, rata, przelew do innego budżetu.
   expense,
+
+  /// Pożyczka z karty kredytowej — pieniądze przychodzą w miesiącu użycia
+  /// karty. Zawsze w parze ze spłatą ([PlanPosition.linkId]).
+  cardLoan,
+
+  /// Spłata karty — wychodzi w miesiącu wynikającym z okresu bezodsetkowego.
+  cardRepayment,
 }
 
 /// Wartości pola `kind` W ZAPISIE — odcięte od nazw w kodzie (jak typy
@@ -17,6 +24,8 @@ enum PlanKind {
 const Map<PlanKind, String> _kindWireNames = {
   PlanKind.income: 'income',
   PlanKind.expense: 'expense',
+  PlanKind.cardLoan: 'cardLoan',
+  PlanKind.cardRepayment: 'cardRepayment',
 };
 
 extension PlanKindWire on PlanKind {
@@ -100,6 +109,11 @@ class PlanPosition {
 
   /// Miesiące pozycji: "RRRR-MM" → kwota (i dzień).
   final Map<String, PlanMonth> months;
+
+  /// Spina pożyczkę z karty z jej spłatą (ten sam identyfikator na obu).
+  /// Usunięcie jednej usuwa drugą — sama pożyczka bez spłaty zawyżałaby
+  /// wpływy, a sama spłata zostawiłaby wydatek bez źródła.
+  final String? linkId;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -115,11 +129,21 @@ class PlanPosition {
     this.note,
     this.archived = false,
     this.months = const {},
+    this.linkId,
     required this.createdAt,
     this.updatedAt,
   });
 
   bool get isIncome => kind == PlanKind.income;
+
+  /// Pozycja karty kredytowej (pożyczka albo spłata) — liczona osobno od
+  /// wpływów i wydatków: w skali roku para się znosi, więc wliczona do nich
+  /// zawyżałaby obie średnie.
+  bool get isCard =>
+      kind == PlanKind.cardLoan || kind == PlanKind.cardRepayment;
+
+  /// Czy pieniądze przychodzą (wpływ, pożyczka z karty) — kierunek przepływu.
+  bool get isInflow => kind == PlanKind.income || kind == PlanKind.cardLoan;
 
   /// Kwota w miesiącu (0, gdy pozycja w nim nie obowiązuje).
   double amountIn(String monthKey) => months[monthKey]?.amount ?? 0;
@@ -164,6 +188,7 @@ class PlanPosition {
           (k, v) => MapEntry(k, PlanMonth.fromJson(v as Map<String, dynamic>)),
         ) ??
         const {},
+    linkId: json['linkId'] as String?,
     createdAt: DateTime.parse(json['createdAt'] as String),
     updatedAt: json['updatedAt'] != null
         ? DateTime.parse(json['updatedAt'] as String)
@@ -186,6 +211,7 @@ class PlanPosition {
     'months': {
       for (final k in (months.keys.toList()..sort())) k: months[k]!.toJson(),
     },
+    'linkId': ?linkId,
     'createdAt': createdAt.toIso8601String(),
     if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
   };
@@ -220,6 +246,7 @@ class PlanPosition {
     note: clearNote ? null : (note ?? this.note),
     archived: archived ?? this.archived,
     months: months ?? this.months,
+    linkId: linkId,
     createdAt: createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );

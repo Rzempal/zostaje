@@ -12,11 +12,12 @@ import 'package:provider/provider.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'controllers/subscription_controller.dart';
 import 'controllers/budget_controller.dart';
+import 'controllers/plan_controller.dart';
 import 'controllers/receipt_scan_controller.dart';
 import 'screens/dashboard_screen.dart';
+import 'screens/planning_screen.dart';
 import 'screens/spending_screen.dart';
 import 'screens/settings_screen.dart';
-import 'screens/budget_dashboard_screen.dart';
 import 'services/ai_engine_service.dart';
 import 'services/app_logger.dart';
 import 'models/budget_entry.dart';
@@ -95,6 +96,12 @@ void main() async {
           // (przez konstruktor) i nasłuchuje go — nie tworzymy nowej instancji
           // przy każdej zmianie, tylko zwracamy istniejącą.
           update: (_, _, budget) => budget!,
+        ),
+        // Plan roczny (ADR-035) — słucha BudgetController (aktywny budżet,
+        // koperta, subskrypcje zakresu), więc też nie powstaje od nowa.
+        ChangeNotifierProxyProvider<BudgetController, PlanController>(
+          create: (ctx) => PlanController(storage, ctx.read<BudgetController>()),
+          update: (_, _, plan) => plan!,
         ),
         ChangeNotifierProvider.value(value: updateService),
         ChangeNotifierProvider.value(value: syncService),
@@ -393,25 +400,21 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  /// Kolejnosc zakladek: przeglad, potem sciezka pieniedzy (wplywy -> biezace
-  /// -> cykliczne), na koncu ustawienia. Subskrypcje nie maja juz wlasnej
-  /// zakladki — sa sekcja „Cyklicznych" (ADR-027).
+  /// Kolejnosc zakladek (ADR-035): przeglad (statystyki i kalendarz), plan
+  /// roczny — wpływy, wydatki, karta i subskrypcje na jednym ekranie — potem
+  /// Biezace, na koncu ustawienia. „Wplywy" i „Cykliczne" zlaly sie
+  /// w „Planowanie".
   static const _screens = [
     DashboardScreen(),
-    BudgetDashboardScreen(mode: BudgetEntriesMode.incomes),
+    PlanningScreen(),
     SpendingScreen(),
-    BudgetDashboardScreen(mode: BudgetEntriesMode.expenses),
     SettingsScreen(),
   ];
 
   static const _navItems = [
-    // Nazwy sekcji wg ADR-019 i ADR-032: „Budżet" to przeglad calosci, a
-    // wydatki dziela sie po sposobie liczenia — „Biezace" (datowane, w bilans
-    // konkretnego miesiaca) i „Cykliczne" (usredniane na miesiac).
     GlassNavItem(icon: LucideIcons.wallet, label: 'Budżet'),
-    GlassNavItem(icon: LucideIcons.trendingUp, label: 'Wpływy'),
+    GlassNavItem(icon: LucideIcons.calendarRange, label: 'Planowanie'),
     GlassNavItem(icon: lucide.LucideIcons.receiptText, label: 'Bieżące'),
-    GlassNavItem(icon: LucideIcons.repeat, label: 'Cykliczne'),
     GlassNavItem(icon: LucideIcons.settings, label: 'Ustawienia'),
   ];
 
@@ -425,9 +428,8 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
   /// a i zakres nie ma tam czego przelaczac.
   static SectionInfo? _sectionInfoFor(int index) => switch (index) {
     0 => SectionInfo.budget,
-    1 => SectionInfo.incomes,
+    1 => SectionInfo.planning,
     2 => SectionInfo.spending,
-    3 => SectionInfo.recurringExpenses,
     _ => null,
   };
 

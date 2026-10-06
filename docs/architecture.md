@@ -70,7 +70,8 @@ lib/
 │   └── app_config.dart          # Build-time config (channels, URLs)
 ├── controllers/
 │   ├── subscription_controller.dart # Stan subskrypcji (CRUD + analytics)
-│   ├── budget_controller.dart   # Stan budzetu domowego (CRUD + agregaty)
+│   ├── budget_controller.dart   # Stan budzetu domowego (CRUD + agregaty), aktywny zakres, odhaczenia platnosci, koperta
+│   ├── plan_controller.dart     # Plan roczny aktywnego budzetu (ADR-035): pozycje, miesiace, karta, plan na kolejny rok
 │   └── receipt_scan_controller.dart # Skan paragonow AI: kolejka pozycji oczekujacych + OCR w tle (ADR-013)
 ├── models/
 │   ├── subscription.dart        # Glowna encja + PaymentMethod
@@ -92,6 +93,7 @@ lib/
 │   ├── analytics_service.dart   # Obliczenia subskrypcji: totale, trendy, breakdown
 │   ├── budget_service.dart      # Agregacja budzetu (wplywy/koszty/surplus/bilans)
 │   ├── plan_conversion.dart     # Konwersja starych pozycji na plan roczny + raport zgodnosci (ADR-035); stare dane nietkniete
+│   ├── plan_service.dart        # Obliczenia planu: kwoty okresu, sumy miesiaca, statystyki roku, kalendarz, subskrypcje w miesiacach
 │   ├── excel_service.dart       # Import/eksport .xlsx (subskrypcje + budzet)
 │   ├── ai_engine_service.dart   # Mostek do Lokalnego Silnika AI (kanal platformowy -> usluga AIDL silnika)
 │   ├── receipt_scan_service.dart # Parser odpowiedzi silnika (JSON paragonow) + dopasowanie kategorii
@@ -107,12 +109,17 @@ lib/
 ├── theme/
 │   └── app_theme.dart           # Aurora: AppColors/AppRadii/AppSemanticColors + ThemeData (ADR-005/007)
 ├── screens/
-│   ├── dashboard_screen.dart    # Zakladka „Budzet" (przeglad): pod-zakladki Plan (domyslna) / Bilans miesiaca (ADR-011)
+│   ├── dashboard_screen.dart    # Zakladka „Budzet": pod-zakladki Statystyki (rok planu) / Kalendarz (platnosci) — ADR-035
+│   ├── planning_screen.dart     # Zakladka „Planowanie": plan roczny — wplywy, wydatki, karta, subskrypcje (ADR-035)
+│   ├── plan_position_screen.dart # Szczegoly pozycji: 12 miesiecy roku, edycja jednego albo kilku zaznaczonych
+│   ├── plan_position_form_screen.dart # Formularz pozycji planu (nowa: kwota + siatka miesiecy; edycja: dane wspolne)
+│   ├── card_loan_form_screen.dart # Pozyczka z karty: para pozyczka–splata po okresie bezodsetkowym
+│   ├── plan_copy_year_screen.dart # „Zaplanuj kolejny rok" na bazie poprzedniego
 │   ├── spending_screen.dart     # „Biezace": wejscie do Plannera -> karta miesiaca -> lista wydatkow (ADR-011)
-│   ├── spending_planner_screen.dart # Planner: koperta „Na biezace wydatki" (ADR-012) — wejscie z Biezacych i z Cyklicznych
+│   ├── spending_planner_screen.dart # Planner: koperta „Na biezace wydatki" (ADR-012) — wejscie z Biezacych i z Planowania
 │   ├── add_spending_screen.dart # Formularz wydatku biezacego (BudgetEntryType.spending)
 │   ├── add_subscription_screen.dart # Formularz subskrypcji (zakres bierze z listy, na ktorej stoi uzytkownik)
-│   ├── budget_dashboard_screen.dart  # „Cykliczne" (z sekcja Subskrypcje, ADR-027) i „Wplywy" (jeden widget, tryby) + Excel
+│   ├── budget_dashboard_screen.dart  # NIEUZYWANY od Fazy 16 (dawne „Cykliczne"/„Wplywy") — do usuniecia w E5
 │   ├── add_budget_entry_screen.dart  # Formularz pozycji budzetu (typy planowalne)
 │   ├── household_sync_screen.dart # Parowanie QR + haslo, ponowne wystawienie kodu QR, sync budzetu domowego (ADR-009)
 │   ├── receipt_archive_screen.dart # Archiwum zdjec paragonow (osobna sekcja Ustawien)
@@ -132,6 +139,7 @@ lib/
 │   ├── subscription_stats_view.dart # Limit subskrypcji + koszty okresow probnych („Plan" -> „Limity i okresy probne")
 │   ├── category_icons.dart      # Slownik ikon kategorii (wspolny dla list i Ustawien)
 │   ├── budget_widgets.dart      # Wspolne widgety budzetu (BudgetSummarySection full/compact, flow/miesiac/karta)
+│   ├── plan_widgets.dart        # Planowanie: sekcja z suma, wiersz pozycji z paskiem 12 miesiecy, „Zostaje", koperta, karta
 │   ├── cashflow_calendar.dart   # Siatka miesiaca z kropkami wplyw/wydatek
 │   ├── spending_chart.dart      # Wykres trendu wydatkow (jedna seria lub kilka + chipy legendy)
 │   ├── category_breakdown_chart.dart # Podzial na kategorie (pie)
@@ -183,7 +191,7 @@ Serce aplikacji -- obliczenia finansowe wykonywane lokalnie:
 
 ---
 
-## Nawigacja (5 zakladek)
+## Nawigacja (4 zakladki)
 
 > **ADR:** [ADR-026 Gestosc interfejsu](adr/ADR-026-gestosc-interfejsu-bez-paskow-tytulu.md)
 > | [ADR-027 Subskrypcje jako sekcja „Wydatkow"](adr/ADR-027-subskrypcje-jako-sekcja-wydatkow.md)
@@ -208,36 +216,28 @@ Ten sam styl jest w `appBarTheme.systemOverlayStyle` (podekrany), a klatke
 startowa (przed pierwsza klatka Fluttera) pokrywa `windowLightStatusBar`
 w `android/app/src/main/res/values{,-night}/styles.xml`.
 
-Kolejnosc: Budzet | Wplywy | Biezace | Cykliczne | ⋮ Ustawienia —
-przeglad, potem sciezka pieniedzy: skad przychodza (Wplywy) i gdzie wychodza
-(Biezace, Cykliczne). Subskrypcje nie maja juz wlasnej zakladki — sa sekcja
-„Cyklicznych" (ADR-027). Separator oddziela Ustawienia od czworki
+Kolejnosc (ADR-035): Budzet | Planowanie | Biezace | ⋮ Ustawienia — przeglad
+planu, sam plan (wplywy, wydatki, karta i subskrypcje na jednym ekranie), potem
+datowane wydatki. „Wplywy" i „Cykliczne" zlaly sie w „Planowanie" (do 2026-10
+osobne zakladki — ADR-019/027/032). Separator oddziela Ustawienia od trojki
 funkcyjnej (`GlassNavBar` liczy go dynamicznie). Indeks zakladki Biezace jest
-stala `_rachunkiTab` w `main.dart` — po „Udostepnij -> Zostaje" ladujemy wlasnie
-tam, wiec kolejna zmiana kolejnosci nie moze go rozjechac po cichu. Pasek pokazuje etykiete TYLKO aktywnej pozycji (reszta to ikony),
-a `FittedBox(scaleDown)` chroni pigulke od wyjscia za krawedz na waskim ekranie.
-
-Nazwy sekcji wg **[ADR-019](adr/ADR-019-podzial-sekcji-aplikacji.md)** i
-**[ADR-032](adr/ADR-032-biezace-i-cykliczne-zamiast-rachunkow.md)**: „Budzet" to
-PRZEGLAD calosci (dawny „Dashboard"), a wydatki dziela sie po SPOSOBIE LICZENIA —
-„Biezace" (datowane, w bilans konkretnego miesiaca; dawniej „Rachunki") i „Cykliczne"
-(usredniane na miesiac; dawniej „Wydatki"). „Cykliczne" i „Wplywy" to jeden widget
-`BudgetDashboardScreen` w dwoch trybach (`BudgetEntriesMode`) — wspolne filtry,
-sortowanie, grupowanie i Excel.
+stala `_spendingTab` w `main.dart` — po „Udostepnij -> Zostaje" ladujemy wlasnie
+tam, wiec kolejna zmiana kolejnosci nie moze go rozjechac po cichu. Pasek pokazuje
+etykiete TYLKO aktywnej pozycji (reszta to ikony), a `FittedBox(scaleDown)`
+chroni pigulke od wyjscia za krawedz na waskim ekranie.
 
 | Zakladka | Tresc |
 |----------|-------|
-| **Budzet** (przeglad) | Pod-zakladki **Plan** (domyslna; **trzy grupy wg okresu**, kazda ze swoim sterowaniem w naglowku: bez naglowka plan („Saldo", „Koszty roczne" — kompaktowe, kwota w linii etykiety), **„Miesiac ‹ Sierpien 2026 ›"** („Plan vs Realne", „Kategorie") i **„Statystyki · od {miesiaca}"** (trend, podsumowanie roczne — liczone od punktu startu ewidencji). Punkt startu ustawia sie w naglowku (wczesniej byl w srodku karty rocznej, choc ucina tez trend) — **jeden wykres trendu 6 mies. z trzema ROZLACZNYMI seriami** (Cykliczne bez subskrypcji / Subskrypcje / Biezace) + chipy wlacz-wylacz i seria „Razem" (suma, linia przerywana, domyslnie wylaczona), **jeden podzial na kategorie** laczacy te trzy zrodla; oba wykresy maja wlasny przelacznik **Plan / Realne** (ADR-028): plan = kwoty bazowe + koperta „Na biezace wydatki", realne = kwoty miesiaca z korektami + faktyczne wydatki biezace (realne biezacego miesiaca liczy sie tak samo jak „Bilans miesiaca"); trend ma dodatkowo tryb **Oba** — dwie linie zbiorcze (realne vs plan) pokazujace odchylenie — i zaczyna sie od **poczatku ewidencji**, bo wczesniejsze miesiace bylyby odtworzone z dzisiejszych kwot; koszt subskrypcji — miesiecznie, rocznie i liczba aktywnych — w rozwinietej karcie „Saldo" (subskrypcje sa czescia kosztow cyklicznych); **Koszty roczne** (plan × 12) i pod nimi **Podsumowanie roczne** — wykonanie planu narastajaco miesiac po miesiacu, z wlasnym przelacznikiem Plan/Realne i **poczatkiem ewidencji** (miesiace sprzed niego sa puste po obu stronach porownania) — ADR-029; zwijana sekcja **„Limity i okresy probne"** (domyslnie zwinieta, chowana gdy nie ma ani limitu, ani trwajacego okresu probnego) trzyma limit subskrypcji i koszty triali; **obie grupy zwijaja sie tapnieciem w nazwe naglowka**. Wydatki biezace miesiaca sa wylacznie w „Bilansie miesiaca") i **Bilans miesiaca** (**„Rzeczywisty bilans miesiaca"** nad kalendarzem: kwota + pasek i rozpis realnych strumieni — wplywy − koszty cykliczne (z korektami i ratami) − subskrypcje − biezace zbiorczo = bilans; przytrzymanie kwoty otwiera rozbicie „bilans vs plan". Karta kalendarza nie powtarza juz kwoty bilansu. Dalej kalendarz + „Platnosci" jako jedna sekcja z grupami manualne/automatyczne + biezace miesiaca + „Podsumowanie miesiaca" — wplywy i wydatki po dniach, sekcja na dole, zwijana; w pasku akcji sortowanie A→Z / po dacie i grupowanie po typie glownym: Biezace / Subskrypcje / Budzet — dziala na obie sekcje) — ADR-011 |
+| **Budzet** (przeglad) | Dwie pod-zakladki (ADR-035). **Statystyki** — wybrany rok planu: karta „Srednio miesiecznie" (wplywy, wydatki stale, Planner, subskrypcje, karta netto, zostaje + sumy roczne), wykres 12 miesiecy (wplywy vs wydatki) i podzial wydatkow na kategorie (srednio/mies., z koperta i subskrypcjami); pod spodem „Limity i okresy probne" subskrypcji. **Kalendarz** — dawny „Bilans miesiaca" bez realnego bilansu: siatka miesiaca, „Platnosci" do odhaczenia i „Podsumowanie miesiaca"; dane z planu (miesiace pozycji z dniem platnosci), odnowien subskrypcji i Biezacych (`PlanService.calendarForMonth`). Odhaczenia maja klucz `zakres|id|data`, a pozycje planu zachowaly identyfikatory starych pozycji — odhaczenia sprzed przebudowy zostaly. Porownania plan/realne, podsumowanie roczne i „poczatek ewidencji" usuniete (ADR-028/029 zastapione) |
+| **Planowanie** | Plan roczny aktywnego budzetu (ADR-035): sekcje **Wplywy · Wydatki** (z koperta Planner przypieta na gorze) **· Karta kredytowa · Subskrypcje** i karta „Zostaje" dla okresu. Filtr czasu bez „Wszystkie lata": rok = srednie miesieczne, miesiac = kwoty tego miesiaca (pozycja widoczna, gdy w nim obowiazuje); „Dzisiaj", kategorie z podgrupami, sortowanie, „pokaz ukryte". Wiersz pozycji ma pasek 12 kratek (miesiace roku). Tap → szczegoly pozycji: 12 miesiecy wybranego roku, kazdy z kwota i dniem; przytrzymanie = zaznaczanie miesiecy (ustaw kwote / dzien / usun z planu). Formularz nowej pozycji: kwota + siatka miesiecy (caly rok, co kwartal, raty od pierwszego zaznaczonego). „Zaplanuj kolejny rok" przenosi miesiace i kwoty (konczace sie raty domyslnie odznaczone). **Pozyczka z karty** — para pozycji (pozyczka w miesiacu uzycia, splata po okresie bezodsetkowym) spieta `linkId`, liczona osobno jako „karta netto". Subskrypcje zostaja osobnym modulem — w planie kwota miesiaca z ich cyklu (okres probny i po anulowaniu = 0). Zaznaczanie wielu pozycji: kategoria, metoda, ukryj/przywroc, usun |
 | **Biezace** (dawniej „Rachunki") | Datowane wydatki jednorazowe (`billPayment`, ADR-018): zakupy, paliwo, wyjscia, zajecia, wieksze jednorazowe. Uklad jak na liscie „Cykliczne": **paski filtrow** (kategorie + czas ze skrotem „Dzisiaj"), **karta „Planner"** (suma planu, wejscie do `BillsPlannerScreen`, ADR-012) i **naglowek sekcji „Biezace"** z suma pozycji AKTUALNIE widocznych po filtrach; przy wybranym jednym miesiacu naglowek dokłada porownanie z koperta (pasek plan/realny). Domyslny filtr to biezacy miesiac, ale „Wszystkie lata" otwieraja cale archiwum. Sortowanie (data / kwota / A-Z) przyklejone na koncu paska filtrow. **Zaznaczanie wielu pozycji** (dlugie przytrzymanie): pasek zaznaczania ZASTEPUJE pasek kategorii, a akcje zbiorcze to kategoria, metoda platnosci, data (przenosi wydatek do innego miesiaca razem z odhaczeniem platnosci), **scalenie w jeden wpis** i usuniecie. **Scalanie** (ADR-034): suma kwot, data NAJSTARSZEJ pozycji, wzorzec nazwy/kategorii/metody wybierany z listy zaznaczonych; formularz jest podgladem propozycji (Anuluj nie rusza niczego), a zapis tworzy wpis i kasuje zrodla jedna operacja. Pozycje spiete (`creditLinkId` karty, `linkId` przelewu) sa ODRZUCANE — ich usuniecie kasuje kaskada pozycje spoza zaznaczenia. **Splaty karty** tej samej metody, miesiaca i waluty rysuja sie jako **jeden zwiniety wiersz z suma** (prog 2 pozycje, rozwiniecie tapnieciem, w trybie zaznaczania zawsze rozwiniete) — to wylacznie sposob rysowania listy, dane i sumy sekcji zostaja bez zmian. „Dodaj wydatek"; **skan paragonu AI** (aparat/galeria/Udostepnij) z sekcja „Do zatwierdzenia" (miniatura + Zatwierdz/Edytuj/Odrzuc; tap w miniature -> podglad z „Przytnij") — ADR-011, ADR-013 |
-| **Cykliczne** (dawniej „Wydatki") | Trzy sekcje: **Przelew wewnetrzny · Wydatki stale · Subskrypcje** (ADR-027). Pozycje planowalne (koszty stale, raty, przelew) + subskrypcje aktywnego zakresu; datowane wydatki jednorazowe sa w „Biezacych" (ADR-018). Sekcje **zwijane tapnieciem w naglowek** (suma zostaje widoczna, stan trwaly). Grupowanie zawsze po typach, przycisk „warstwy" wlacza podgrupy po kategoriach (takze w subskrypcjach); filtr typu ma pseudo-chip „Subskrypcje"; **„pokaz ukryte"** przy filtrze czasu odslania wstrzymane pozycje i anulowane subskrypcje (sumy sekcji licza tylko aktywne; przy filtrze na **jednym miesiacu** sumy biora kwoty tego miesiaca z korektami — te same, ktore pokazuja wiersze, i tym samym wzorem co „Bilans miesiaca", ADR-008 — `BudgetService.sumAmounts`). Koperta „Na biezace wydatki" jako **wiersz sumy** przypiety na gorze wydatkow stalych — tapniecie otwiera ekran Plannera (ten sam, co z „Biezacych"). Menu „Dodaj": pozycja budzetu i subskrypcja (import z Excela przeniesiony do Ustawien -> „Eksport/import danych" — wczytanie arkusza to operacja na calym zbiorze, nie dodanie pozycji). **Zaznaczanie wielu pozycji** (dlugie przytrzymanie, bez subskrypcji): kategoria, metoda platnosci, wstrzymaj/wznow, usuniecie |
-| **Wplywy** | Wplywy cykliczne (pensja) i jednorazowe (premia); w budzecie domowym takze wklady czlonkow i lustro przelewu z osobistego. Ten sam widget co „Cykliczne", tryb `incomes`. Wplywy z karty zwijaja sie w wiersze z suma — tak samo jak splaty na „Biezacych" (ADR-034), ale w DWOCH osobnych grupach: **„Zakupy karta"** (lustrzane wplywy „Karta: …", ktore znosza sie z zakupem) i **„Pozyczki z karty"** (wplywy wpisane recznie, czyli realne pieniadze). Wspolna suma nie znaczylaby nic. Po rozdzieleniu sekcji formularz pokazuje TYLKO typy tej sekcji (`allowedTypes`) — przy wplywie nie ma po co oferowac kosztu ani raty, bo zmiana typu przeniosłaby pozycje na inny ekran. Z tego samego powodu na Wplywach nie ma grupowania po kategoriach: wplywy kategorii nie maja (formularz je czysci) |
 | **Ustawienia** | Trzy sekcje. **Personalizacja**: wyglad, waluta i limit, **wybor budzetow** (tryb: Osobisty / Domowy / oba — ADR-014), powiadomienia, **kategorie i metody platnosci** (slowniki, ktorymi uzytkownik opisuje SWOJ budzet — stad przy personalizacji, nie przy danych). **Dane**: **Asystent AI** (opt-in wspomagania skanu silnikiem), **Archiwum paragonow** (zapis zdjec do `Documents/<podfolder>`), **Budzet domowy** (parowanie i synchronizacja), **Backup** (kopia zapasowa i odtwarzanie) oraz **Eksport/import danych** (XLSX subskrypcji i budzetu w OBIE strony, raport PDF — wczesniej ikony w paskach ekranow; arkusz to nie kopia zapasowa: import DOKLADA pozycje, nie odtwarza zdjec, odhaczen ani ustawien). **Aplikacja**: **aktualizacje OTA inline**, polityka prywatnosci, Developer Tools (tylko DEV). Karty frost |
 
 **Tryb budzetu (ADR-014):** globalny zakres w `BudgetController` ma tryb (`budgetMode`,
 lokalny). `both` = przelacznik zakresu na kartach + swipe zmienia zakres (`ScopeSwipeArea`).
 Tryb jednozakresowy (`personalOnly`/`householdOnly`) chowa przelacznik (`scopeSelectable`),
 a `ScopeSwipeArea(enabled: false)` oddaje swipe dziecku — w Budzecie `TabBarView`
-przelacza Bilans/Plan. Dane obu zakresow zostaja; tryb je tylko chowa/odslania.
+przelacza Statystyki/Kalendarz. Dane obu zakresow zostaja; tryb je tylko chowa/odslania.
 
 **Rachunek auto-oplacony:** przy tworzeniu `billPayment` (log JUZ zaplaconej pozycji,
 ADR-008) `BudgetController.create` od razu ustawia jego stan „wykonane" w platnosciach

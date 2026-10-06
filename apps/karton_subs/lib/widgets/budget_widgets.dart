@@ -1499,9 +1499,8 @@ class MonthSummarySection extends StatelessWidget {
             if (!compact) ...[
               const SizedBox(height: 8),
               Text(
-                'Realne wpływy i wydatki tego miesiąca — kwoty po korektach, '
-                'z pozycjami jednorazowymi. Suma może różnić się od bilansu, '
-                'który uśrednia koszty cykliczne.',
+                'Wpływy i wydatki zaplanowane na ten miesiąc — kwoty miesięcy '
+                'pozycji planu, odnowienia subskrypcji i wydatki z Bieżących.',
                 style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted),
               ),
               if (incomes.isNotEmpty) ...[

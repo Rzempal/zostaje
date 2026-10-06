@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../controllers/budget_controller.dart';
+import '../controllers/plan_controller.dart';
+import '../services/plan_service.dart' show PlanPeriod;
 import '../theme/app_theme.dart';
 import '../utils/money_format.dart';
 import '../widgets/spending_allocation_editor.dart';
@@ -106,16 +108,20 @@ class SpendingPlannerScreen extends StatelessWidget {
   /// i nie ma się zmieniać sam z siebie.
   Future<void> _fillToRound(BuildContext context) async {
     final ctrl = context.read<BudgetController>();
+    final plan = context.read<PlanController>();
     final cur = ctrl.targetCurrencyLabel;
     var basePlanner = true;
     var step = 100;
+    // Wydatki planu rocznego (ADR-035): średnio miesięcznie w bieżącym roku —
+    // pozycje, subskrypcje i sam Planner.
+    double planExpenses() => plan.totals(PlanPeriod(plan.today.year)).outgoing;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dctx) => StatefulBuilder(
         builder: (dctx, setLocal) {
           final planTotal = ctrl.spendingAllocation ?? 0;
-          final expensesTotal = ctrl.monthlyExpenses;
+          final expensesTotal = planExpenses();
           final base = basePlanner ? planTotal : expensesTotal;
           final gap = ctrl.roundUpGap(base, step);
           final theme = Theme.of(dctx);
@@ -151,9 +157,8 @@ class SpendingPlannerScreen extends StatelessWidget {
                   Text(
                     basePlanner
                         ? 'Suma pozycji planu.'
-                        : 'Wszystkie koszty miesięczne: cykliczne, subskrypcje '
-                              'i Planner — czyli to, co pomniejsza „zostaje '
-                              'miesięcznie".',
+                        : 'Wydatki planu średnio miesięcznie w bieżącym roku: '
+                              'pozycje, subskrypcje i Planner.',
                     style: theme.textTheme.bodySmall,
                   ),
                   const SizedBox(height: 16),
@@ -201,7 +206,7 @@ class SpendingPlannerScreen extends StatelessWidget {
 
     final base = basePlanner
         ? (ctrl.spendingAllocation ?? 0)
-        : ctrl.monthlyExpenses;
+        : planExpenses();
     final gap = ctrl.roundUpGap(base, step);
     if (gap == 0) return;
 

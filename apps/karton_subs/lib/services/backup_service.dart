@@ -9,6 +9,7 @@ import '../models/category.dart';
 import '../models/spending_allocation_item.dart';
 import '../models/budget_entry.dart';
 import 'backup_crypto_service.dart';
+import 'plan_conversion.dart';
 import 'storage_service.dart';
 import 'app_logger.dart';
 
@@ -379,10 +380,13 @@ class BackupService {
     }
 
     // Plan roczny (ADR-035) powstaje ze starych pozycji, a te właśnie się
-    // zmieniły — przy następnym starcie konwersja przeliczy go od nowa.
-    // Kopia w formacie planu (v8, etap E4) będzie go niosła sama.
+    // zmieniły — przeliczamy go od razu, żeby „Planowanie" nie pokazywało do
+    // restartu planu sprzed importu. Kopia w formacie planu (v8, etap E4)
+    // będzie go niosła sama.
     if (budgetImported > 0 || removed > 0) {
-      await _storage.setPlanConversionVersion(0);
+      await PlanConversionRunner(
+        _storage,
+      ).reconvert(Subscription.devDateOverride ?? DateTime.now());
     }
 
     _log.info(

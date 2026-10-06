@@ -24,7 +24,7 @@
 | 13 | Karta kredytowa + scalanie wydatkow | ✅ Ukonczona (2026-08-18) |
 | 14 | Proces wydawania wersji | ✅ Ukonczona (2026-08-02) |
 | 15 | Przejscie na Google Play | Planowana (kierunek bez terminu — ADR-031) |
-| 16 | Przebudowa: plan roczny (ADR-035) | 🚧 W trakcie na galezi `przebudowa-plan-roczny` (E0–E1 gotowe) |
+| 16 | Przebudowa: plan roczny (ADR-035) | 🚧 W trakcie na galezi `przebudowa-plan-roczny` (E0–E3 gotowe) |
 
 > **Stan na 2026-10-06:** ostatnie wydanie PROD to `v0.26.26100600` (suma grupy
 > z korektami miesiaca) — ostatnia wersja przed przebudowa. Faza 16 idzie na
@@ -43,8 +43,8 @@ korekt, przelewow wewnetrznych i porownan plan/realne — [ADR-035](adr/ADR-035-
 |------|--------|--------|
 | E0 | Galaz, wydanie DEV z galezi, odpornosc skryptu na przestoje GitHuba | ✅ 2026-10-06 |
 | E1 | Model pozycji z miesiacami, konwersja (stare dane nietkniete), raport w Developer Tools | ✅ 2026-10-06 (do sprawdzenia na DEV) |
-| E2 | Zakladka „Planowanie" (wplywy + wydatki + karta + subskrypcje), miesiace pozycji z zaznaczaniem, plan na kolejny rok; bez „Wplywow" i „Cyklicznych" | ⏳ |
-| E3 | „Budzet" = statystyki roku (srednie, trend, kategorie) + kalendarz platnosci | ⏳ |
+| E2 | Zakladka „Planowanie" (wplywy + wydatki + karta + subskrypcje), miesiace pozycji z zaznaczaniem, plan na kolejny rok; bez „Wplywow" i „Cyklicznych" | ✅ 2026-10-06 (do sprawdzenia na DEV) |
+| E3 | „Budzet" = statystyki roku (srednie, trend, kategorie) + kalendarz platnosci | ✅ 2026-10-06 (do sprawdzenia na DEV) |
 | E4 | Kopia zapasowa v8, Excel jako tabela roku, usuniecie synchronizacji, wylaczenie automatu karty w Biezacych | ⏳ |
 | E5 | Sprzatanie kodu, testow i dokumentacji; statusy zastapionych ADR | ⏳ |
 | E6 | Przelaczenie PROD po akceptacji testow na DEV | ⏳ |

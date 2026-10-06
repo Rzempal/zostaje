@@ -1,6 +1,9 @@
 {
-  "releaseNotes": "- Przebudowa, etap 1: nowy plan roczny liczony w tle ze starych pozycji (stare dane bez zmian)\n- Developer Tools: raport konwersji planu (stary model vs nowy plan)",
   "changelog": [
+    {
+      "version": "0.26.26100602",
+      "notes": "- Przebudowa, etapy 2-3: nowa zakladka Planowanie - wplywy, wydatki, karta i subskrypcje na jednym ekranie\n- Pozycja ma miesiace z wlasnymi kwotami; kilka miesiecy mozna zmienic naraz\n- Pozyczka z karty: wplyw w miesiacu uzycia i splata po okresie bezodsetkowym\n- Budzet: Statystyki roku (srednie, miesiace, kategorie) i Kalendarz platnosci\n- Zakladki Wplywy i Cykliczne zastapione Planowaniem"
+    },
     {
       "version": "0.26.26100601",
       "notes": "- Przebudowa, etap 1: nowy plan roczny liczony w tle ze starych pozycji (stare dane bez zmian)\n- Developer Tools: raport konwersji planu (stary model vs nowy plan)"
@@ -36,14 +39,11 @@
     {
       "version": "0.26.26081700",
       "notes": "- Scalanie zaznaczonych wydatkow w jeden wpis: suma kwot, data najstarszej pozycji, wzorzec wybierany z listy\n- Splaty karty kredytowej zwijaja sie w jeden wiersz z suma skladnikow"
-    },
-    {
-      "version": "0.25.26081401",
-      "notes": "- Pigulka Anuluj / Zapisz ma teraz to samo rozmyte szklo co pasek nawigacji — wczesniej tresc pod nia przeswitywala\n- W arkuszach pigulka plywa nad trescia zamiast zajmowac caly wiersz, wiec przy edycji kategorii nie zaslania juz siatki ikon"
     }
   ],
-  "versionCode": 2026100601,
-  "version": "0.26.26100601",
-  "releaseDate": "2026-10-06T17:35:49Z",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026100601"
+  "versionCode": 2026100602,
+  "releaseNotes": "- Przebudowa, etapy 2-3: nowa zakladka Planowanie - wplywy, wydatki, karta i subskrypcje na jednym ekranie\n- Pozycja ma miesiace z wlasnymi kwotami; kilka miesiecy mozna zmienic naraz\n- Pozyczka z karty: wplyw w miesiacu uzycia i splata po okresie bezodsetkowym\n- Budzet: Statystyki roku (srednie, miesiace, kategorie) i Kalendarz platnosci\n- Zakladki Wplywy i Cykliczne zastapione Planowaniem",
+  "releaseDate": "2026-10-06T18:14:23Z",
+  "version": "0.26.26100602",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026100602"
 }

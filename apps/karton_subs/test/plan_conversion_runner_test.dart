@@ -84,7 +84,7 @@ void main() {
     expect(_storage.getPlanPositions().map((p) => p.id), ['b']);
   });
 
-  test('odtworzenie starej kopii zapasowej każe przeliczyć plan', () async {
+  test('odtworzenie starej kopii zapasowej od razu przelicza plan', () async {
     await _storage.saveBudgetEntry(_cost('a'));
     final runner = PlanConversionRunner(_storage);
     await runner.ensureConverted(_today);
@@ -106,9 +106,9 @@ void main() {
       ),
       replace: true,
     );
-    expect(_storage.getPlanConversionVersion(), 0);
-
-    await runner.ensureConverted(_today);
+    // Bez restartu aplikacji: plan odpowiada już pozycjom z kopii.
     expect(_storage.getPlanPositions().map((p) => p.id), ['z']);
+    expect(_storage.getPlanConversionVersion(), PlanConversion.version);
+    expect(await runner.ensureConverted(_today), isNull);
   });
 }
