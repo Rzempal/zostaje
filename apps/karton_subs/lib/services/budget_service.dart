@@ -239,6 +239,27 @@ class BudgetService {
         .fold(0.0, (sum, e) => sum + _monthly(e, t) + _overrideDelta(e, monthKey, t));
   }
 
+  /// Suma pozycji do nagłówka sekcji listy, w walucie docelowej. Cykliczne
+  /// liczone kwotą/mies, jednorazowe pełną kwotą (`monthlyAmount` mają 0,
+  /// a sens tylko jako jednorazowy wydatek).
+  ///
+  /// [monthKey] = filtr listy stoi na jednym miesiącu. Wiersz pokazuje wtedy
+  /// kwotę z korekty tego miesiąca, więc suma nad nim też ją bierze — tą samą
+  /// różnicą wobec bazy co bilans miesiąca (ADR-008), żeby nagłówek zgadzał
+  /// się z „Bilansem miesiąca". Plan („zostaje/mies") korekt dalej nie widzi.
+  double sumAmounts(
+    List<BudgetEntry> entries, {
+    String? monthKey,
+    Currency? target,
+  }) {
+    final t = target ?? Currency.PLN;
+    return entries.fold(0.0, (sum, e) {
+      if (e.isOneTime) return sum + _currency.convert(e.amount, e.currency, t);
+      final delta = monthKey == null ? 0.0 : _overrideDelta(e, monthKey, t);
+      return sum + _monthly(e, t) + delta;
+    });
+  }
+
   /// Czy pozycja wchodzi do biezacych kosztow/mies. Rata liczy sie tylko gdy
   /// aktywna w biezacym miesiacu (po ostatniej racie znika z surplus) — ADR-008.
   bool _countsNow(BudgetEntry e) =>

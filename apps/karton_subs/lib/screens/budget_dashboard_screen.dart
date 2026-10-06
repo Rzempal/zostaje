@@ -696,9 +696,14 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
         _Section(
           title: b.title,
           // Suma liczy tylko to, co liczy plan — wstrzymana pozycja bywa na
-          // liście widoczna („pokaż ukryte"), ale nic nie kosztuje.
+          // liście widoczna („pokaż ukryte"), ale nic nie kosztuje. Przy
+          // jednym miesiącu w filtrze bierze kwoty tego miesiąca (korekty),
+          // bo te same kwoty pokazują wiersze pod nagłówkiem (ADR-008).
           total:
-              ctrl.sumAmounts(b.entries.where((e) => e.isActive).toList()) +
+              ctrl.sumAmounts(
+                b.entries.where((e) => e.isActive).toList(),
+                monthKey: monthKey,
+              ) +
               (isExp ? (alloc ?? 0) : 0),
           currency: cur,
           collapsed: _collapsed.contains(b.key),

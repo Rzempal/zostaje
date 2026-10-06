@@ -151,19 +151,11 @@ class BudgetController extends ChangeNotifier {
       .where((s) => s.isActive)
       .fold(0.0, (sum, s) => sum + monthlySubscriptionAmount(s));
 
-  /// Suma pozycji w walucie docelowej — do nagłówka sekcji. Cykliczne
-  /// znormalizowane do kwoty/mies; jednorazowe liczone pełną kwotą (mają sens
-  /// tylko jako jednorazowy wydatek, `monthlyAmount` = 0).
-  double sumAmounts(List<BudgetEntry> entries) => entries.fold(
-    0.0,
-    (sum, e) =>
-        sum +
-        _currency.convert(
-          e.isOneTime ? e.amount : e.monthlyAmount,
-          e.currency,
-          _target,
-        ),
-  );
+  /// Suma pozycji w walucie docelowej — do nagłówka sekcji. [monthKey] =
+  /// filtr na jednym miesiącu: wtedy z korektami kwot tego miesiąca, tak jak
+  /// wiersze listy. Reguła w [BudgetService.sumAmounts].
+  double sumAmounts(List<BudgetEntry> entries, {String? monthKey}) =>
+      _budget.sumAmounts(entries, monthKey: monthKey, target: _target);
 
   /// Waluta docelowa (kod) — do formatowania w UI.
   String get targetCurrencyLabel => _target.label;

@@ -143,4 +143,117 @@ void main() {
           closeTo(300, 0.001));
     });
   });
+
+  // Nagłówek sekcji listy („Cykliczne", „Wpływy"). Przy filtrze na jednym
+  // miesiącu wiersz pokazuje kwotę z korekty, więc suma nad nim musi ją brać —
+  // wcześniej nagłówek liczył zawsze kwotę bazową (plan).
+  group('BudgetService — suma sekcji listy przy filtrze miesiąca', () {
+    const oct = '2026-10';
+
+    BudgetEntry cost(
+      String name,
+      double amount, {
+      BudgetEntryType type = BudgetEntryType.recurringCost,
+      BillingCycle cycle = BillingCycle.monthly,
+      Map<String, MonthAmountOverride>? ov,
+    }) =>
+        BudgetEntry(
+          id: name,
+          name: name,
+          type: type,
+          amount: amount,
+          currency: t,
+          cycle: cycle,
+          startDate: DateTime(2026, 1, 10),
+          monthOverrides: ov,
+          dataDodania: DateTime(2026, 1, 1),
+        );
+
+    test('bez miesiąca: plan — kwota/mies, korekty pominięte', () {
+      final entries = [
+        cost('Karta', 10, ov: {oct: const MonthAmountOverride(amount: 6000)}),
+        cost('Ubezpieczenie', 300, cycle: BillingCycle.quarterly),
+      ];
+      // 10 + 300/3
+      expect(svc.sumAmounts(entries, target: t), closeTo(110, 0.001));
+    });
+
+    test('miesiąc z korektą: suma bierze kwotę korekty, jak wiersz', () {
+      final transfer = cost('Budżet domowy', 7700,
+          type: BudgetEntryType.householdTransfer,
+          ov: {oct: const MonthAmountOverride(amount: 500)});
+      final fixed = [
+        cost('Karta', 10, ov: {oct: const MonthAmountOverride(amount: 6000)}),
+        cost('Telefon', 50),
+      ];
+      expect(svc.sumAmounts([transfer], monthKey: oct, target: t),
+          closeTo(500, 0.001));
+      expect(svc.sumAmounts(fixed, monthKey: oct, target: t),
+          closeTo(6050, 0.001));
+      // Listopad bez korekt → baza.
+      expect(svc.sumAmounts(fixed, monthKey: '2026-11', target: t),
+          closeTo(60, 0.001));
+    });
+
+    test('korekta samej daty nie zmienia sumy', () {
+      final e = cost('Fryzjer', 80,
+          ov: {oct: MonthAmountOverride(date: DateTime(2026, 10, 20))});
+      expect(svc.sumAmounts([e], monthKey: oct, target: t), closeTo(80, 0.001));
+    });
+
+    test('pozycja jednorazowa: pełna kwota, z miesiącem i bez', () {
+      final bonus = BudgetEntry(
+        id: 'p',
+        name: 'Premia',
+        type: BudgetEntryType.oneTimeIncome,
+        amount: 1000,
+        currency: t,
+        month: oct,
+        dataDodania: DateTime(2026, 1, 1),
+      );
+      expect(svc.sumAmounts([bonus], target: t), closeTo(1000, 0.001));
+      expect(svc.sumAmounts([bonus], monthKey: oct, target: t),
+          closeTo(1000, 0.001));
+    });
+
+    test('STRAŻNIK: sekcje miesiąca sumują się do kosztów cyklicznych bilansu',
+        () {
+      // Ekran dzieli koszty na „Przelew wewnętrzny" i „Wydatki stałe". Razem
+      // muszą dać to, co bilans miesiąca liczy jako koszty cykliczne — także
+      // przy pozycji kwartalnej, gdzie liczy się średnia + różnica korekty
+      // wobec bazy (300/3 + (350 − 300) = 150), a nie goła kwota korekty.
+      final transfers = [
+        cost('Budżet domowy', 7700,
+            type: BudgetEntryType.householdTransfer,
+            ov: {oct: const MonthAmountOverride(amount: 500)}),
+      ];
+      final fixed = [
+        cost('Karta', 10, ov: {oct: const MonthAmountOverride(amount: 6000)}),
+        cost('Ubezpieczenie', 300,
+            cycle: BillingCycle.quarterly,
+            ov: {oct: const MonthAmountOverride(amount: 350)}),
+        BudgetEntry(
+          id: 'r',
+          name: 'Rata',
+          type: BudgetEntryType.installment,
+          amount: 226.21,
+          currency: t,
+          startDate: DateTime(2026, 9, 28),
+          installmentCount: 12,
+          dataDodania: DateTime(2026, 1, 1),
+        ),
+        cost('Telefon', 50),
+      ];
+      final sections = svc.sumAmounts(transfers, monthKey: oct, target: t) +
+          svc.sumAmounts(fixed, monthKey: oct, target: t);
+      expect(
+          sections,
+          closeTo(
+              svc.recurringExpensesForMonth([...transfers, ...fixed], oct,
+                  target: t),
+              0.001));
+      // 500 + 6000 + 150 + 226,21 + 50
+      expect(sections, closeTo(6926.21, 0.001));
+    });
+  });
 }

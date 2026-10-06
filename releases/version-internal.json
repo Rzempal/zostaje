@@ -1,8 +1,9 @@
 {
-  "version": "0.26.26082301",
-  "versionCode": 2026082301,
-  "releaseDate": "2026-08-23T10:49:17Z",
   "changelog": [
+    {
+      "version": "0.26.26100600",
+      "notes": "- Cykliczne i Wplywy: przy wybranym miesiacu suma grupy uwzglednia korekty kwot, tak jak pozycje pod nia"
+    },
     {
       "version": "0.26.26082301",
       "notes": "- Potwierdzenie z portfela telefonu czytane poprawnie: nazwa sklepu, kwota i data\n- Pary etykieta-wartosc skladane pozycyjnie, bo OCR zwraca osobno kolumne etykiet i wartosci\n- Dokument czyta sie bez obracania zdjecia, czyli szybciej"
@@ -38,12 +39,11 @@
     {
       "version": "0.25.26081400",
       "notes": "- Zapis w stalym miejscu na dole ekranu zamiast przycisku na koncu przewijanej listy\n- Pigulka Anuluj / Zapisz jedzie nad klawiatura, wiec jest widoczna caly czas\n- Dotyczy dodawania i edycji wydatku biezacego, pozycji budzetu i subskrypcji oraz arkuszy metody platnosci i kategorii\n- Zapis znika z paska tytulu, gdzie przy edycji dublowal przycisk z dolu"
-    },
-    {
-      "version": "0.25.26081003",
-      "notes": "- Naprawione skanowanie paragonow: po zmianie nazw przestalo dzialac i pokazywalo blednie, ze wymaga Androida\n- Poprawki odczytu: stawka VAT nie jest brana za kwote, nazwa nie moze byc numerem ani etykieta dokumentu"
     }
   ],
-  "releaseNotes": "- Potwierdzenie z portfela telefonu czytane poprawnie: nazwa sklepu, kwota i data\n- Pary etykieta-wartosc skladane pozycyjnie, bo OCR zwraca osobno kolumne etykiet i wartosci\n- Dokument czyta sie bez obracania zdjecia, czyli szybciej",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026082301"
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026100600",
+  "version": "0.26.26100600",
+  "versionCode": 2026100600,
+  "releaseDate": "2026-10-06T15:40:12Z",
+  "releaseNotes": "- Cykliczne i Wplywy: przy wybranym miesiacu suma grupy uwzglednia korekty kwot, tak jak pozycje pod nia"
 }
