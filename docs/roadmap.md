@@ -49,6 +49,7 @@ korekt, przelewow wewnetrznych i porownan plan/realne — [ADR-035](adr/ADR-035-
 | E4 | Kopia zapasowa v8, Excel jako tabela roku, usuniecie synchronizacji | ✅ |
 | E5 | Sprzatanie kodu, testow i dokumentacji; statusy zastapionych ADR | ⏳ |
 | E6 | Przelaczenie PROD po akceptacji testow na DEV | ⏳ |
+| E7 | Po migracji PROD: usuniecie danych synchronizacji domowej z Supabase (projekt „karton", wspoldzielony — tylko obiekty sync tej aplikacji, za zgoda wlasciciela) | ⏳ |
 
 ---
 
