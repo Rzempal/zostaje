@@ -1,7 +1,14 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026100700",
-  "versionCode": 2026100700,
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026100701",
+  "releaseDate": "2026-10-07T19:33:28Z",
+  "releaseNotes": "- Kopia zapasowa niesie plan roczny (wersja 8)\n- Eksport/import planu w Excelu: tabela roku, arkusz na rok\n- Usunieta synchronizacja budzetu domowego\n- Minus przy sumach wydatkow i subskrypcji w naglowkach\n- Naprawa: po odtworzeniu kopii znikaly stare subskrypcje dopiero po restarcie",
+  "version": "0.26.26100701",
+  "versionCode": 2026100701,
   "changelog": [
+    {
+      "version": "0.26.26100701",
+      "notes": "- Kopia zapasowa niesie plan roczny (wersja 8)\n- Eksport/import planu w Excelu: tabela roku, arkusz na rok\n- Usunieta synchronizacja budzetu domowego\n- Minus przy sumach wydatkow i subskrypcji w naglowkach\n- Naprawa: po odtworzeniu kopii znikaly stare subskrypcje dopiero po restarcie"
+    },
     {
       "version": "0.26.26100700",
       "notes": "- Przebudowa E3b: zakladka Biezace i skan paragonow usuniete\n- Planner Na biezace wydatki zamieniony na zwykle pozycje planu (co miesiac)\n- Nawigacja: Budzet, Planowanie, Ustawienia\n- Aplikacja mniejsza o ok. 13 MB"
@@ -37,13 +44,6 @@
     {
       "version": "0.26.26081801",
       "notes": "- Jednorazowe wplywy z karty (pozyczki gotowkowe) zwijaja sie we wlasna grupe\n- Lustrzane wplywy z zakupow zostaja w osobnej grupie, bo ich suma znaczy co innego\n- Grupowanie idzie po karcie, a nie po nazwie wpisu"
-    },
-    {
-      "version": "0.26.26081800",
-      "notes": "- Lustrzane wplywy z karty zwijaja sie na Wplywach w jeden wiersz z suma\n- Pozycje rozwinietej grupy karty maja wciecie, wiec widac przynaleznosc\n- Wplyw wpisany recznie (pozyczka gotowkowa) zostaje osobnym wierszem"
     }
-  ],
-  "releaseDate": "2026-10-07T06:14:19Z",
-  "version": "0.26.26100700",
-  "releaseNotes": "- Przebudowa E3b: zakladka Biezace i skan paragonow usuniete\n- Planner Na biezace wydatki zamieniony na zwykle pozycje planu (co miesiac)\n- Nawigacja: Budzet, Planowanie, Ustawienia\n- Aplikacja mniejsza o ok. 13 MB"
+  ]
 }

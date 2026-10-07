@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -19,7 +18,6 @@ import 'services/cloud_backup_service.dart';
 import 'services/excel_service.dart';
 import 'services/plan_conversion.dart';
 import 'services/storage_service.dart';
-import 'services/sync_service.dart';
 import 'services/theme_provider.dart';
 import 'services/update_service.dart';
 import 'services/notification_service.dart';
@@ -60,9 +58,6 @@ void main() async {
         .severe('Konwersja planu nie powiodla sie', e, st);
   }
 
-  // Synchronizacja budzetu domowego (relay E2E, ADR-009) — wczytaj sparowanie.
-  final syncService = SyncService(storage);
-  await syncService.init();
 
   final updateService = UpdateService();
   // OTA check w tle — nie blokujemy startu
@@ -100,7 +95,6 @@ void main() async {
           update: (_, _, plan) => plan!,
         ),
         ChangeNotifierProvider.value(value: updateService),
-        ChangeNotifierProvider.value(value: syncService),
         ChangeNotifierProvider(create: (_) => ThemeProvider(storage)),
         Provider(create: (_) => BackupService(storage)),
         Provider(create: (_) => ExcelService(storage)),
@@ -220,39 +214,19 @@ class _MainShell extends StatefulWidget {
 
 class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
   int _currentIndex = 0;
-  Timer? _syncDebounce;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Auto-synchronizacja po zmianie budzetu domowego (debounced).
-    context.read<BudgetController>().onHouseholdChanged = _scheduleSync;
-    // Synchronizacja budzetu domowego przy starcie (jesli sparowane).
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _syncThenMaybeBackup();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeCloudBackup());
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _syncThenMaybeBackup();
+      _maybeCloudBackup();
     }
-  }
-
-  /// Scalanie budzetu domowego, a po nim kopia w chmurze (jesli czas na nia).
-  /// Kolejnosc ma znaczenie: kopia zrobiona przed scaleniem zapisalaby
-  /// w chmurze uboższą migawkę (telefon po dluzszym offline).
-  Future<void> _syncThenMaybeBackup() async {
-    final sync = context.read<SyncService>();
-    if (sync.isPaired) {
-      final result = await sync.syncNow();
-      if (result.changedLocal && mounted) {
-        context.read<BudgetController>().refresh();
-      }
-    }
-    if (mounted) _maybeCloudBackup();
   }
 
   /// Kopia na koncie Google - najwyzej raz na dobe, po cichu i bez okien.
@@ -277,24 +251,9 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
     );
   }
 
-  /// Synchronizacja z opóźnieniem — seria szybkich zmian = jeden sync.
-  void _scheduleSync() {
-    _syncDebounce?.cancel();
-    _syncDebounce = Timer(const Duration(seconds: 2), () async {
-      if (!mounted) return;
-      final sync = context.read<SyncService>();
-      if (!sync.isPaired) return;
-      final result = await sync.syncNow();
-      if (result.changedLocal && mounted) {
-        context.read<BudgetController>().refresh();
-      }
-    });
-  }
-
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _syncDebounce?.cancel();
     super.dispose();
   }
 

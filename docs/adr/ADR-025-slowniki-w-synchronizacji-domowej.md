@@ -1,7 +1,7 @@
 # ADR-025: Slowniki (kategorie, metody platnosci) w synchronizacji domowej
 
 Data: 2026-07-29
-Status: zaakceptowany
+Status: zastąpiony przez [ADR-035](ADR-035-plan-roczny-pozycje-z-miesiacami.md) (2026-10-07) — usunięte razem z synchronizacją
 
 ## Kontekst
 

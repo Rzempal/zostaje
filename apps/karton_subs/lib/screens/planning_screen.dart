@@ -18,7 +18,6 @@ import '../widgets/plan_widgets.dart';
 import '../widgets/scope_swipe_area.dart';
 import '../widgets/selection_bar.dart';
 import '../widgets/subscription_row.dart';
-import '../widgets/sync_refresh.dart';
 import 'add_subscription_screen.dart';
 import 'card_loan_form_screen.dart';
 import 'plan_copy_year_screen.dart';
@@ -516,95 +515,95 @@ class _PlanningScreenState extends State<PlanningScreen> {
           Expanded(
             child: ScopeSwipeArea(
               enabled: budget.scopeSelectable,
-              child: SyncRefresh(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: [
-                    if (empty)
-                      const _EmptyPlan()
-                    else ...[
-                      if (_filterCategoryId == null) ...[
-                        PlanSummaryCard(
-                          period: period,
-                          totals: plan.totals(period),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      if (yearEmpty) ...[
-                        _CopyYearHint(
-                          year: _year,
-                          onTap: () =>
-                              _push(PlanCopyYearScreen(fromYear: _year - 1)),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      if (incomes.isNotEmpty)
-                        PlanSection(
-                          title: 'Wpływy',
-                          total: _sum(incomes, amount),
-                          collapsed: _collapsed.contains(_kIncomes),
-                          onToggle: () => _toggleSection(_kIncomes),
-                          children: _rows(incomes, period, amount, false),
-                        ),
-                      if (expenses.isNotEmpty)
-                        PlanSection(
-                          title: 'Wydatki',
-                          total: _sum(expenses, amount),
-                          collapsed: _collapsed.contains(_kExpenses),
-                          onToggle: () => _toggleSection(_kExpenses),
-                          children: _rows(expenses, period, amount, true),
-                        ),
-                      if (cardRows.isNotEmpty)
-                        PlanSection(
-                          title: 'Karta kredytowa',
-                          total: cardRows.fold(0.0, (s, r) => s + r.net),
-                          collapsed: _collapsed.contains(_kCard),
-                          onToggle: () => _toggleSection(_kCard),
-                          children: [
-                            BudgetEntryList(
-                              rows: [
-                                for (final r in cardRows)
-                                  CardLoanRow(
-                                    loan: r.loan,
-                                    repayment: r.repayment,
-                                    net: r.net,
-                                    onTap: () => _push(
-                                      CardLoanFormScreen(linkId: r.loan.linkId),
-                                    ),
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  if (empty)
+                    const _EmptyPlan()
+                  else ...[
+                    if (_filterCategoryId == null) ...[
+                      PlanSummaryCard(
+                        period: period,
+                        totals: plan.totals(period),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (yearEmpty) ...[
+                      _CopyYearHint(
+                        year: _year,
+                        onTap: () =>
+                            _push(PlanCopyYearScreen(fromYear: _year - 1)),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (incomes.isNotEmpty)
+                      PlanSection(
+                        title: 'Wpływy',
+                        total: _sum(incomes, amount),
+                        collapsed: _collapsed.contains(_kIncomes),
+                        onToggle: () => _toggleSection(_kIncomes),
+                        children: _rows(incomes, period, amount, false),
+                      ),
+                    if (expenses.isNotEmpty)
+                      PlanSection(
+                        title: 'Wydatki',
+                        total: _outflow(_sum(expenses, amount)),
+                        collapsed: _collapsed.contains(_kExpenses),
+                        onToggle: () => _toggleSection(_kExpenses),
+                        children: _rows(expenses, period, amount, true),
+                      ),
+                    if (cardRows.isNotEmpty)
+                      PlanSection(
+                        title: 'Karta kredytowa',
+                        total: cardRows.fold(0.0, (s, r) => s + r.net),
+                        collapsed: _collapsed.contains(_kCard),
+                        onToggle: () => _toggleSection(_kCard),
+                        children: [
+                          BudgetEntryList(
+                            rows: [
+                              for (final r in cardRows)
+                                CardLoanRow(
+                                  loan: r.loan,
+                                  repayment: r.repayment,
+                                  net: r.net,
+                                  onTap: () => _push(
+                                    CardLoanFormScreen(linkId: r.loan.linkId),
                                   ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      if (subs.isNotEmpty)
-                        PlanSection(
-                          title: 'Subskrypcje',
-                          total: subs
-                              .where((s) => s.isActive)
-                              .fold(0.0, (sum, s) => sum + subAmount(s)),
-                          collapsed: _collapsed.contains(_kSubscriptions),
-                          onToggle: () => _toggleSection(_kSubscriptions),
-                          children: _grouped(
-                            subs,
-                            (s) => s.categoryId,
-                            (items) => [
-                              for (final s in items)
-                                SubscriptionRow(
-                                  subscription: s,
-                                  amountText:
-                                      '−${budgetNf.format(subAmount(s))}',
-                                  onTap: () =>
-                                      _push(AddSubscriptionScreen(existing: s)),
-                                  onLongPress: () =>
-                                      _showSubscriptionActions(s),
                                 ),
                             ],
                           ),
+                        ],
+                      ),
+                    if (subs.isNotEmpty)
+                      PlanSection(
+                        title: 'Subskrypcje',
+                        total: _outflow(
+                          subs
+                              .where((s) => s.isActive)
+                              .fold(0.0, (sum, s) => sum + subAmount(s)),
                         ),
-                    ],
+                        collapsed: _collapsed.contains(_kSubscriptions),
+                        onToggle: () => _toggleSection(_kSubscriptions),
+                        children: _grouped(
+                          subs,
+                          (s) => s.categoryId,
+                          (items) => [
+                            for (final s in items)
+                              SubscriptionRow(
+                                subscription: s,
+                                amountText:
+                                    '−${budgetNf.format(subAmount(s))}',
+                                onTap: () =>
+                                    _push(AddSubscriptionScreen(existing: s)),
+                                onLongPress: () =>
+                                    _showSubscriptionActions(s),
+                              ),
+                          ],
+                        ),
+                      ),
                   ],
-                ),
+                ],
               ),
             ),
           ),
@@ -612,6 +611,10 @@ class _PlanningScreenState extends State<PlanningScreen> {
       ),
     );
   }
+
+  /// Wydatki w nagłówku sekcji ze znakiem minus — jak karta kredytowa, więc
+  /// kierunek pieniędzy widać bez czytania tytułu. Zero zostaje bez znaku.
+  double _outflow(double total) => total == 0 ? 0 : -total;
 
   double _sum(List<PlanPosition> items, double Function(PlanPosition) amount) =>
       items.where((p) => !p.archived).fold(0.0, (s, p) => s + amount(p));

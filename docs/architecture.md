@@ -90,10 +90,8 @@ lib/
 │   ├── budget_service.dart      # Agregacja budzetu (wplywy/koszty/surplus/bilans)
 │   ├── plan_conversion.dart     # Konwersja starych pozycji na plan roczny + raport zgodnosci (ADR-035); stare dane nietkniete
 │   ├── plan_service.dart        # Obliczenia planu: kwoty okresu, sumy miesiaca, statystyki roku, kalendarz, subskrypcje w miesiacach
-│   ├── excel_service.dart       # Import/eksport .xlsx (subskrypcje + budzet)
-│   ├── sync_crypto_service.dart # Synchronizacja: klucz z hasla + szyfrowanie paczki (ADR-009)
-│   ├── sync_merge.dart          # Synchronizacja: scalanie LWW + nagrobki + snapshot
-│   ├── sync_service.dart        # Synchronizacja: orkiestracja (pull/scal/push CAS) + RPC relay
+│   ├── excel_service.dart       # Import/eksport .xlsx: subskrypcje + plan (udostepnianie, wybor pliku)
+│   ├── plan_excel.dart          # Plan w arkuszu: tabela roku (pozycje x 12 miesiecy, arkusz na rok) — budowa i odczyt (ADR-035)
 │   ├── notification_service.dart # Lokalne powiadomienia
 │   ├── update_service.dart      # OTA updates
 │   └── pdf_export_service.dart  # Eksport raportu PDF
@@ -107,9 +105,8 @@ lib/
 │   ├── card_loan_form_screen.dart # Pozyczka z karty: para pozyczka–splata po okresie bezodsetkowym
 │   ├── plan_copy_year_screen.dart # „Zaplanuj kolejny rok" na bazie poprzedniego
 │   ├── add_subscription_screen.dart # Formularz subskrypcji (zakres bierze z listy, na ktorej stoi uzytkownik)
-│   ├── household_sync_screen.dart # Parowanie QR + haslo, ponowne wystawienie kodu QR, sync budzetu domowego (ADR-009)
-│   ├── data_export_screen.dart  # Eksport/import XLSX (subskrypcje, budzet) + raport PDF — Ustawienia -> Dane
-│   ├── settings_screen.dart     # Ustawienia, backup, OTA, synchronizacja domowego
+│   ├── data_export_screen.dart  # Eksport/import XLSX (subskrypcje, plan biezacego budzetu) + raport PDF — Ustawienia -> Dane
+│   ├── settings_screen.dart     # Ustawienia, backup, OTA
 │   ├── dev_tools_screen.dart    # Developer Tools (tylko DEV): override daty, testy powiadomien, podglad surowego odczytu OCR
 │   └── plan_conversion_report_screen.dart # Developer Tools: raport konwersji na plan roczny (stary model vs nowy plan)
 ├── widgets/
@@ -133,11 +130,10 @@ lib/
 │   ├── filter_bars.dart         # Wspolne paski filtrow list: kategorie i czas (ze skrotem „Dzisiaj")
 │   ├── selection_bar.dart       # Tryb zaznaczania wielu pozycji: pasek akcji zbiorczych + wiersz z kolkiem
 │   ├── month_picker_dialog.dart # Wybor miesiaca (rok + siatka 12 miesiecy, „Dzisiaj")
-│   ├── sync_refresh.dart        # Przeciagnij w dol = synchronizacja (RefreshIndicator)
 │   ├── workspace_top_bar.dart   # Wspolny pasek: zakres Osobisty/Domowy + opis sekcji
 │   ├── flow_view_controls.dart  # Sortowanie i grupowanie w naglowkach sekcji miesiaca
 │   └── import_summary_dialog.dart # Wspolny dialog podsumowania importu Excel
-└── main.dart                    # Entry point, provider setup (4 zakladki, GlassNavBar; AuroraBackground raz w MaterialApp.builder)
+└── main.dart                    # Entry point, provider setup (3 zakladki, GlassNavBar; AuroraBackground raz w MaterialApp.builder)
 ```
 
 ---
@@ -175,7 +171,7 @@ Serce aplikacji -- obliczenia finansowe wykonywane lokalnie:
 
 ---
 
-## Nawigacja (4 zakladki)
+## Nawigacja (3 zakladki)
 
 > **ADR:** [ADR-026 Gestosc interfejsu](adr/ADR-026-gestosc-interfejsu-bez-paskow-tytulu.md)
 > | [ADR-027 Subskrypcje jako sekcja „Wydatkow"](adr/ADR-027-subskrypcje-jako-sekcja-wydatkow.md)
@@ -213,7 +209,7 @@ za krawedz na waskim ekranie.
 |----------|-------|
 | **Budzet** (przeglad) | Dwie pod-zakladki (ADR-035). **Statystyki** — wybrany rok planu: karta „Srednio miesiecznie" (wplywy, wydatki, subskrypcje, karta netto, zostaje + sumy roczne), wykres 12 miesiecy (wplywy vs wydatki) i podzial wydatkow na kategorie (srednio/mies., z subskrypcjami); pod spodem „Limity i okresy probne" subskrypcji. **Kalendarz** — dawny „Bilans miesiaca" bez realnego bilansu: siatka miesiaca, „Platnosci" do odhaczenia i „Podsumowanie miesiaca"; dane z planu (miesiace pozycji z dniem platnosci) i odnowien subskrypcji (`PlanService.calendarForMonth`). Odhaczenia maja klucz `zakres|id|data`, a pozycje planu zachowaly identyfikatory starych pozycji — odhaczenia sprzed przebudowy zostaly. Porownania plan/realne, podsumowanie roczne i „poczatek ewidencji" usuniete (ADR-028/029 zastapione) |
 | **Planowanie** | Plan roczny aktywnego budzetu (ADR-035): sekcje **Wplywy · Wydatki** **· Karta kredytowa · Subskrypcje** i karta „Zostaje" dla okresu. Filtr czasu bez „Wszystkie lata": rok = srednie miesieczne, miesiac = kwoty tego miesiaca (pozycja widoczna, gdy w nim obowiazuje); „Dzisiaj", kategorie z podgrupami, sortowanie, „pokaz ukryte". Wiersz pozycji ma pasek 12 kratek (miesiace roku). Tap → szczegoly pozycji: 12 miesiecy wybranego roku, kazdy z kwota i dniem; przytrzymanie = zaznaczanie miesiecy (ustaw kwote / dzien / usun z planu). Formularz nowej pozycji: kwota + siatka miesiecy (caly rok, co kwartal, raty od pierwszego zaznaczonego). „Zaplanuj kolejny rok" przenosi miesiace i kwoty (konczace sie raty domyslnie odznaczone). **Pozyczka z karty** — para pozycji (pozyczka w miesiacu uzycia, splata po okresie bezodsetkowym) spieta `linkId`, liczona osobno jako „karta netto". Subskrypcje zostaja osobnym modulem — w planie kwota miesiaca z ich cyklu (okres probny i po anulowaniu = 0). Zaznaczanie wielu pozycji: kategoria, metoda, ukryj/przywroc, usun |
-| **Ustawienia** | Trzy sekcje. **Personalizacja**: wyglad, waluta i limit, **wybor budzetow** (tryb: Osobisty / Domowy / oba — ADR-014), powiadomienia, **kategorie i metody platnosci** (slowniki, ktorymi uzytkownik opisuje SWOJ budzet — stad przy personalizacji, nie przy danych). **Dane**: **Budzet domowy** (parowanie i synchronizacja), **Backup** (kopia zapasowa i odtwarzanie) oraz **Eksport/import danych** (XLSX subskrypcji i budzetu w OBIE strony, raport PDF — wczesniej ikony w paskach ekranow; arkusz to nie kopia zapasowa: import DOKLADA pozycje, nie odtwarza zdjec, odhaczen ani ustawien). **Aplikacja**: **aktualizacje OTA inline**, polityka prywatnosci, Developer Tools (tylko DEV). Karty frost |
+| **Ustawienia** | Trzy sekcje. **Personalizacja**: wyglad, waluta i limit, **wybor budzetow** (tryb: Osobisty / Domowy / oba — ADR-014), powiadomienia, **kategorie i metody platnosci** (slowniki, ktorymi uzytkownik opisuje SWOJ budzet — stad przy personalizacji, nie przy danych). **Dane**: **Backup** (kopia zapasowa i odtwarzanie) oraz **Eksport/import danych** (XLSX subskrypcji i planu roku w OBIE strony — arkusz planu to sposob udostepnienia budzetu (ADR-035), raport PDF — wczesniej ikony w paskach ekranow; arkusz to nie kopia zapasowa: import DOKLADA pozycje, nie odtwarza zdjec, odhaczen ani ustawien). **Aplikacja**: **aktualizacje OTA inline**, polityka prywatnosci, Developer Tools (tylko DEV). Karty frost |
 
 **Tryb budzetu (ADR-014):** globalny zakres w `BudgetController` ma tryb (`budgetMode`,
 lokalny). `both` = przelacznik zakresu na kartach + swipe zmienia zakres (`ScopeSwipeArea`).
@@ -319,28 +315,10 @@ NAJPOZNIEJSZEJ dacie (remis dat = nie zwijamy). Nowego pola nie dokladamy
 swiadomie: pozycje jada miedzy telefonami, a starsza wersja skasowalaby nieznane
 pole po cichu.
 
-**Planner w synchronizacji (ADR-022):** koperta „Na biezace wydatki" zakresu DOMOWEGO jedzie
-w tej samej paczce co pozycje — jako **sekcja opcjonalna przy tej samej wersji paczki**,
-zeby telefony mogly aktualizowac sie w roznym czasie. Pozycje Plannera maja `updatedAt`
-i nagrobki (scalanie per pozycja). Brak sekcji w paczce = BRAK INFORMACJI (lokalny
-Planner zostaje), pusta lista w paczce = „Planner jest pusty". Planner osobisty zostaje
-lokalny.
-
-**Uruchomienie synchronizacji:** standardowy gest **przeciagnij w dol**
-(`SyncRefresh` = `RefreshIndicator`) na listach Budzetu, Biezacych, Cyklicznych
-cyklicznych i Wplywow — zastapil przycisk „Synchronizuj teraz" w pasku, o ktorym
-trzeba bylo wiedziec. Gest dziala takze BEZ sparowania (przelicza dane lokalne),
-zeby pociagniecie listy nigdy nie wygladalo na zepsuta apke; komunikat pokazuje
-sie tylko po realnej synchronizacji. Listy maja `AlwaysScrollableScrollPhysics`,
-inaczej gest znika, gdy tresc nie wypelnia ekranu. Poza gestem sync leci
-automatycznie (start aplikacji, powrot do niej, zmiana w budzecie domowym).
-
-**Synchronizacja domowego (ADR-009):** box `household_budget_entries` jest opcjonalnie
-synchronizowany miedzy urzadzeniami przez relay E2E (Supabase) — bez kont, parowanie
-QR + haslo. Serwer jest slepy (szyfrowanie end-to-end). Scalanie „ostatnia zmiana
-wygrywa" per pozycja (`updatedAt`) + nagrobki (`deleted`). Osobisty zostaje lokalny.
-Patrz [ADR-009](adr/ADR-009-synchronizacja-budzetu-domowego-relay-e2e.md) i
-[security.md](security.md).
+**Synchronizacja domowego (ADR-009/022/025) — usunieta (ADR-035).** Nikt jej nie
+uzywal; budzet udostepnia sie arkuszem planu (Ustawienia -> Dane). Pola `updatedAt`
+i nagrobki `deleted` w starych pozycjach zostaja w formacie zapisu (archiwum, powrot
+do poprzedniej wersji).
 
 **Przeniesienie wydatku miedzy budzetami:** `BudgetController.moveToScope`
 przenosi pozycje osobisty ↔ domowy (akcja w formularzu edycji wydatku, tylko

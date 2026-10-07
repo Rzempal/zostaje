@@ -26,14 +26,4 @@ class AppConfig {
   static String get remoteReleasePath => isInternal
       ? const String.fromEnvironment('DEPLOY_REMOTE_INTERNAL', defaultValue: '')
       : const String.fromEnvironment('DEPLOY_REMOTE_PROD', defaultValue: '');
-
-  // ── Synchronizacja budzetu domowego (relay E2E, ADR-009) ─────────────────────
-  // Skrzynka relay = projekt Supabase "karton" (dawniej "karton-subs-sync";
-  // wspoldzielony z innymi aplikacjami). Wartosci sa JAWNE z zalozenia:
-  // klucz "publishable" jest projektowany do umieszczenia w aplikacji.
-  // Dane chroni dostep przez RPC (sync_pull/sync_push po sekretnym household_id)
-  // + szyfrowanie E2E (serwer nie odczytuje tresci). Patrz docs/security.md.
-  static const String syncRelayUrl = 'https://yhcowgjxhbiyeraqdpor.supabase.co';
-  static const String syncRelayKey =
-      'sb_publishable_PIvE9n0YC3aVcHbU0cG2xw_0PcN6e-b';
 }

@@ -37,12 +37,6 @@ void main() {
 
   setUp(() async {
     await resetStorage(storage);
-    // resetStorage czyści pudełko subskrypcji, ale nie ich pamięć podręczną
-    // (ten sam brak ma odtwarzanie kopii w trybie „Odtwórz" — do naprawy
-    // przy kopii zapasowej, etap E4). Usuwanie przez API czyści obie.
-    for (final s in storage.getSubscriptions().toList()) {
-      await storage.deleteSubscription(s.id);
-    }
     Subscription.devDateOverride = DateTime(2026, 10, 6);
   });
   tearDown(() => Subscription.devDateOverride = null);

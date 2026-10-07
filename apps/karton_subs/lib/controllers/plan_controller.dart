@@ -125,6 +125,16 @@ class PlanController extends ChangeNotifier {
     return p;
   }
 
+  /// Gotowe pozycje (import z arkusza) do bieżącego budżetu — jedno
+  /// odświeżenie ekranów na końcu zamiast po każdej pozycji.
+  Future<void> addAll(List<PlanPosition> positions) async {
+    for (final p in positions) {
+      await _save(p.copyWith(budgetId: budgetId));
+    }
+    _log.info('Imported ${positions.length} plan positions ($budgetId)');
+    notifyListeners();
+  }
+
   Future<void> update(PlanPosition p) async {
     await _save(p);
     notifyListeners();

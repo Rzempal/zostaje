@@ -9,36 +9,14 @@
 **Dane finansowe nigdy nie opuszczaja urzadzenia w czytelnej formie.**
 
 Aplikacja dziala domyslnie 100% offline. Nie ma kont ani logowania. Dane opuszczaja
-urzadzenie tylko w dwoch swiadomie wlaczonych przypadkach, zawsze **zaszyfrowane**:
+urzadzenie tylko w swiadomie wlaczonych przypadkach:
 1. **Eksport backupu** przez uzytkownika (`.zostaje`, dawniej `.subkarton`, AES-256-GCM).
-2. **Synchronizacja budzetu domowego** (opcjonalna, po sparowaniu) — patrz nizej.
+2. **Kopia na koncie Google** (raz na dobe, zaszyfrowana — patrz nizej).
+3. **Eksport arkusza** (XLSX/PDF) — JAWNY, na wyrazne zyczenie; tak udostepnia sie
+   budzet drugiej osobie.
 
-Budzety osobiste, subskrypcje i ustawienia **nigdy** nie opuszczaja urzadzenia.
-
----
-
-## Synchronizacja budzetu domowego (relay E2E)
-
-> **ADR:** [ADR-009 Synchronizacja budzetu domowego — relay E2E](adr/ADR-009-synchronizacja-budzetu-domowego-relay-e2e.md)
-
-Synchronizacja jest **opcjonalna** i obejmuje **wylacznie** box `household_budget_entries`.
-Po sparowaniu (QR + haslo) zmiany przeplywaja przez **skrzynke relay w chmurze**
-(Supabase, darmowy tier). Model bezpieczenstwa:
-
-| Aspekt | Rozwiazanie |
-|--------|-------------|
-| Szyfrowanie tresci | **End-to-end (E2E)** — AES-256-GCM, klucz z hasla (PBKDF2-SHA256, 100k) |
-| Co widzi serwer | **Tylko zaszyfrowany blob + metadane** (rozmiar, znacznik czasu). NIE widzi kwot ani nazw |
-| Gdzie jest klucz | Wylacznie na urzadzeniach (wyprowadzany z hasla). Nigdy na serwerze |
-| Dostep do skrzynki | Po sekretnym `household_id` (z kodu QR), nie po koncie |
-| Gdzie jest parowanie | Sejf systemowy (Keystore/Keychain): `household_id`, klucz i `salt`. **Nie ma go w kopii zapasowej** — dlatego po wymianie telefonu trzeba sparowac urzadzenie ponownie (sparowany telefon wystawia kod przez „Pokaz kod QR") |
-| Zakres | Tylko budzet domowy. Osobiste dane sie nie synchronizuja |
-| Slowniki (ADR-025) | W paczce jada **tylko kategorie i metody platnosci uzywane przez pozycje domowe**. Slownik jest wspoldzielony z budzetem osobistym i subskrypcjami, wiec nazwa kategorii uzywanej wylacznie prywatnie NIE opuszcza telefonu |
-
-**Swiadomy wyjatek od „zero cloud":** wlaczenie synchronizacji oznacza, ze serwer relay
-posredniczy w przesylaniu zaszyfrowanych paczek. Serwer nie odczytuje tresci, ale widzi
-**metadane** (ze i kiedy nastapila wymiana, jej rozmiar). Bez wlaczonej synchronizacji
-aplikacja dziala jak dotad — w pelni offline.
+Synchronizacja budzetu domowego (relay E2E, ADR-009) zostala **usunieta** (ADR-035):
+aplikacja nie laczy sie juz z serwerem relay.
 
 ---
 
@@ -106,7 +84,7 @@ lokalnego kodu przed zapytaniem o haslo.
 | **Co jedzie** | Ten sam zaszyfrowany plik `.zostaje` co kopia lokalna. **Bez zdjec rachunkow** |
 | **Dokad** | Prywatna przestrzen aplikacji na Dysku (`appDataFolder`) — niewidoczna w interfejsie Dysku |
 | **Sekret** | Kod odzyskiwania lezy **obok** kopii. Google technicznie ma klucz i szyfrogram — **swiadomy kompromis** na rzecz odzyskiwalnosci ([ADR-024](adr/ADR-024-kopia-w-chmurze-google-i-kod-odzyskiwania.md)) |
-| **Sciezka prywatna** | Pozostaje: eksport „Eksportuj z haslem" i synchronizacja domowa (E2E) |
+| **Sciezka prywatna** | Pozostaje: eksport „Eksportuj z haslem" |
 | **Zakres OAuth** | `drive.appdata` — niewrazliwy, bez weryfikacji Google. Wiecej uprawnien nie prosimy |
 | **Sejf na kod** | Block Store (uslugi Google Play), wymaga Androida 9+ i blokady ekranu |
 | **Klucz podpisu APK** | Identyfikatory OAuth wisza na SHA-1 `debug.keystore` — utrata pliku zrywa polaczenie z Dyskiem u wszystkich |

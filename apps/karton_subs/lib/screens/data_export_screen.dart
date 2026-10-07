@@ -3,6 +3,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../controllers/budget_controller.dart';
+import '../controllers/plan_controller.dart';
 import '../controllers/subscription_controller.dart';
 import '../services/excel_service.dart';
 import '../services/pdf_export_service.dart';
@@ -13,11 +14,8 @@ import '../widgets/settings_widgets.dart';
 
 /// Wymiana danych z plikami (Ustawienia → Dane): eksport i import.
 ///
-/// Eksport trafił tu z pasków ekranów Subskrypcje i Wydatki cykliczne — zabierał
-/// tam miejsce przy codziennej pracy, choć robi się go raz na jakiś czas.
-/// Import przyszedł z menu „Dodaj" na Wpływach i Cyklicznych z tego samego
-/// powodu: wczytanie arkusza to nie jest dodawanie pozycji, tylko operacja na
-/// całym zbiorze, a menu „Dodaj" sugerowało coś przeciwnego.
+/// Arkusz planu (ADR-035) to też sposób udostępnienia budżetu drugiej osobie
+/// — synchronizacji już nie ma.
 ///
 /// To NIE jest kopia zapasowa. Arkusz niesie pozycje, ale nie stan aplikacji —
 /// import DOKŁADA je do tego, co już jest, i nie odtwarza kategorii, metod
@@ -73,10 +71,19 @@ class _DataExportScreenState extends State<DataExportScreen> {
   Future<void> _exportSubscriptions() =>
       _run(() => context.read<ExcelService>().exportToFile(), import: false);
 
-  Future<void> _exportBudget() => _run(
-    () => context.read<ExcelService>().exportBudgetToFile(),
-    import: false,
-  );
+  /// Budżet, w którym jest użytkownik (przełącznik Osobisty/Domowy) —
+  /// eksport i import planu dotyczą tylko jego.
+  String get _budgetLabel =>
+      context.read<BudgetController>().isHousehold ? 'Domowy' : 'Osobisty';
+
+  Future<void> _exportPlan() => _run(() {
+    final plan = context.read<PlanController>();
+    return context.read<ExcelService>().exportPlanToFile(
+      budgetId: plan.budgetId,
+      budgetLabel: _budgetLabel.toLowerCase(),
+      years: plan.years,
+    );
+  }, import: false);
 
   Future<void> _exportPdf() => _run(() async {
     final storage = context.read<StorageService>();
@@ -89,19 +96,18 @@ class _DataExportScreenState extends State<DataExportScreen> {
 
   // ── Import ─────────────────────────────────────────────────────────────────
 
-  Future<void> _importBudget() => _run(() async {
-    final result = await context.read<ExcelService>().pickAndParseBudget();
+  Future<void> _importPlan() => _run(() async {
+    final plan = context.read<PlanController>();
+    final result =
+        await context.read<ExcelService>().pickAndParsePlan(plan.budgetId);
     if (!mounted) return;
-    final ctrl = context.read<BudgetController>();
-    for (final e in result.entries) {
-      await ctrl.add(e);
-    }
+    await plan.addAll(result.positions);
     if (!mounted) return;
     await showImportSummaryDialog(
       context,
-      title: 'Import budżetu z Excela',
+      title: 'Import planu z Excela',
       importedCount: result.importedCount,
-      importedNoun: 'pozycji budżetu',
+      importedNoun: 'pozycji planu',
       skipped: result.skipped,
     );
   }, import: true);
@@ -127,6 +133,9 @@ class _DataExportScreenState extends State<DataExportScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final budgetName = context.watch<BudgetController>().isHousehold
+        ? 'domowy'
+        : 'osobisty';
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(title: const Text('Eksport/import danych')),
@@ -144,9 +153,9 @@ class _DataExportScreenState extends State<DataExportScreen> {
               ),
               _tile(
                 icon: LucideIcons.fileSpreadsheet,
-                title: 'Budżet (XLSX)',
-                subtitle: 'Wpływy, wydatki cykliczne, raty i przelewy',
-                onTap: _exportBudget,
+                title: 'Plan — budżet $budgetName (XLSX)',
+                subtitle: 'Tabela roku: pozycje × 12 miesięcy, arkusz na rok',
+                onTap: _exportPlan,
               ),
               _tile(
                 icon: LucideIcons.fileText,
@@ -161,9 +170,9 @@ class _DataExportScreenState extends State<DataExportScreen> {
             children: [
               _tile(
                 icon: LucideIcons.fileInput,
-                title: 'Budżet (XLSX)',
-                subtitle: 'Dokłada pozycje do budżetu',
-                onTap: _importBudget,
+                title: 'Plan — budżet $budgetName (XLSX)',
+                subtitle: 'Dokłada pozycje z tabeli roku do planu',
+                onTap: _importPlan,
                 action: LucideIcons.upload,
               ),
               _tile(

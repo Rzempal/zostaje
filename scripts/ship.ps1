@@ -234,7 +234,7 @@ try {
     # ── [2/5] Commit ─────────────────────────────────────────────────────────
     Show-Step 2 "Commit"
     git add .
-    $commitMsg = "$Message`n`nWydanie $Channel $version.`n`nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+    $commitMsg = "$Message`n`nWydanie $Channel $version.`n`nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
     git commit -m $commitMsg
     if ($LASTEXITCODE -ne 0) {
         Show-Warning "Nie bylo czego commitowac — ide dalej."

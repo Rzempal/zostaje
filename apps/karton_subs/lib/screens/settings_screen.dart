@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../config/app_config.dart';
 import '../controllers/budget_controller.dart';
-import '../services/sync_service.dart';
 import '../widgets/settings_widgets.dart';
 import '../widgets/update_inline_section.dart';
 import 'appearance_screen.dart';
@@ -14,7 +13,6 @@ import 'category_management_screen.dart';
 import 'currency_screen.dart';
 import 'data_export_screen.dart';
 import 'dev_tools_screen.dart';
-import 'household_sync_screen.dart';
 import 'notifications_screen.dart';
 import 'payment_method_management_screen.dart';
 
@@ -57,7 +55,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 screen: const NotificationsScreen()),
             // Kategorie i metody płatności to słowniki, którymi użytkownik
             // opisuje SWÓJ budżet — bliżej im do personalizacji niż do sekcji
-            // „Dane", gdzie mieszkają kopie, synchronizacja i eksport.
+            // „Dane", gdzie mieszkają kopie i eksport.
             _navTile(context,
                 icon: LucideIcons.tag,
                 title: 'Zarządzaj kategoriami',
@@ -71,23 +69,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SettingsSectionLabel('Dane'),
           SettingsGroup(children: [
             // „Asystent AI" i „Archiwum paragonów" zniknęły razem ze skanem
-            // paragonów (ADR-035): zaplanowany wydatek to pozycja planu.
-            Consumer<SyncService>(
-              builder: (_, sync, _) => ListTile(
-                leading: const Icon(LucideIcons.users),
-                title: Row(children: [
-                  const Flexible(child: Text('Budżet domowy')),
-                  const SizedBox(width: 8),
-                  const PreviewBadge(),
-                ]),
-                subtitle:
-                    Text(sync.isPaired ? 'Synchronizacja: połączono' : 'Synchronizacja: nie połączono'),
-                trailing: const Icon(LucideIcons.chevronRight),
-                onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => const HouseholdSyncScreen(),
-                )),
-              ),
-            ),
+            // paragonów, „Budżet domowy" (synchronizacja) — bo nikt jej nie
+            // używał; budżet udostępnia się arkuszem planu (ADR-035).
             _navTile(context,
                 icon: LucideIcons.databaseBackup,
                 title: 'Backup',

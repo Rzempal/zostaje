@@ -117,11 +117,22 @@ dnia płatności nie ma miejsca na kalendarzu.
 - Raport konwersji w Developer Tools porównuje sumy roku ze starego modelu
   z nowym planem — sprawdzenie na prawdziwych danych bez wynoszenia ich
   z telefonu.
+- **Kopia `.zostaje` w wersji 8** niesie plan w sekcji `planPositions`; stare
+  sekcje zostają w pliku jako archiwum. Plik v8 wczytuje plan wprost (bez
+  przeliczania), plik v7 i starszy — przelicza plan ze starych pozycji.
+  Poprzednia wersja aplikacji odrzuca plik v8 przed skasowaniem czegokolwiek
+  (nie przyjmuje wersji > 7), więc po powrocie trzeba użyć kopii sprzed
+  przejścia albo kopii z konta Google zrobionej przez starą wersję.
 
 ### 6. Synchronizacja budżetu domowego — usunięta
 
-Udostępnianie budżetu: eksport/import (Excel jako tabela roku). Dwa budżety
-zostają lokalne.
+Udostępnianie budżetu: eksport/import arkusza planu — tabela roku (wiersz =
+pozycja, kolumny = 12 miesięcy, zakładka „Plan RRRR" na każdy rok), zawsze dla
+budżetu, w którym jest użytkownik. Import DOKŁADA pozycje (nowe identyfikatory),
+pozycja przez dwa lata wraca jako jedna. Pozycje karty są w arkuszu do wglądu,
+ale nie wracają z niego — para pożyczka/spłata powstaje w aplikacji. Dwa budżety
+zostają lokalne. Aplikacja nie łączy się już z serwerem synchronizacji;
+przy powrocie do poprzedniej wersji synchronizacja byłaby znów dostępna.
 
 ## Konsekwencje
 

@@ -4,7 +4,10 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:karton_subs/models/spending_allocation_item.dart';
 import 'package:karton_subs/models/budget_entry.dart';
-import 'package:karton_subs/models/subscription.dart' show Currency, BillingCycle;
+import 'package:karton_subs/models/plan_position.dart';
+import 'package:karton_subs/models/subscription.dart'
+    show Currency, BillingCycle, Subscription;
+import 'package:karton_subs/services/plan_conversion.dart';
 import 'package:karton_subs/services/backup_crypto_service.dart';
 import 'package:karton_subs/services/backup_service.dart';
 import 'package:karton_subs/services/storage_service.dart';
@@ -208,6 +211,93 @@ void main() {
     });
   });
 
+  group('Plan roczny w kopii (v8, ADR-035)', () {
+    PlanPosition position(String id, double amount) => PlanPosition(
+          id: id,
+          budgetId: kBudgetPersonal,
+          name: id,
+          kind: PlanKind.expense,
+          currency: Currency.PLN,
+          months: {'2026-10': PlanMonth(amount: amount)},
+          createdAt: DateTime(2026, 10, 1),
+        );
+
+    Map<String, dynamic> v8(List<PlanPosition> plan,
+            {List<BudgetEntry> personal = const []}) =>
+        {
+          ..._payload(personal: personal, version: 8),
+          'planPositions': [for (final p in plan) p.toJson()],
+        };
+
+    test('eksport zapisuje plan i wersje 8', () async {
+      await _storage.savePlanPosition(position('czynsz', 2000));
+
+      final data =
+          jsonDecode(_backup.buildJsonPayloadForTest()) as Map<String, dynamic>;
+
+      expect(data['version'], 8);
+      expect((data['planPositions'] as List).single['id'], 'czynsz');
+    });
+
+    test('ODTWORZENIE v8 bierze plan z pliku, bez przeliczania starych pozycji',
+        () async {
+      await _storage.savePlanPosition(position('lokalna', 50));
+
+      await _backup.importFromBytes(
+        _file(v8([position('z-pliku', 300)],
+            personal: [_entry('stara', 'Stara pozycja')])),
+        replace: true,
+      );
+
+      final plan = _storage.getPlanPositions();
+      expect(plan.map((p) => p.id), ['z-pliku']);
+      expect(plan.single.amountIn('2026-10'), closeTo(300, 0.001));
+      // Plan z pliku jest gotowy — start aplikacji nie może go przeliczyć.
+      expect(_storage.getPlanConversionVersion(), PlanConversion.version);
+      expect(_storage.getPlanEnvelopeMigrated(), isTrue);
+    });
+
+    test('SCALANIE v8 dokłada i aktualizuje pozycje po identyfikatorze',
+        () async {
+      await _storage.savePlanPosition(position('lokalna', 50));
+      await _storage.savePlanPosition(position('wspolna', 100));
+
+      await _backup.importFromBytes(
+        _file(v8([position('wspolna', 120), position('nowa', 10)])),
+      );
+
+      final byId = {for (final p in _storage.getPlanPositions()) p.id: p};
+      expect(byId.keys, unorderedEquals(['lokalna', 'wspolna', 'nowa']));
+      expect(byId['wspolna']!.amountIn('2026-10'), closeTo(120, 0.001));
+    });
+
+    test('plik v7 (bez planu) dalej przelicza plan ze starych pozycji',
+        () async {
+      await _backup.importFromBytes(
+        _file(_payload(personal: [_entry('prad', 'Prad', amount: 150)])),
+        replace: true,
+      );
+
+      expect(_storage.getPlanPositions().map((p) => p.id), contains('prad'));
+    });
+
+    test('ODTWORZENIE czyści też pamięć podręczną subskrypcji', () async {
+      await _storage.saveSubscription(Subscription(
+        id: 'netflix',
+        name: 'Netflix',
+        amount: 60,
+        currency: Currency.PLN,
+        billingCycle: BillingCycle.monthly,
+        startDate: DateTime(2026, 1, 1),
+        dataDodania: DateTime(2026, 1, 1),
+      ));
+
+      await _backup.importFromBytes(_file(_payload()), replace: true);
+
+      expect(_storage.getSubscriptions(), isEmpty);
+    });
+  });
+
   group('Wersje formatu', () {
     test('stary plik (v1, bez metod platnosci i Plannera) da sie wczytac', () {
       final payload = {
@@ -222,7 +312,7 @@ void main() {
       );
     });
 
-    test('plik z przyszlosci (wersja > 7) jest odrzucany, nie psuje danych',
+    test('plik z przyszlosci (wersja > 8) jest odrzucany, nie psuje danych',
         () async {
       await _storage.saveBudgetEntry(_entry('moja', 'Moja'), BudgetScope.personal);
 

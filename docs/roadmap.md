@@ -46,7 +46,7 @@ korekt, przelewow wewnetrznych i porownan plan/realne — [ADR-035](adr/ADR-035-
 | E2 | Zakladka „Planowanie" (wplywy + wydatki + karta + subskrypcje), miesiace pozycji z zaznaczaniem, plan na kolejny rok; bez „Wplywow" i „Cyklicznych" | ✅ 2026-10-06 (do sprawdzenia na DEV) |
 | E3 | „Budzet" = statystyki roku (srednie, trend, kategorie) + kalendarz platnosci | ✅ 2026-10-06 (do sprawdzenia na DEV) |
 | E3b | Bez Biezacych i Plannera: koperta → pozycje planu, usuniety skan paragonow (ML Kit, silnik AI, usluga w tle), nawigacja Budzet / Planowanie / Ustawienia; APK 44,7 → 32,0 MB | ✅ 2026-10-07 (do sprawdzenia na DEV) |
-| E4 | Kopia zapasowa v8, Excel jako tabela roku, usuniecie synchronizacji | ⏳ |
+| E4 | Kopia zapasowa v8, Excel jako tabela roku, usuniecie synchronizacji | ✅ |
 | E5 | Sprzatanie kodu, testow i dokumentacji; statusy zastapionych ADR | ⏳ |
 | E6 | Przelaczenie PROD po akceptacji testow na DEV | ⏳ |
 

@@ -1,7 +1,7 @@
 # ADR-022: Planner w synchronizacji budżetu domowego
 
 Data: 2026-07-26
-Status: zaakceptowany
+Status: zastąpiony przez [ADR-035](ADR-035-plan-roczny-pozycje-z-miesiacami.md) (2026-10-07) — usunięte razem z synchronizacją i Plannerem
 
 ## Kontekst
 

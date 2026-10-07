@@ -66,8 +66,6 @@ dependencies:
   # Local notifications
   flutter_local_notifications: ^18.0.1
   timezone: ^0.10.0
-  mobile_scanner: ^7.2.0
-  qr_flutter: ^4.1.0
   dynamic_color: ^1.8.1
   lucide_icons_flutter: ^3.1.14+2
   animations: ^2.2.0

@@ -19,7 +19,6 @@ import '../widgets/frost_card.dart';
 import '../widgets/month_picker_dialog.dart';
 import '../widgets/scope_swipe_area.dart';
 import '../widgets/spending_chart.dart';
-import '../widgets/sync_refresh.dart';
 import '../widgets/subscription_stats_view.dart' show SubscriptionStatsView;
 
 /// Sortowanie, grupowanie i zwijanie JEDNEJ sekcji miesiąca. Trzy ustawienia
@@ -293,67 +292,61 @@ class _DashboardScreenState extends State<DashboardScreen>
                     : null,
                 controller: _tab,
                 children: [
-                  SyncRefresh(
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
-                      // Gest musi dzialac takze wtedy, gdy tresc nie wypelnia
-                      // ekranu (np. swiezy budzet bez pozycji).
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: _statsTab(plan, budget, currency),
-                    ),
+                  ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: _statsTab(plan, budget, currency),
                   ),
-                  SyncRefresh(
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: [
-                        BudgetMonthSection(
+                  ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      BudgetMonthSection(
+                        month: _selectedMonth,
+                        currency: currency,
+                        calendar: calendar,
+                        selectedDay: _selectedDay,
+                        today: _today,
+                        compact: _monthCompact,
+                        onToggleCompact: _toggleMonth,
+                        onPrev: () => _shiftMonth(-1),
+                        onNext: () => _shiftMonth(1),
+                        onPickMonth: _pickMonth,
+                        onSelectDay: (d) => setState(() => _selectedDay = d),
+                      ),
+                      if (MonthPaymentsSection.hasAny(calendar)) ...[
+                        const SizedBox(height: 24),
+                        MonthPaymentsSection(
                           month: _selectedMonth,
-                          currency: currency,
                           calendar: calendar,
-                          selectedDay: _selectedDay,
-                          today: _today,
-                          compact: _monthCompact,
-                          onToggleCompact: _toggleMonth,
-                          onPrev: () => _shiftMonth(-1),
-                          onNext: () => _shiftMonth(1),
-                          onPickMonth: _pickMonth,
-                          onSelectDay: (d) => setState(() => _selectedDay = d),
+                          currency: currency,
+                          compact: _paymentsCompact,
+                          onToggleCompact: _togglePayments,
+                          isDone: budget.isPaymentDone,
+                          onToggle: budget.togglePaymentDone,
+                          onSetAll: (items, done) =>
+                              budget.setPaymentsDone(items, done),
+                          sort: _paymentsView.sort,
+                          grouping: _paymentsView.grouping,
+                          spendingCollapsed: _paymentsView.spendingCollapsed,
+                          viewControls: _controlsFor(_paymentsView, calendar),
                         ),
-                        if (MonthPaymentsSection.hasAny(calendar)) ...[
-                          const SizedBox(height: 24),
-                          MonthPaymentsSection(
-                            month: _selectedMonth,
-                            calendar: calendar,
-                            currency: currency,
-                            compact: _paymentsCompact,
-                            onToggleCompact: _togglePayments,
-                            isDone: budget.isPaymentDone,
-                            onToggle: budget.togglePaymentDone,
-                            onSetAll: (items, done) =>
-                                budget.setPaymentsDone(items, done),
-                            sort: _paymentsView.sort,
-                            grouping: _paymentsView.grouping,
-                            spendingCollapsed: _paymentsView.spendingCollapsed,
-                            viewControls: _controlsFor(_paymentsView, calendar),
-                          ),
-                        ],
-                        if (MonthSummarySection.hasAny(calendar)) ...[
-                          const SizedBox(height: 24),
-                          MonthSummarySection(
-                            month: _selectedMonth,
-                            calendar: calendar,
-                            currency: currency,
-                            compact: _monthSummaryCompact,
-                            onToggleCompact: _toggleMonthSummary,
-                            sort: _summaryView.sort,
-                            grouping: _summaryView.grouping,
-                            spendingCollapsed: _summaryView.spendingCollapsed,
-                            viewControls: _controlsFor(_summaryView, calendar),
-                          ),
-                        ],
                       ],
-                    ),
+                      if (MonthSummarySection.hasAny(calendar)) ...[
+                        const SizedBox(height: 24),
+                        MonthSummarySection(
+                          month: _selectedMonth,
+                          calendar: calendar,
+                          currency: currency,
+                          compact: _monthSummaryCompact,
+                          onToggleCompact: _toggleMonthSummary,
+                          sort: _summaryView.sort,
+                          grouping: _summaryView.grouping,
+                          spendingCollapsed: _summaryView.spendingCollapsed,
+                          viewControls: _controlsFor(_summaryView, calendar),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),

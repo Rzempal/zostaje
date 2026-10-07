@@ -389,7 +389,12 @@ class StorageService {
     bool spendingAllocation = false,
     bool planPositions = false,
   }) async {
-    if (subscriptions) await _subscriptionsBox.clear();
+    // Pudełko i pamięć podręczna razem — inaczej odczyty po odtworzeniu
+    // zwracałyby jeszcze dane sprzed niego (aż do restartu aplikacji).
+    if (subscriptions) {
+      await _subscriptionsBox.clear();
+      _subscriptionsCache.clear();
+    }
     if (planPositions) {
       await _planPositionsBox.clear();
       _planPositionsCache.clear();
@@ -409,6 +414,7 @@ class StorageService {
       for (final key in _categoriesBox.keys.toList()) {
         if (defaultCategories.any((d) => d.id == key)) continue;
         await _categoriesBox.delete(key);
+        _categoriesCache.remove(key);
       }
     }
     if (spendingAllocation) {

@@ -8,6 +8,7 @@ import '../models/subscription.dart';
 import '../models/category.dart';
 import '../models/spending_allocation_item.dart';
 import '../models/budget_entry.dart';
+import '../models/plan_position.dart';
 import 'backup_crypto_service.dart';
 import 'plan_conversion.dart';
 import 'storage_service.dart';
@@ -226,7 +227,9 @@ class BackupService {
     final budget = _storage.getBudgetEntries(BudgetScope.personal);
     final household = _storage.getBudgetEntries(BudgetScope.household);
     return jsonEncode({
-      'version': 7,
+      // v8 (ADR-035): plan roczny w `planPositions`. Stara aplikacja odrzuca
+      // wersję > 7, zanim cokolwiek skasuje — nie wczyta pliku bez planu.
+      'version': 8,
       'exportDate': DateTime.now().toIso8601String(),
       'subscriptions': subs.map((s) => s.toJson()).toList(),
       'categories': cats
@@ -255,6 +258,13 @@ class BackupService {
       // Preferencje użytkownika, które zmieniają liczby albo działanie apki
       // (waluta, limit, tryb budżetu, powiadomienia, asystent, motyw) — v7.
       'settings': _storage.exportSettings(),
+      // Plan roczny (v8, ADR-035) — wszystkie budżety. Stare sekcje wyżej
+      // zostają jako archiwum: z nich powstał plan i z nich korzysta powrót
+      // do poprzedniej wersji aplikacji.
+      'planPositions': _storage
+          .getPlanPositions()
+          .map((p) => p.toJson())
+          .toList(),
     });
   }
 
@@ -267,7 +277,7 @@ class BackupService {
   }) async {
     final data = jsonDecode(jsonString) as Map<String, dynamic>;
     final version = data['version'] as int? ?? 1;
-    if (version > 7) {
+    if (version > 8) {
       throw FormatException('Nieobsługiwana wersja backupu: $version');
     }
     // Liczba pozycji usuniętych przy odtwarzaniu — do uczciwego podsumowania.
@@ -292,6 +302,7 @@ class BackupService {
         budgetHousehold: hasHousehold,
         paymentDone: data['paymentDone'] != null,
         spendingAllocation: data['billsAllocation'] != null,
+        planPositions: data['planPositions'] != null,
       );
     }
 
@@ -379,11 +390,20 @@ class BackupService {
       await _storage.importSettings(settingsRaw);
     }
 
-    // Plan roczny (ADR-035) powstaje ze starych pozycji, a te właśnie się
-    // zmieniły — przeliczamy go od razu, żeby „Planowanie" nie pokazywało do
-    // restartu planu sprzed importu. Kopia w formacie planu (v8, etap E4)
-    // będzie go niosła sama.
-    if (budgetImported > 0 || removed > 0) {
+    // Plan roczny (ADR-035). Kopia v8 niesie go sama: odtworzenie zastępuje
+    // plan, scalenie dokłada/aktualizuje pozycje po identyfikatorze. Starsza
+    // kopia planu nie ma — powstaje wtedy od razu ze starych pozycji, żeby
+    // „Planowanie" nie pokazywało do restartu planu sprzed importu.
+    final planRaw = data['planPositions'] as List<dynamic>?;
+    if (planRaw != null) {
+      for (final p in planRaw) {
+        await _storage.savePlanPosition(
+          PlanPosition.fromJson(p as Map<String, dynamic>),
+        );
+      }
+      await _storage.setPlanConversionVersion(PlanConversion.version);
+      await _storage.setPlanEnvelopeMigrated(true);
+    } else if (budgetImported > 0 || removed > 0) {
       await PlanConversionRunner(
         _storage,
       ).reconvert(Subscription.devDateOverride ?? DateTime.now());
