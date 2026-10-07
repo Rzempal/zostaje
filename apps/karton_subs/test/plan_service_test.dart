@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:karton_subs/models/budget_entry.dart';
 import 'package:karton_subs/models/plan_position.dart';
 import 'package:karton_subs/models/subscription.dart';
-import 'package:karton_subs/services/budget_service.dart' show DayCashflow;
+import 'package:karton_subs/models/cashflow.dart' show DayCashflow;
 import 'package:karton_subs/services/plan_service.dart';
 
 // Obliczenia planu rocznego (ADR-035): subskrypcje w miesiącach, sumy okresu,

@@ -6,7 +6,7 @@ import '../controllers/plan_controller.dart';
 import '../controllers/subscription_controller.dart';
 import '../models/subscription.dart';
 import '../services/analytics_service.dart' show MonthlyDataPoint;
-import '../services/budget_service.dart' show DayCashflow;
+import '../models/cashflow.dart' show DayCashflow;
 import '../services/plan_service.dart';
 import '../services/storage_service.dart';
 import '../services/update_service.dart';

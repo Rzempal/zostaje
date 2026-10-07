@@ -1,7 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:karton_subs/models/budget_entry.dart';
-import 'package:karton_subs/models/subscription.dart';
-import 'package:karton_subs/services/budget_service.dart';
 
 // Test-straznik migracji typow scalonych (ADR-018 / ADR-011).
 //
@@ -10,7 +8,6 @@ import 'package:karton_subs/services/budget_service.dart';
 // w koszt cykliczny obciazajacy plan "zostaje/mies" CO MIESIAC. Dotyczy naraz
 // bazy lokalnej, backupu i synchronizacji domowej.
 
-const _svc = BudgetService();
 final _date = DateTime(2026, 1, 1);
 
 Map<String, dynamic> _json(String type) => {
@@ -46,27 +43,6 @@ void main() {
         BudgetEntry.fromJson(_json('cosNowego')).type,
         BudgetEntryType.recurringCost,
       );
-    });
-
-    test('zmigrowany wydatek jednorazowy NIE obciaza planu miesiecznego', () {
-      final e = BudgetEntry.fromJson(_json('oneTimeExpense'));
-      expect(e.monthlyAmount, 0);
-      expect(e.signedMonthlyAmount, 0);
-
-      final entries = [
-        e,
-        BudgetEntry(
-          id: 'inc',
-          name: 'Pensja',
-          type: BudgetEntryType.income,
-          amount: 5000,
-          currency: Currency.PLN,
-          dataDodania: _date,
-        ),
-      ];
-      // Plan bez zmian (sama pensja), bilans marca pomniejszony o pralke.
-      expect(_svc.monthlySurplus(entries, const []), 5000);
-      expect(_svc.balanceForMonth(entries, const [], '2026-03'), 2000);
     });
 
     test('zapis uzywa nowej nazwy typu', () {

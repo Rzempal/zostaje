@@ -4,7 +4,7 @@ import '../models/budget_entry.dart';
 import '../models/plan_position.dart';
 import '../models/subscription.dart';
 import '../services/app_logger.dart';
-import '../services/budget_service.dart' show DayCashflow;
+import '../models/cashflow.dart' show DayCashflow;
 import '../services/plan_service.dart';
 import '../services/storage_service.dart';
 import 'budget_controller.dart';

@@ -1,8 +1,7 @@
 # ADR-004: Model budzetu domowego (BudgetEntry, osobno od subskrypcji, hybryda czasu)
 
 Data: 2026-06-16
-Status: zaakceptowany
-
+Status: zastąpiony przez [ADR-035](ADR-035-plan-roczny-pozycje-z-miesiacami.md) (2026-10-07) — plan roczny: pozycje z miesiącami
 ## Kontekst
 
 Aplikacja byla trackerem subskrypcji zbudowanym wokol encji `Subscription`.

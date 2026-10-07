@@ -70,14 +70,15 @@ lib/
 │   └── app_config.dart          # Build-time config (channels, URLs)
 ├── controllers/
 │   ├── subscription_controller.dart # Stan subskrypcji (CRUD + analytics)
-│   ├── budget_controller.dart   # Stan budzetu domowego (CRUD + agregaty), aktywny zakres, odhaczenia platnosci, koperta
+│   ├── budget_controller.dart   # Aktywny budzet i tryb, odhaczenia platnosci, kaskady slownikow (plan)
 │   ├── plan_controller.dart     # Plan roczny aktywnego budzetu (ADR-035): pozycje, miesiace, karta, plan na kolejny rok
 ├── models/
 │   ├── subscription.dart        # Glowna encja + PaymentMethod
 │   ├── category.dart            # Kategorie subskrypcji
 │   ├── usage_event.dart         # Logowanie uzycia
-│   ├── budget_entry.dart        # Pozycja budzetu (wplyw/cykliczny/biezacy/rata/przelew) — ADR-018
-│   ├── plan_position.dart       # Plan roczny: pozycja z miesiacami „RRRR-MM → kwota" (ADR-035, Faza 16 w toku)
+│   ├── budget_entry.dart        # Stara pozycja budzetu — archiwum i zrodlo konwersji (ADR-035); BudgetScope, BudgetMode
+│   ├── cashflow.dart            # Przeplywy dnia kalendarza (CalendarItem, DayCashflow)
+│   ├── plan_position.dart       # Plan roczny: pozycja z miesiacami „RRRR-MM → kwota" (ADR-035)
 ├── utils/
 │   ├── cycle_math.dart          # Wspolna normalizacja cyklu -> kwota/mies + projekcja wystapien (ADR-020)
 ├── services/
@@ -87,7 +88,6 @@ lib/
 │   ├── recovery_key_vault.dart  # Sejf na kod odzyskiwania w koncie Google (Block Store)
 │   ├── storage_service.dart     # Hive + cache + CRUD
 │   ├── analytics_service.dart   # Obliczenia subskrypcji: totale, trendy, breakdown
-│   ├── budget_service.dart      # Agregacja budzetu (wplywy/koszty/surplus/bilans)
 │   ├── plan_conversion.dart     # Konwersja starych pozycji na plan roczny + raport zgodnosci (ADR-035); stare dane nietkniete
 │   ├── plan_service.dart        # Obliczenia planu: kwoty okresu, sumy miesiaca, statystyki roku, kalendarz, subskrypcje w miesiacach
 │   ├── excel_service.dart       # Import/eksport .xlsx: subskrypcje + plan (udostepnianie, wybor pliku)
@@ -113,14 +113,12 @@ lib/
 │   ├── aurora_background.dart    # Tlo: gradient + 2 statyczne poswiaty (Aurora)
 │   ├── frost_card.dart           # Karta „frost" (przezroczystosc + border, BEZ blur)
 │   ├── glass_nav_bar.dart        # Plywajaca pigulka nawigacji — jedyny BackdropFilter
-│   ├── metric_tile.dart          # Kafel metryki (ikona + kwota + delta)
-│   ├── gradient_amount.dart      # Kwota-bohater (ShaderMask gradient)
 │   ├── aurora_chip.dart          # Chip filtra (frost / gradient aktywny)
 │   ├── aurora_add_menu.dart      # Przycisk „Dodaj" + menu wysuwane w gore (zamiast bottom sheet)
 │   ├── subscription_row.dart    # Wiersz subskrypcji w stylu listy budzetu (ADR-027)
 │   ├── subscription_stats_view.dart # Limit subskrypcji + koszty okresow probnych („Plan" -> „Limity i okresy probne")
 │   ├── category_icons.dart      # Slownik ikon kategorii (wspolny dla list i Ustawien)
-│   ├── budget_widgets.dart      # Wspolne widgety budzetu (BudgetSummarySection full/compact, flow/miesiac/karta)
+│   ├── budget_widgets.dart      # Przelacznik zakresu, sekcje miesiaca w kalendarzu, lista wierszy
 │   ├── plan_widgets.dart        # Planowanie: sekcja z suma, wiersz pozycji z paskiem 12 miesiecy, „Zostaje", koperta, karta
 │   ├── cashflow_calendar.dart   # Siatka miesiaca z kropkami wplyw/wydatek
 │   ├── spending_chart.dart      # Wykres trendu wydatkow (jedna seria lub kilka + chipy legendy)
@@ -208,7 +206,7 @@ za krawedz na waskim ekranie.
 | Zakladka | Tresc |
 |----------|-------|
 | **Budzet** (przeglad) | Dwie pod-zakladki (ADR-035). **Statystyki** — wybrany rok planu: karta „Srednio miesiecznie" (wplywy, wydatki, subskrypcje, karta netto, zostaje + sumy roczne), wykres 12 miesiecy (wplywy vs wydatki) i podzial wydatkow na kategorie (srednio/mies., z subskrypcjami); pod spodem „Limity i okresy probne" subskrypcji. **Kalendarz** — dawny „Bilans miesiaca" bez realnego bilansu: siatka miesiaca, „Platnosci" do odhaczenia i „Podsumowanie miesiaca"; dane z planu (miesiace pozycji z dniem platnosci) i odnowien subskrypcji (`PlanService.calendarForMonth`). Odhaczenia maja klucz `zakres|id|data`, a pozycje planu zachowaly identyfikatory starych pozycji — odhaczenia sprzed przebudowy zostaly. Porownania plan/realne, podsumowanie roczne i „poczatek ewidencji" usuniete (ADR-028/029 zastapione) |
-| **Planowanie** | Plan roczny aktywnego budzetu (ADR-035): sekcje **Wplywy · Wydatki** **· Karta kredytowa · Subskrypcje** i karta „Zostaje" dla okresu. Filtr czasu bez „Wszystkie lata": rok = srednie miesieczne, miesiac = kwoty tego miesiaca (pozycja widoczna, gdy w nim obowiazuje); „Dzisiaj", kategorie z podgrupami, sortowanie, „pokaz ukryte". Wiersz pozycji ma pasek 12 kratek (miesiace roku). Tap → szczegoly pozycji: 12 miesiecy wybranego roku, kazdy z kwota i dniem; przytrzymanie = zaznaczanie miesiecy (ustaw kwote / dzien / usun z planu). Formularz nowej pozycji: kwota + siatka miesiecy (caly rok, co kwartal, raty od pierwszego zaznaczonego). „Zaplanuj kolejny rok" przenosi miesiace i kwoty (konczace sie raty domyslnie odznaczone). **Pozyczka z karty** — para pozycji (pozyczka w miesiacu uzycia, splata po okresie bezodsetkowym) spieta `linkId`, liczona osobno jako „karta netto". Subskrypcje zostaja osobnym modulem — w planie kwota miesiaca z ich cyklu (okres probny i po anulowaniu = 0). Zaznaczanie wielu pozycji: kategoria, metoda, ukryj/przywroc, usun |
+| **Planowanie** | Plan roczny aktywnego budzetu (ADR-035): sekcje **Wplywy · Wydatki**, a pod wydatkami — wciete, jako ich szczegolne skladowe — **Subskrypcje · Karta kredytowa**; karta „Zostaje" dla okresu. Sumy wydatkow ze znakiem minus (naglowki sekcji i karta „Zostaje"). Filtr czasu bez „Wszystkie lata": rok = srednie miesieczne, miesiac = kwoty tego miesiaca (pozycja widoczna, gdy w nim obowiazuje); „Dzisiaj", kategorie z podgrupami, sortowanie, „pokaz ukryte". Wiersz pozycji ma pasek 12 kratek (miesiace roku). Tap → szczegoly pozycji: 12 miesiecy wybranego roku, kazdy z kwota i dniem; przytrzymanie = zaznaczanie miesiecy (ustaw kwote / dzien / usun z planu). Formularz nowej pozycji: kwota + siatka miesiecy (caly rok, co kwartal, raty od pierwszego zaznaczonego). „Zaplanuj kolejny rok" przenosi miesiace i kwoty (konczace sie raty domyslnie odznaczone). **Pozyczka z karty** — para pozycji (pozyczka w miesiacu uzycia, splata po okresie bezodsetkowym) spieta `linkId`, liczona osobno jako „karta netto". Subskrypcje zostaja osobnym modulem — w planie kwota miesiaca z ich cyklu (okres probny i po anulowaniu = 0). Zaznaczanie wielu pozycji: kategoria, metoda, ukryj/przywroc, usun |
 | **Ustawienia** | Trzy sekcje. **Personalizacja**: wyglad, waluta i limit, **wybor budzetow** (tryb: Osobisty / Domowy / oba — ADR-014), powiadomienia, **kategorie i metody platnosci** (slowniki, ktorymi uzytkownik opisuje SWOJ budzet — stad przy personalizacji, nie przy danych). **Dane**: **Backup** (kopia zapasowa i odtwarzanie) oraz **Eksport/import danych** (XLSX subskrypcji i planu roku w OBIE strony — arkusz planu to sposob udostepnienia budzetu (ADR-035), raport PDF — wczesniej ikony w paskach ekranow; arkusz to nie kopia zapasowa: import DOKLADA pozycje, nie odtwarza zdjec, odhaczen ani ustawien). **Aplikacja**: **aktualizacje OTA inline**, polityka prywatnosci, Developer Tools (tylko DEV). Karty frost |
 
 **Tryb budzetu (ADR-014):** globalny zakres w `BudgetController` ma tryb (`budgetMode`,
@@ -219,128 +217,40 @@ przelacza Statystyki/Kalendarz. Dane obu zakresow zostaja; tryb je tylko chowa/o
 
 ---
 
-## Domena Budzet domowy (rownolegla warstwa)
+## Domena: plan roczny (ADR-035)
 
-> **Uwaga (Faza 16, ADR-035):** ponizszy opis dotyczy modelu SPRZED przebudowy
-> (pozycje z cyklem, korekty, raty, przelewy, Biezace, karta, Planner). Stary
-> zapis zostaje w bazie jako archiwum i zrodlo konwersji (`plan_conversion.dart`),
-> ale aplikacja liczy wszystko z planu rocznego (`PlanPosition`, `PlanService`).
-> Pelna aktualizacja tej sekcji — etap E5.
-
-> **ADR:** [ADR-029 Podsumowanie roczne i poczatek ewidencji](adr/ADR-029-podsumowanie-roczne-i-poczatek-ewidencji.md)
-> | [ADR-028 Plan vs rzeczywistosc na wykresach](adr/ADR-028-plan-vs-rzeczywistosc-na-wykresach.md)
-> | [ADR-027 Subskrypcje jako sekcja „Wydatkow"](adr/ADR-027-subskrypcje-jako-sekcja-wydatkow.md)
-> | [ADR-023 Rozlaczne strumienie wydatkow](adr/ADR-023-rozlaczne-strumienie-wydatkow.md)
-> | [ADR-020 Cykl „wybrane miesiace roku"](adr/ADR-020-cykl-wybrane-miesiace-roku.md)
-> | [ADR-018 Scalenie wydatku jednorazowego z rachunkiem](adr/ADR-018-scalenie-wydatku-jednorazowego-z-rachunkiem.md)
-> | [ADR-004 Model budzetu domowego](adr/ADR-004-model-budzetu-domowego.md)
-> | [ADR-008 Rachunek zmienny: surplus (plan) vs bilans miesiaca (realny)](adr/ADR-008-rachunek-zmienny-surplus-vs-bilans.md)
-> | [ADR-011 Rachunki (realny log) + scalenie typow cyklicznych](adr/ADR-011-rachunki-realny-log-i-scalenie-typow-cyklicznych.md)
-> | [ADR-012 Koperta „Na rachunki" jako lista pozycji](adr/ADR-012-koperta-na-rachunki-lista-pozycji.md)
-> | [ADR-032 „Biezace" i „Cykliczne" zamiast „Rachunkow"](adr/ADR-032-biezace-i-cykliczne-zamiast-rachunkow.md)
-> | [ADR-033 Karta kredytowa: pozyczka i splata](adr/ADR-033-karta-kredytowa-pozyczka-i-splata.md)
-> | [ADR-034 Scalanie wydatkow i zwijanie splat karty](adr/ADR-034-scalanie-wydatkow-i-zwijanie-splat-karty.md)
-
-> **Uwaga do starszych ADR:** dokumenty ADR-008/011/012/018/019 uzywaja nazwy
-> „Rachunki" — to zapis historyczny, nie blad. Dzisiejsza nazwa tej sekcji to
-> **„Biezace"**, a koperty **„Na biezace wydatki"** (ADR-032). Slownik nazw kodu
-> i granice formatu zapisu opisuje ADR-032.
-
-Budzet jest **osobny od subskrypcji** — nie modyfikuje wydanego modulu, tylko
-dodatkowo czyta subskrypcje jako strumien kosztow.
-
-**Dwa zakresy = dwa boxy** (ADR-006): osobisty (`budget_entries`, lokalny) i domowy
-(`household_budget_entries`, przyszla synchronizacja). `BudgetController` trzyma aktywny
-`BudgetScope` — **jeden globalny tryb Osobisty/Domowy dla calej apki**: przelacznik +
-**swipe poziomy** na kazdym ekranie (Budzet, Biezace, Cykliczne, Subskrypcje czytaja
-ten sam zakres). Ten sam silnik liczy oba. Kategorie i metody platnosci to slowniki
-**wspoldzielone** (subskrypcje + pozycje budzetu obu zakresow + koperta „Na biezace") —
-liczniki i kaskady rename/usun w Ustawieniach obejmuja wszystkie te zrodla.
+> **ADR:** [ADR-035 Plan roczny — pozycje z miesiacami](adr/ADR-035-plan-roczny-pozycje-z-miesiacami.md)
+> | [ADR-014 Tryb budzetu](adr/ADR-014-tryb-budzetu-osobisty-domowy-oba.md)
+> | [ADR-020 Cykl „wybrane miesiace roku"](adr/ADR-020-cykl-wybrane-miesiace-roku.md) (subskrypcje)
 
 ```
-BudgetController (ChangeNotifier, aktywny BudgetScope)
-   │  nasluchuje SubscriptionController
+PlanController (ChangeNotifier)  ──► PlanPosition[]  (box: plan_positions, wszystkie budzety)
+   │  slucha BudgetController (aktywny budzet, odhaczenia platnosci, slowniki)
+   │  i przez niego SubscriptionController
    ▼
-BudgetService  ──►  BudgetEntry[]  (box: budget_entries | household_budget_entries)
-   │                          + subskrypcje danego zakresu (Subscription.scope)
-   └──►  AnalyticsService.getMonthlyTotal(subscriptions)  ◄─ integracja
+PlanService  — kwoty okresu, sumy miesiaca, statystyki roku, kalendarz platnosci,
+               subskrypcje w miesiacach, kopiowanie roku
 ```
 
-**Cykle platnosci (ADR-020):** obok `weekly/monthly/quarterly/yearly/custom (dni)`
-jest tryb **`monthsOfYear`** — lista miesiacow platnosci (`cycleMonths`, np. 1,4,9)
-ze wspolnym dniem z daty-kotwicy. Pokrywa „co N miesiecy" dla N dzielacego 12
-(co 2 = szesc miesiecy, co 4 = trzy, co pol roku = dwa); presety w formularzu tylko
-wypelniaja te liste. Kwota/mies = kwota x liczba miesiecy / 12. Dotyczy pozycji
-budzetu i subskrypcji (wspolna matematyka w `cycle_math`).
+- **Pozycja** (`PlanPosition`): nazwa, rodzaj (`income`/`expense`/`cardLoan`/
+  `cardRepayment`), kategoria, metoda, waluta, dzien, notatka, `archived`,
+  `budgetId` (`personal`/`household`) i **miesiace** „RRRR-MM → kwota (+ dzien)".
+  Brak miesiaca = pozycja wtedy nie obowiazuje. Kwota zyje tylko w miesiacach.
+- **Okres:** rok = srednia miesieczna (suma ÷ 12), miesiac = kwoty tego miesiaca.
+- **Karta kredytowa:** para `cardLoan` + `cardRepayment` spieta `linkId`
+  (usuniecie jednej usuwa druga), liczona osobno jako „karta netto".
+- **Subskrypcje:** osobny modul; w planie kwota miesiaca liczy sie z cyklu
+  (`cycle_math`): miesiac odnowienia = pelna kwota, okres probny i po anulowaniu = 0.
+- **Slowniki** (kategorie, metody platnosci) sa wspolne dla wszystkich budzetow;
+  liczniki i kaskady w Ustawieniach obejmuja pozycje planu i subskrypcje.
+- **Odhaczenia platnosci:** klucz `zakres|id|RRRR-MM-DD` (`BudgetController`).
 
-**Regula wyboru sekcji (intencja uzytkownika):** sekcja, do ktorej trafia pozycja,
-JEST wyborem sposobu liczenia. **Wydatki cykliczne** = koszt usredniony (kwota x
-liczba platnosci / 12), niezaleznie od tego, w ktorym miesiacu dodano pozycje —
-to wlasciwe zachowanie przy planowaniu miesiecznego budzetu. **Biezace** = koszt
-datowany, uderzajacy w bilans konkretnego miesiaca. Ta os JEST podzialem zakladek
-(ADR-032): nazwy „Biezace" i „Cykliczne" mowia wprost, czym te sekcje sie roznia.
-Stad scalenie typow z ADR-018:
-„rachunek" i „wydatek jednorazowy" byly dwiema nazwami tej samej, datowanej strony
-tego podzialu.
-
-**Model czasu (hybryda):**
-- Rdzen usredniony: `surplus = wplywy - (koszty cykliczne + subskrypcje)`
-- Jednorazowe (wplyw/wydatek): przypiete do daty, koryguja `balanceForMonth`
-- Roznice „bilans − saldo" rozbija `balanceBreakdownForMonth` (jednorazowe,
-  korekty kwot, korekty rat) — suma delt = `balanceForMonth − monthlySurplus`
-- `BudgetEntry.appliesToMonth` = przynaleznosc pozycji do snapshotu miesiaca
-  (filtr czasu w Budzecie): cykliczne zawsze, jednorazowe = swoj miesiac, raty = okno
-
-**Przelew do domowego** (`householdTransfer`): koszt w osobistym + lustrzany wplyw w
-domowym, spiete `linkId` (kaskada edycji/usuwania; lustro read-only). Patrz
-[ADR-006](adr/ADR-006-budzet-domowy-osobny-zbior.md).
-
-**Karta kredytowa (ADR-033):** metoda platnosci z flaga `isCreditCard` i liczba
-`graceDays`. Karta POZYCZA pieniadze, wiec operacja nia rodzi zestaw pozycji
-spietych `creditLinkId` (osobne pole, bo `linkId` laczy ROZNE zakresy, a te
-pozycje siedza w jednym):
-- **wplyw z karty** -> wplyw + splata za `graceDays` dni (netto zero),
-- **zakup karta** -> zakup + lustrzany wplyw „Karta: …" tego samego dnia +
-  splata za `graceDays` dni. Bez tego wplywu ten sam zakup obciazalby budzet
-  DWA razy — raz jako zakup, raz jako splata.
-
-Automat obejmuje tylko `spending` i `oneTimeIncome`; cykliczne i raty wchodza do
-planu, wiec doklejanie do nich splaty rozjechaloby „zostaje/mies".
-
-Poniewaz model jest 1:1 (kazdy zakup ma WLASNA splate), a bank sciaga jedna kwote
-za okres, lista „Biezace" zwija splaty jednej karty w jeden wiersz z suma
-(`utils/credit_group.dart`, ADR-034). Splata nie ma w danych wlasnego znacznika —
-rozstrzyga data: w obrebie jednego `creditLinkId` splata jest wydatek o
-NAJPOZNIEJSZEJ dacie (remis dat = nie zwijamy). Nowego pola nie dokladamy
-swiadomie: pozycje jada miedzy telefonami, a starsza wersja skasowalaby nieznane
-pole po cichu.
-
-**Synchronizacja domowego (ADR-009/022/025) — usunieta (ADR-035).** Nikt jej nie
-uzywal; budzet udostepnia sie arkuszem planu (Ustawienia -> Dane). Pola `updatedAt`
-i nagrobki `deleted` w starych pozycjach zostaja w formacie zapisu (archiwum, powrot
-do poprzedniej wersji).
-
-**Przeniesienie wydatku miedzy budzetami:** `BudgetController.moveToScope`
-przenosi pozycje osobisty ↔ domowy (akcja w formularzu edycji wydatku, tylko
-gdy oba budzety sa w uzyciu). Zakres nie jest polem pozycji, tylko wynika
-z pudelka, wiec przeniesienie = zapis w nowym + usuniecie ze starego. Trzy
-rzeczy jada razem z pozycja: **nagrobek** przy wyjsciu z domowego (bez niego
-synchronizacja przywroci pozycje z serwera i policzy ja w obu budzetach),
-**zdjecie rachunku** (mapa po `id`) i **odhaczenie platnosci** (klucz zawiera
-zakres ORAZ `id`). Pozycja dostaje NOWE `id` — nagrobek zostaje przy starym,
-wiec nie ma jak sie z nia zderzyc, gdyby wrocila. Przelewy miedzy budzetami
-(`householdTransfer` z `linkId`) sa odrzucane: to para pozycja + lustro.
-
-**Slowniki w paczce (ADR-025):** kategorie i metody platnosci jada jako sekcja
-opcjonalna `dictionaries` — bez nich pozycja u drugiej osoby wskazywala na
-nieistniejaca kategorie (znikala z karty, wpadala do „Inne"), a platnosc
-automatyczna udawala manualna (metoda jest wskazywana po NAZWIE, wiec brak wpisu
-= brak `isAutomatic`). Jada **tylko wpisy uzywane przez budzet domowy** —
-slownik jest wspoldzielony z osobistym i subskrypcjami, wiec prywatne kategorie
-nie opuszczaja telefonu. Scalanie LWW po nowym polu `updatedAt` (brak = epoka
-zero), **bez usuwania zdalnego**; metody dopasowywane po nazwie, a kategorie
-o tej samej nazwie kanonizowane do mniejszego `id` (wybor niezalezny od
-telefonu, wiec pozycje nie przepinaja sie w kolko).
+**Stary model (archiwum).** Pozycje sprzed przebudowy (`budget_entries`,
+`household_budget_entries`, koperta Plannera) leza nietkniete w bazie i w kopii
+`.zostaje`. Czyta je tylko konwersja (`plan_conversion.dart`) — raz przy starcie,
+po odtworzeniu kopii v7 lub starszej i w raporcie konwersji (Developer Tools).
+Identyfikator pozycji planu = identyfikator starej pozycji. Opis starego modelu:
+ADR-004/006/008/011/012/018/033/034 i tag `v0.26.26100600`.
 
 ---
 

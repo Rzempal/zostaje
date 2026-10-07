@@ -1,8 +1,7 @@
 # ADR-006: Budzet domowy jako osobny zbior + przelew jako para linkId
 
 Data: 2026-06-17
-Status: zaakceptowany
-
+Status: częściowo zastąpiony przez [ADR-035](ADR-035-plan-roczny-pozycje-z-miesiacami.md) (2026-10-07) — dwa budżety zostają (jako `budgetId` pozycji planu), przelew między budżetami usunięty
 ## Kontekst
 
 Budzet (dotad jeden, osobisty) rozszerzono o **wspolny budzet domowy** (rodzina/partner,

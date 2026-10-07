@@ -1,8 +1,7 @@
 # ADR-027: Subskrypcje jako sekcja „Wydatkow", nie osobna zakladka
 
 Data: 2026-08-01
-Status: zaakceptowany
-
+Status: częściowo zastąpiony przez [ADR-035](ADR-035-plan-roczny-pozycje-z-miesiacami.md) (2026-10-07) — subskrypcje są sekcją planu, wciętą pod wydatkami
 > **Powiazane:** [ADR-019 Podzial sekcji aplikacji](ADR-019-podzial-sekcji-aplikacji.md)
 > | [ADR-023 Rozlaczne strumienie wydatkow](ADR-023-rozlaczne-strumienie-wydatkow.md)
 > | [ADR-026 Gestosc interfejsu](ADR-026-gestosc-interfejsu-bez-paskow-tytulu.md)

@@ -88,7 +88,7 @@ class PlanExcel {
           TextCellValue(p.currency.label),
           TextCellValue(sanitizeCell(p.note ?? '')),
           for (var m = 1; m <= 12; m++) _monthCell(p, year, m),
-          DoubleCellValue(_round(p.yearTotal(year))),
+          DoubleCellValue(_signed(p, p.yearTotal(year))),
         ]);
       }
     }
@@ -109,11 +109,18 @@ class PlanExcel {
   }
 
   /// Pusta komórka = pozycja w tym miesiącu nie obowiązuje; liczba (także 0)
-  /// = obowiązuje z tą kwotą. Dzień inny niż domyślny ginie — arkusz niesie
+  /// = obowiązuje z tą kwotą (wydatki ze znakiem minus). Dzień inny niż domyślny ginie — arkusz niesie
   /// kwoty, nie terminy pojedynczych miesięcy.
   static CellValue? _monthCell(PlanPosition p, int year, int month) {
     final pm = p.months[planMonthKey(year, month)];
-    return pm == null ? null : DoubleCellValue(_round(pm.amount));
+    return pm == null ? null : DoubleCellValue(_signed(p, pm.amount));
+  }
+
+  /// Pieniądze wychodzące (wydatek, spłata karty) jako liczby ujemne — jak
+  /// sumy na ekranie Planowanie; arkusz da się wtedy wprost zsumować.
+  static double _signed(PlanPosition p, double amount) {
+    final v = _round(p.isInflow ? amount : -amount);
+    return v == 0 ? 0 : v;
   }
 
   static double _round(double v) => double.parse(v.toStringAsFixed(2));
@@ -199,8 +206,10 @@ class PlanExcel {
           if (i == null || i >= cells.length) continue;
           final raw = cellText(cells[i])?.trim();
           if (raw == null || raw.isEmpty) continue;
-          final amount = parseAmount(raw);
-          if (amount == null || amount < 0 || amount > maxAmount) {
+          // Znak kwoty niesie kolumna „Rodzaj"; minus przy wydatku (tak
+          // eksportujemy) i jego brak (wpis ręczny) znaczą to samo.
+          final amount = parseAmount(raw)?.abs();
+          if (amount == null || amount > maxAmount) {
             badAmount = true;
             continue;
           }

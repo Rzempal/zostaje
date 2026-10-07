@@ -33,8 +33,9 @@ class PlanSection extends StatelessWidget {
   final bool collapsed;
   final VoidCallback onToggle;
 
-  /// Wiersz przypięty na górze sekcji (koperta „Na bieżące wydatki").
-  final Widget? pinnedTop;
+  /// Sekcja jako szczególna składowa wydatków (Subskrypcje, Karta kredytowa):
+  /// wcięta i z mniejszym tytułem, żeby było widać, że należy do wydatków.
+  final bool nested;
   final List<Widget> children;
 
   const PlanSection({
@@ -44,14 +45,14 @@ class PlanSection extends StatelessWidget {
     required this.collapsed,
     required this.onToggle,
     required this.children,
-    this.pinnedTop,
+    this.nested = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final c = context.semanticColors;
-    return Column(
+    final section = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         InkWell(
@@ -61,7 +62,12 @@ class PlanSection extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: Text(title, style: theme.textTheme.titleMedium),
+                  child: Text(
+                    title,
+                    style: nested
+                        ? theme.textTheme.titleSmall
+                        : theme.textTheme.titleMedium,
+                  ),
                 ),
                 Text(
                   budgetNf.format(total),
@@ -80,17 +86,13 @@ class PlanSection extends StatelessWidget {
             ),
           ),
         ),
-        if (!collapsed) ...[
-          if (pinnedTop != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: pinnedTop!,
-            ),
-          ...children,
-        ],
+        if (!collapsed) ...children,
         const SizedBox(height: 16),
       ],
     );
+    return nested
+        ? Padding(padding: const EdgeInsets.only(left: 16), child: section)
+        : section;
   }
 }
 
@@ -325,7 +327,12 @@ class PlanSummaryCard extends StatelessWidget {
             Row(
               children: [
                 part('Wpływy', totals.income, c.positive),
-                part('Wydatki', totals.outgoing, c.negative),
+                // Ze znakiem minus, jak sumy w nagłówkach sekcji.
+                part(
+                  'Wydatki',
+                  totals.outgoing == 0 ? 0 : -totals.outgoing,
+                  c.negative,
+                ),
                 if (totals.cardLoans != 0 || totals.cardRepayments != 0)
                   part(
                     'Karta netto',

@@ -54,9 +54,6 @@ Future<void> resetStorage(StorageService storage) async {
     spendingAllocation: true,
     planPositions: true,
   );
-  for (final id in storage.getReceiptPhotoPaths().keys.toList()) {
-    await storage.removeReceiptPhotoPath(id);
-  }
   for (final scope in BudgetScope.values) {
     await storage.setSpendingAllocationItems(scope, const []);
   }

@@ -8,7 +8,7 @@ import '../models/budget_entry.dart';
 import '../models/plan_position.dart';
 import '../models/subscription.dart';
 import '../utils/cycle_math.dart';
-import 'budget_service.dart' show CalendarItem, CalendarItemKind, DayCashflow;
+import '../models/cashflow.dart' show CalendarItem, CalendarItemKind, DayCashflow;
 import 'currency_service.dart';
 
 /// Okres widoku planu: cały rok (średnia miesięczna) albo jeden miesiąc.

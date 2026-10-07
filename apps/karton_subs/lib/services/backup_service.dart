@@ -208,12 +208,6 @@ class BackupService {
     }
   }
 
-  /// Legacy: otwiera file picker + importuje (dla kompatybilności).
-  Future<BackupImportResult> importFromFile({String? password, bool replace = false}) async {
-    final fileInfo = await pickFile();
-    return importFromBytes(fileInfo, password: password, replace: replace);
-  }
-
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   /// Tresc kopii przed zaszyfrowaniem. Publiczne wylacznie dla strazniku

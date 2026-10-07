@@ -553,31 +553,10 @@ class _PlanningScreenState extends State<PlanningScreen> {
                         onToggle: () => _toggleSection(_kExpenses),
                         children: _rows(expenses, period, amount, true),
                       ),
-                    if (cardRows.isNotEmpty)
-                      PlanSection(
-                        title: 'Karta kredytowa',
-                        total: cardRows.fold(0.0, (s, r) => s + r.net),
-                        collapsed: _collapsed.contains(_kCard),
-                        onToggle: () => _toggleSection(_kCard),
-                        children: [
-                          BudgetEntryList(
-                            rows: [
-                              for (final r in cardRows)
-                                CardLoanRow(
-                                  loan: r.loan,
-                                  repayment: r.repayment,
-                                  net: r.net,
-                                  onTap: () => _push(
-                                    CardLoanFormScreen(linkId: r.loan.linkId),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
                     if (subs.isNotEmpty)
                       PlanSection(
                         title: 'Subskrypcje',
+                        nested: true,
                         total: _outflow(
                           subs
                               .where((s) => s.isActive)
@@ -601,6 +580,29 @@ class _PlanningScreenState extends State<PlanningScreen> {
                               ),
                           ],
                         ),
+                      ),
+                    if (cardRows.isNotEmpty)
+                      PlanSection(
+                        title: 'Karta kredytowa',
+                        nested: true,
+                        total: cardRows.fold(0.0, (s, r) => s + r.net),
+                        collapsed: _collapsed.contains(_kCard),
+                        onToggle: () => _toggleSection(_kCard),
+                        children: [
+                          BudgetEntryList(
+                            rows: [
+                              for (final r in cardRows)
+                                CardLoanRow(
+                                  loan: r.loan,
+                                  repayment: r.repayment,
+                                  net: r.net,
+                                  onTap: () => _push(
+                                    CardLoanFormScreen(linkId: r.loan.linkId),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
                       ),
                   ],
                 ],

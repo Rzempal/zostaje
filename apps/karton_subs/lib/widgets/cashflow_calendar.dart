@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/budget_service.dart';
+import '../models/cashflow.dart';
 import '../theme/app_theme.dart';
 
 /// Siatka miesiąca z kropkami przepływów: zielona = wpływ, czerwona = wydatek.

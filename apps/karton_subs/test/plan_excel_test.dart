@@ -74,6 +74,31 @@ void main() {
       expect(byName['Ubezpieczenie']!.months.keys, ['2026-03']);
     });
 
+    test('wydatki w arkuszu są ujemne, wpływy dodatnie; import bierze kwotę '
+        'bez znaku', () {
+      final bytes = PlanExcel.build(
+        positions: [
+          _pos('w', 'Pensja', {'2026-01': 8000}, kind: PlanKind.income),
+          _pos('x', 'Czynsz', {'2026-01': 2000}),
+        ],
+        categories: const [],
+        years: [2026],
+      );
+      final rows = Excel.decodeBytes(bytes).tables['Plan 2026']!.rows;
+      final jan = PlanExcel.headers.indexOf('sty');
+      final values = {
+        for (final r in rows.skip(1))
+          PlanExcel.cellText(r[1]): double.parse(PlanExcel.cellText(r[jan])!),
+      };
+      expect(values['Pensja'], 8000);
+      expect(values['Czynsz'], -2000);
+
+      final back = PlanExcel.parse(bytes, budgetId: kBudgetPersonal);
+      final czynsz = back.positions.firstWhere((p) => p.name == 'Czynsz');
+      expect(czynsz.amountIn('2026-01'), closeTo(2000, 0.001));
+      expect(czynsz.kind, PlanKind.expense);
+    });
+
     test('pozycje karty idą do arkusza, ale z niego nie wracają', () {
       final bytes = PlanExcel.build(
         positions: [

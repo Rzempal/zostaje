@@ -141,13 +141,19 @@ void main() {
   // archiwum, ale nie trafiają już do kalendarza.
   test('kalendarz: pozycje planu, bez starych wydatków z Bieżących', () async {
     await addMonthly('Czynsz', amount: 2000);
-    await budget.create(
-      name: 'Zakupy',
-      type: BudgetEntryType.spending,
-      amount: 80,
-      currency: Currency.PLN,
-      startDate: DateTime(2026, 10, 3),
-      month: '2026-10',
+    await storage.saveBudgetEntry(
+      BudgetEntry(
+        id: 'zakupy',
+        name: 'Zakupy',
+        type: BudgetEntryType.spending,
+        amount: 80,
+        currency: Currency.PLN,
+        cycle: BillingCycle.monthly,
+        startDate: DateTime(2026, 10, 3),
+        month: '2026-10',
+        dataDodania: DateTime(2026, 10, 3),
+      ),
+      BudgetScope.personal,
     );
     final cal = plan.calendarForMonth(DateTime(2026, 10));
     expect(cal[10]!.items.single.name, 'Czynsz');

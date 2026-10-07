@@ -1,10 +1,12 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026100701",
-  "releaseDate": "2026-10-07T19:33:28Z",
-  "releaseNotes": "- Kopia zapasowa niesie plan roczny (wersja 8)\n- Eksport/import planu w Excelu: tabela roku, arkusz na rok\n- Usunieta synchronizacja budzetu domowego\n- Minus przy sumach wydatkow i subskrypcji w naglowkach\n- Naprawa: po odtworzeniu kopii znikaly stare subskrypcje dopiero po restarcie",
-  "version": "0.26.26100701",
-  "versionCode": 2026100701,
+  "releaseNotes": "- Planowanie: Subskrypcje i Karta kredytowa wciete pod Wydatkami\n- Minus przy wydatkach w karcie Zostaje\n- Excel: wydatki jako liczby ujemne\n- Usuniety nieuzywany kod starego budzetu",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026100702",
+  "version": "0.26.26100702",
   "changelog": [
+    {
+      "version": "0.26.26100702",
+      "notes": "- Planowanie: Subskrypcje i Karta kredytowa wciete pod Wydatkami\n- Minus przy wydatkach w karcie Zostaje\n- Excel: wydatki jako liczby ujemne\n- Usuniety nieuzywany kod starego budzetu"
+    },
     {
       "version": "0.26.26100701",
       "notes": "- Kopia zapasowa niesie plan roczny (wersja 8)\n- Eksport/import planu w Excelu: tabela roku, arkusz na rok\n- Usunieta synchronizacja budzetu domowego\n- Minus przy sumach wydatkow i subskrypcji w naglowkach\n- Naprawa: po odtworzeniu kopii znikaly stare subskrypcje dopiero po restarcie"
@@ -40,10 +42,8 @@
     {
       "version": "0.26.26082200",
       "notes": "- Potwierdzenie platnosci z Samsung Wallet czytane szybka sciezka OCR w okolo sekunde\n- Kwota, data i nazwa sklepu prosto z dokumentu, bez zgadywania roku\n- Stan platnosci i nazwa karty nie wplywaja na odczyt"
-    },
-    {
-      "version": "0.26.26081801",
-      "notes": "- Jednorazowe wplywy z karty (pozyczki gotowkowe) zwijaja sie we wlasna grupe\n- Lustrzane wplywy z zakupow zostaja w osobnej grupie, bo ich suma znaczy co innego\n- Grupowanie idzie po karcie, a nie po nazwie wpisu"
     }
-  ]
+  ],
+  "versionCode": 2026100702,
+  "releaseDate": "2026-10-07T19:55:16Z"
 }

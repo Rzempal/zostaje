@@ -107,7 +107,9 @@ dnia płatności nie ma miejsca na kalendarzu.
 
 - Konwersja jest automatyczna (przy starcie i po odtworzeniu starej kopii)
   i czysta: reguły w `services/plan_conversion.dart`, sprawdzone testami.
-- **Stare pozycje zostają nietknięte** w dotychczasowych pudełkach bazy, plan
+- **Stare pozycje zostają nietknięte** — także przy zmianach słowników
+  (usunięcie kategorii, zmiana nazwy metody płatności dotyczą planu
+  i subskrypcji, nie archiwum) — w dotychczasowych pudełkach bazy, plan
   trafia do osobnego pudełka `plan_positions`. Identyfikator pozycji planu =
   identyfikator starej pozycji, więc odhaczenia płatności nie przepadają.
 - **Powrót** do poprzedniej wersji: zbudowanie starej rewizji z WYŻSZYM numerem
