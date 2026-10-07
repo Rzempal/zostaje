@@ -1,7 +1,7 @@
 # ADR-028: Plan vs rzeczywistosc na wykresach zakladki „Plan"
 
 Data: 2026-08-01
-Status: zaakceptowany
+Status: zastąpiony przez [ADR-035](ADR-035-plan-roczny-pozycje-z-miesiacami.md) (2026-10-07) — statystyki pokazują wyłącznie plan
 
 > **Powiazane:** [ADR-008 Rachunek zmienny: surplus vs bilans](ADR-008-rachunek-zmienny-surplus-vs-bilans.md)
 > | [ADR-011 Rachunki (realny log)](ADR-011-rachunki-realny-log-i-scalenie-typow-cyklicznych.md)

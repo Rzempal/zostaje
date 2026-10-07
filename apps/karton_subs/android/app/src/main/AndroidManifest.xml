@@ -12,23 +12,16 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <!-- Lokalny Silnik AI: wpiecie do uslugi AIDL (uprawnienie signature-level silnika
-         PRODUKCYJNEGO; przyznane tylko przy zgodnosci klucza podpisu). Takze build dev
-         Zostaje korzysta z produkcyjnego silnika. -->
-    <uses-permission android:name="app.michalrapala.ai_engine.permission.BIND_AI_ENGINE"/>
-    <!-- Skan rachunku: usluga pierwszoplanowa na czas rozpoznawania (~45 s).
-         Bez niej system ubijal zbuforowana apke, gdy silnik zajmowal pamiec
-         modelem, i skan przepadal (ADR-016). Uprawnienia systemowe - bez pytania
-         uzytkownika. -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
+    <!-- Skan paragonow (silnik AI, usluga pierwszoplanowa) zniknal razem
+         z zakladka Biezace (ADR-035) - wraz z jego uprawnieniami. -->
 
     <application
         android:label="@string/app_name"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
-        <!-- launchMode=singleTask: wymagane przez receive_sharing_intent, by
-             "Udostepnij -> Zostaje" trafialo do istniejacej instancji apki. -->
+        <!-- launchMode=singleTask: jedna instancja apki. Wprowadzone dla
+             "Udostepnij -> Zostaje" (usuniete w ADR-035); zostawione, zeby nie
+             zmieniac powrotow z logowania Google i instalatora OTA. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -50,31 +43,7 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Skan rachunku: przyjmowanie zdjecia z systemowego "Udostepnij". -->
-            <intent-filter>
-                <action android:name="android.intent.action.SEND"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <data android:mimeType="image/*"/>
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.SEND_MULTIPLE"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <data android:mimeType="image/*"/>
-            </intent-filter>
         </activity>
-        <!-- image_cropper: natywny ekran przycinania zdjecia rachunku (uCrop).
-             Motyw ciemny pod Aurore; konkretne kolory ustawia Dart
-             (AndroidUiSettings w receipt_crop_service.dart). -->
-        <activity
-            android:name="com.yalantis.ucrop.UCropActivity"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.AppCompat.NoActionBar"/>
-        <!-- Skan rachunku: rozpoznawanie prowadzone poza cyklem zycia ekranu,
-             zeby przetrwalo wyjscie z apki (ADR-016). -->
-        <service
-            android:name=".BillScanService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync"/>
         <!-- FileProvider wymagany przez ota_update do instalacji APK (Android 7+) -->
         <provider
             android:name="sk.fourq.otaupdate.OtaUpdateFileProvider"
@@ -108,8 +77,5 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
-        <!-- Widocznosc pakietu silnika AI (Android 11+): bez tego bindService
-             do app.michalrapala.ai_engine zwraca false. -->
-        <package android:name="app.michalrapala.ai_engine"/>
     </queries>
 </manifest>

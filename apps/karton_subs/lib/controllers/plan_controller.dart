@@ -9,11 +9,11 @@ import '../services/plan_service.dart';
 import '../services/storage_service.dart';
 import 'budget_controller.dart';
 
-/// Stan planu rocznego aktywnego budżetu (ADR-035) — pozycje z miesiącami,
-/// subskrypcje jako osobna sekcja, koperta „Na bieżące wydatki".
+/// Stan planu rocznego aktywnego budżetu (ADR-035) — pozycje z miesiącami
+/// i subskrypcje jako osobna sekcja.
 ///
-/// Aktywny budżet, odhaczenia płatności i kopertę trzyma [BudgetController]
-/// — ten kontroler go słucha, więc przełączenie budżetu odświeża plan.
+/// Aktywny budżet i odhaczenia płatności trzyma [BudgetController] — ten
+/// kontroler go słucha, więc przełączenie budżetu odświeża plan.
 class PlanController extends ChangeNotifier {
   static final _log = AppLogger.get('PlanController');
   static const _uuid = Uuid();
@@ -54,9 +54,6 @@ class PlanController extends ChangeNotifier {
 
   List<Subscription> get subscriptions => _budget.subscriptions;
 
-  /// Koperta „Na bieżące wydatki" — ta sama kwota w każdym miesiącu planu.
-  double get envelope => _budget.spendingAllocation ?? 0;
-
   List<int> get years => _plan.yearsFor(positions, today);
 
   // ── Kwoty ──────────────────────────────────────────────────────────────────
@@ -70,7 +67,6 @@ class PlanController extends ChangeNotifier {
   PlanMonthTotals totals(PlanPeriod period) => _plan.periodTotals(
     positions: positions,
     subscriptions: subscriptions,
-    envelope: envelope,
     period: period,
     target: target,
   );
@@ -78,17 +74,15 @@ class PlanController extends ChangeNotifier {
   PlanYearStats yearStats(int year) => _plan.yearStats(
     positions: positions,
     subscriptions: subscriptions,
-    envelope: envelope,
     year: year,
     target: target,
   );
 
-  /// Kalendarz płatności miesiąca: plan, subskrypcje i Bieżące (stary zapis).
+  /// Kalendarz płatności miesiąca: pozycje planu i subskrypcje.
   Map<int, DayCashflow> calendarForMonth(DateTime month) =>
       _plan.calendarForMonth(
         positions: positions,
         subscriptions: subscriptions,
-        spending: _storage.getBudgetEntries(_budget.scope),
         month: month,
         target: target,
         autoByPayment: {

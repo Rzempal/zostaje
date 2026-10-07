@@ -36,11 +36,8 @@ class PlanPeriod {
 class PlanMonthTotals {
   final double income;
 
-  /// Pozycje „wydatek" — bez koperty i subskrypcji, które mają własne pola.
+  /// Pozycje „wydatek" — bez subskrypcji, które mają własne pole.
   final double expense;
-
-  /// Koperta „Na bieżące wydatki" (ADR-012) — ta sama kwota co miesiąc.
-  final double envelope;
   final double subscriptions;
   final double cardLoans;
   final double cardRepayments;
@@ -48,7 +45,6 @@ class PlanMonthTotals {
   const PlanMonthTotals({
     this.income = 0,
     this.expense = 0,
-    this.envelope = 0,
     this.subscriptions = 0,
     this.cardLoans = 0,
     this.cardRepayments = 0,
@@ -58,15 +54,14 @@ class PlanMonthTotals {
   double get cardNet => cardLoans - cardRepayments;
 
   /// Wszystko, co plan wydaje poza kartą.
-  double get outgoing => expense + envelope + subscriptions;
+  double get outgoing => expense + subscriptions;
 
-  /// „Zostaje": wpływy − wydatki (z kopertą i subskrypcjami) ± karta.
+  /// „Zostaje": wpływy − wydatki (z subskrypcjami) ± karta.
   double get left => income - outgoing + cardNet;
 
   PlanMonthTotals operator +(PlanMonthTotals o) => PlanMonthTotals(
     income: income + o.income,
     expense: expense + o.expense,
-    envelope: envelope + o.envelope,
     subscriptions: subscriptions + o.subscriptions,
     cardLoans: cardLoans + o.cardLoans,
     cardRepayments: cardRepayments + o.cardRepayments,
@@ -75,7 +70,6 @@ class PlanMonthTotals {
   PlanMonthTotals scaled(double f) => PlanMonthTotals(
     income: income * f,
     expense: expense * f,
-    envelope: envelope * f,
     subscriptions: subscriptions * f,
     cardLoans: cardLoans * f,
     cardRepayments: cardRepayments * f,
@@ -89,9 +83,8 @@ class PlanYearStats {
   /// Styczeń … grudzień.
   final List<PlanMonthTotals> months;
 
-  /// Wydatki według kategorii, średnio miesięcznie (pozycje „wydatek",
-  /// subskrypcje i koperta). Klucz `null` = bez kategorii, koperta stoi pod
-  /// [PlanService.envelopeCategoryKey].
+  /// Wydatki według kategorii, średnio miesięcznie (pozycje „wydatek"
+  /// i subskrypcje). Klucz `null` = bez kategorii.
   final Map<String?, double> expenseByCategory;
 
   const PlanYearStats({
@@ -111,9 +104,6 @@ class PlanService {
   const PlanService();
 
   static const _currency = CurrencyService();
-
-  /// Klucz koperty „Na bieżące wydatki" w podziale na kategorie.
-  static const envelopeCategoryKey = '__envelope__';
 
   // ── Subskrypcje w planie ─────────────────────────────────────────────────
 
@@ -203,7 +193,6 @@ class PlanService {
   PlanMonthTotals monthTotals({
     required List<PlanPosition> positions,
     required List<Subscription> subscriptions,
-    required double envelope,
     required int year,
     required int month,
     required Currency target,
@@ -235,7 +224,6 @@ class PlanService {
     return PlanMonthTotals(
       income: income,
       expense: expense,
-      envelope: envelope,
       subscriptions: subs,
       cardLoans: loans,
       cardRepayments: repayments,
@@ -246,21 +234,18 @@ class PlanService {
   PlanMonthTotals periodTotals({
     required List<PlanPosition> positions,
     required List<Subscription> subscriptions,
-    required double envelope,
     required PlanPeriod period,
     required Currency target,
   }) => period.isYear
       ? yearStats(
           positions: positions,
           subscriptions: subscriptions,
-          envelope: envelope,
           year: period.year,
           target: target,
         ).average
       : monthTotals(
           positions: positions,
           subscriptions: subscriptions,
-          envelope: envelope,
           year: period.year,
           month: period.month!,
           target: target,
@@ -269,7 +254,6 @@ class PlanService {
   PlanYearStats yearStats({
     required List<PlanPosition> positions,
     required List<Subscription> subscriptions,
-    required double envelope,
     required int year,
     required Currency target,
   }) {
@@ -278,7 +262,6 @@ class PlanService {
         monthTotals(
           positions: positions,
           subscriptions: subscriptions,
-          envelope: envelope,
           year: year,
           month: m,
           target: target,
@@ -304,7 +287,6 @@ class PlanService {
       }
       add(s.categoryId, _currency.convert(sum, s.currency, target) / 12);
     }
-    add(envelopeCategoryKey, envelope);
     return PlanYearStats(
       year: year,
       months: months,
@@ -314,8 +296,8 @@ class PlanService {
 
   // ── Kalendarz płatności ──────────────────────────────────────────────────
 
-  /// Kalendarz miesiąca: miesiące pozycji planu (z dniem płatności),
-  /// odnowienia subskrypcji i wydatki z Bieżących.
+  /// Kalendarz miesiąca: miesiące pozycji planu (z dniem płatności)
+  /// i odnowienia subskrypcji.
   ///
   /// Pozycja bez dnia nie ma miejsca na kalendarzu — jak dawniej pozycja bez
   /// daty. Identyfikator pozycji jest kluczem odhaczenia płatności, więc
@@ -323,7 +305,6 @@ class PlanService {
   Map<int, DayCashflow> calendarForMonth({
     required List<PlanPosition> positions,
     required List<Subscription> subscriptions,
-    required List<BudgetEntry> spending,
     required DateTime month,
     required Currency target,
     Map<String, bool>? autoByPayment,
@@ -370,28 +351,6 @@ class PlanService {
           ),
         );
       }
-    }
-
-    for (final e in spending) {
-      if (e.deleted || !e.isActive || e.type != BudgetEntryType.spending) {
-        continue;
-      }
-      final d =
-          e.startDate ??
-          (e.month != null ? DateTime.tryParse('${e.month}-01') : null);
-      if (d == null || d.year != y || d.month != m) continue;
-      add(
-        d.day,
-        CalendarItem(
-          name: e.name,
-          amount: _currency.convert(e.amount, e.currency, target),
-          isIncome: false,
-          kind: CalendarItemKind.spending,
-          isAutomatic: autoOf(e.paymentMethod),
-          sourceId: e.id,
-          entryType: e.type,
-        ),
-      );
     }
 
     return {

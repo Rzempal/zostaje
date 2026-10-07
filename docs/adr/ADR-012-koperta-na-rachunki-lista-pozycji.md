@@ -1,7 +1,7 @@
 # ADR-012: Koperta „Na rachunki" jako lista pozycji (nazwa + kwota + metoda płatności)
 
 Data: 2026-07-12
-Status: zaakceptowany
+Status: zastąpiony przez [ADR-035](ADR-035-plan-roczny-pozycje-z-miesiacami.md) (2026-10-07) — pozycje koperty stały się zwykłymi pozycjami planu
 
 ## Kontekst
 

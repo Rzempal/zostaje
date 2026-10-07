@@ -1,5 +1,11 @@
 {
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026100700",
+  "versionCode": 2026100700,
   "changelog": [
+    {
+      "version": "0.26.26100700",
+      "notes": "- Przebudowa E3b: zakladka Biezace i skan paragonow usuniete\n- Planner Na biezace wydatki zamieniony na zwykle pozycje planu (co miesiac)\n- Nawigacja: Budzet, Planowanie, Ustawienia\n- Aplikacja mniejsza o ok. 13 MB"
+    },
     {
       "version": "0.26.26100602",
       "notes": "- Przebudowa, etapy 2-3: nowa zakladka Planowanie - wplywy, wydatki, karta i subskrypcje na jednym ekranie\n- Pozycja ma miesiace z wlasnymi kwotami; kilka miesiecy mozna zmienic naraz\n- Pozyczka z karty: wplyw w miesiacu uzycia i splata po okresie bezodsetkowym\n- Budzet: Statystyki roku (srednie, miesiace, kategorie) i Kalendarz platnosci\n- Zakladki Wplywy i Cykliczne zastapione Planowaniem"
@@ -35,15 +41,9 @@
     {
       "version": "0.26.26081800",
       "notes": "- Lustrzane wplywy z karty zwijaja sie na Wplywach w jeden wiersz z suma\n- Pozycje rozwinietej grupy karty maja wciecie, wiec widac przynaleznosc\n- Wplyw wpisany recznie (pozyczka gotowkowa) zostaje osobnym wierszem"
-    },
-    {
-      "version": "0.26.26081700",
-      "notes": "- Scalanie zaznaczonych wydatkow w jeden wpis: suma kwot, data najstarszej pozycji, wzorzec wybierany z listy\n- Splaty karty kredytowej zwijaja sie w jeden wiersz z suma skladnikow"
     }
   ],
-  "versionCode": 2026100602,
-  "releaseNotes": "- Przebudowa, etapy 2-3: nowa zakladka Planowanie - wplywy, wydatki, karta i subskrypcje na jednym ekranie\n- Pozycja ma miesiace z wlasnymi kwotami; kilka miesiecy mozna zmienic naraz\n- Pozyczka z karty: wplyw w miesiacu uzycia i splata po okresie bezodsetkowym\n- Budzet: Statystyki roku (srednie, miesiace, kategorie) i Kalendarz platnosci\n- Zakladki Wplywy i Cykliczne zastapione Planowaniem",
-  "releaseDate": "2026-10-06T18:14:23Z",
-  "version": "0.26.26100602",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026100602"
+  "releaseDate": "2026-10-07T06:14:19Z",
+  "version": "0.26.26100700",
+  "releaseNotes": "- Przebudowa E3b: zakladka Biezace i skan paragonow usuniete\n- Planner Na biezace wydatki zamieniony na zwykle pozycje planu (co miesiac)\n- Nawigacja: Budzet, Planowanie, Ustawienia\n- Aplikacja mniejsza o ok. 13 MB"
 }

@@ -2,10 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:karton_subs/controllers/receipt_scan_controller.dart';
 import 'package:karton_subs/models/spending_allocation_item.dart';
 import 'package:karton_subs/models/budget_entry.dart';
-import 'package:karton_subs/models/pending_receipt_scan.dart';
 import 'package:karton_subs/models/subscription.dart';
 import 'package:karton_subs/services/backup_service.dart';
 import 'package:karton_subs/services/storage_service.dart';
@@ -95,26 +93,6 @@ void main() {
       final raw = Hive.box('settings').get('billsAllocationItems|personal');
       expect(raw, isNotNull);
       expect(raw.toString(), contains('Paliwo'));
-    });
-
-    test('kolejka skanów siedzi pod „pendingBillScans"', () async {
-      await storage.savePendingReceiptScans([
-        PendingReceiptScan(
-          id: 's1',
-          imagePath: '/tmp/a.jpg',
-          scope: BudgetScope.personal,
-          status: PendingScanStatus.values.first,
-          createdAt: DateTime(2026, 1, 1),
-        ),
-      ]);
-
-      expect(Hive.box('settings').get('pendingBillScans'), isNotNull);
-    });
-
-    test('katalog zdjęć skanu to „bill_scans"', () async {
-      // Ścieżka wpisana w kolejce skanów wskazuje na ten katalog. Zmiana nazwy
-      // osierociłaby zdjęcia czekające na zatwierdzenie.
-      expect(ReceiptScanController.scansDirName, 'bill_scans');
     });
   });
 

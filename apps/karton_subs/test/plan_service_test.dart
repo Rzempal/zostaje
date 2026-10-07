@@ -154,7 +154,6 @@ void main() {
     PlanMonthTotals month(int m) => _svc.monthTotals(
       positions: positions,
       subscriptions: subs,
-      envelope: 1500,
       year: 2026,
       month: m,
       target: _pln,
@@ -164,11 +163,10 @@ void main() {
       final jan = month(1);
       expect(jan.income, 10000);
       expect(jan.expense, 2000);
-      expect(jan.envelope, 1500);
       expect(jan.subscriptions, 40);
       expect(jan.cardLoans, 3000);
       expect(jan.cardRepayments, 0);
-      expect(jan.left, closeTo(10000 - 3540 + 3000, 1e-9));
+      expect(jan.left, closeTo(10000 - 2040 + 3000, 1e-9));
       expect(month(3).expense, 3200);
     });
 
@@ -176,7 +174,6 @@ void main() {
       final stats = _svc.yearStats(
         positions: positions,
         subscriptions: subs,
-        envelope: 1500,
         year: 2026,
         target: _pln,
       );
@@ -184,24 +181,22 @@ void main() {
       expect(avg.income, closeTo(10000, 1e-9));
       expect(avg.expense, closeTo((2000 * 12 + 1200) / 12, 1e-9));
       expect(stats.total.cardNet, 0);
-      expect(avg.left, closeTo(10000 - 2100 - 1500 - 40, 1e-9));
+      expect(avg.left, closeTo(10000 - 2100 - 40, 1e-9));
     });
 
-    test('kategorie: średnio/mies., z kopertą i subskrypcjami, bez karty', () {
+    test('kategorie: średnio/mies., z subskrypcjami, bez karty', () {
       final byCat = _svc
           .yearStats(
             positions: positions,
             subscriptions: subs,
-            envelope: 1500,
             year: 2026,
             target: _pln,
           )
           .expenseByCategory;
       expect(byCat['cat_x'], closeTo(100, 1e-9));
       expect(byCat[null], closeTo(2000, 1e-9));
-      expect(byCat[PlanService.envelopeCategoryKey], 1500);
       expect(byCat['cat_streaming'], closeTo(40, 1e-9));
-      expect(byCat.length, 4);
+      expect(byCat.length, 3);
     });
 
     test('kwota pozycji: miesiąc wprost, rok jako średnia, w walucie celu', () {
@@ -226,12 +221,10 @@ void main() {
     Map<int, DayCashflow> calendar({
       List<PlanPosition> positions = const [],
       List<Subscription> subs = const [],
-      List<BudgetEntry> spending = const [],
       DateTime? month,
     }) => _svc.calendarForMonth(
       positions: positions,
       subscriptions: subs,
-      spending: spending,
       month: month ?? DateTime(2026, 10),
       target: _pln,
     );
@@ -294,21 +287,9 @@ void main() {
       expect(cal, isEmpty);
     });
 
-    test('subskrypcja w pełnej kwocie, wydatek z Bieżących, karta', () {
+    test('subskrypcja w pełnej kwocie i karta', () {
       final cal = calendar(
         subs: [_sub('netflix', amount: 60, sharedWith: 2)],
-        spending: [
-          BudgetEntry(
-            id: 'zakupy',
-            name: 'Zakupy',
-            type: BudgetEntryType.spending,
-            amount: 80,
-            currency: _pln,
-            startDate: DateTime(2026, 10, 3),
-            month: '2026-10',
-            dataDodania: DateTime(2026, 10, 3),
-          ),
-        ],
         positions: [
           _pos(
             'pozyczka',
@@ -323,7 +304,7 @@ void main() {
         ],
       );
       expect(cal[15]!.items.single.amount, 60);
-      expect(cal[3]!.items.single.sourceId, 'zakupy');
+      expect(cal.keys, unorderedEquals([7, 15, 25]));
       expect(cal[7]!.items.single.isIncome, isTrue);
       expect(cal[25]!.items.single.isIncome, isFalse);
     });

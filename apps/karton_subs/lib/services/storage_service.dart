@@ -6,7 +6,6 @@ import '../models/category.dart';
 import '../models/budget_entry.dart';
 import '../models/plan_position.dart';
 import '../models/spending_allocation_item.dart';
-import '../models/pending_receipt_scan.dart';
 import '../utils/money_format.dart';
 import 'app_logger.dart';
 import 'storage_keys.dart';
@@ -324,6 +323,14 @@ class StorageService {
   Future<void> setPlanConversionVersion(int version) =>
       _settingsBox.put('planConversionVersion', version);
 
+  /// Czy pozycje koperty „Na bieżące wydatki" (Planner) trafiły już do planu
+  /// jako zwykłe pozycje (ADR-035).
+  bool getPlanEnvelopeMigrated() =>
+      _settingsBox.get('planEnvelopeMigrated', defaultValue: false) as bool;
+
+  Future<void> setPlanEnvelopeMigrated(bool value) =>
+      _settingsBox.put('planEnvelopeMigrated', value);
+
   // ── Ustawienia w backupie (format v7) ──────────────────────────────────────
   //
   // Tylko preferencje UZYTKOWNIKA, ktore zmieniaja liczby albo dzialanie apki.
@@ -387,6 +394,7 @@ class StorageService {
       await _planPositionsBox.clear();
       _planPositionsCache.clear();
       await setPlanConversionVersion(0);
+      await setPlanEnvelopeMigrated(false);
     }
     if (budgetPersonal) {
       await _budgetEntriesBox.clear();
@@ -642,23 +650,6 @@ class StorageService {
     }
   }
 
-  /// Bieżące rozpoznane przez lokalny silnik AI, oczekujące na zatwierdzenie.
-  /// LOKALNE (jak koperta): poza synchronizacją, backupem i bilansem — do budżetu
-  /// trafiają dopiero po zatwierdzeniu (wtedy stają się zwykłym billPayment).
-  List<PendingReceiptScan> getPendingReceiptScans() {
-    final raw = _settingsBox.get(StorageKeys.pendingReceiptScans);
-    if (raw is String && raw.isNotEmpty) {
-      try {
-        return (jsonDecode(raw) as List)
-            .map((e) => PendingReceiptScan.fromJson(e as Map<String, dynamic>))
-            .toList();
-      } catch (e) {
-        _log.warning('Nie udalo sie odczytac pendingBillScans: $e');
-      }
-    }
-    return [];
-  }
-
   /// Tryb budżetu (preferencja UI, lokalna — poza sync). Default: oba zakresy
   /// (jak dotąd). Tryb jednozakresowy chowa przełącznik zakresu i zwalnia swipe.
   BudgetMode getBudgetMode() {
@@ -766,17 +757,6 @@ class StorageService {
       'receiptArchiveSubfolder',
       clean.isEmpty ? 'Zostaje' : clean,
     );
-  }
-
-  Future<void> savePendingReceiptScans(List<PendingReceiptScan> items) async {
-    if (items.isEmpty) {
-      await _settingsBox.delete(StorageKeys.pendingReceiptScans);
-    } else {
-      await _settingsBox.put(
-        StorageKeys.pendingReceiptScans,
-        jsonEncode(items.map((e) => e.toJson()).toList()),
-      );
-    }
   }
 
   // ── Notification preferences ───────────────────────────────────────────────

@@ -3,13 +3,10 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../config/app_config.dart';
-import '../controllers/receipt_scan_controller.dart';
 import '../controllers/budget_controller.dart';
-import '../services/storage_service.dart';
 import '../services/sync_service.dart';
 import '../widgets/settings_widgets.dart';
 import '../widgets/update_inline_section.dart';
-import 'ai_assistant_screen.dart';
 import 'appearance_screen.dart';
 import 'backup_screen.dart';
 import 'budget_mode_screen.dart';
@@ -20,10 +17,8 @@ import 'dev_tools_screen.dart';
 import 'household_sync_screen.dart';
 import 'notifications_screen.dart';
 import 'payment_method_management_screen.dart';
-import 'receipt_archive_screen.dart';
 
 /// Ekran Ustawien — lista nawigacyjna do osobnych ekranow (kazda sekcja = ekran).
-/// Stateful: podtytul kafla „Asystent AI" odswieza sie po powrocie z podekranu.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -34,9 +29,6 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
-    // watch: podtytul aktualizuje sie od razu po zmianie przelacznika.
-    final aiEnabled = context.watch<ReceiptScanController>().aiAssistantEnabled;
-    final storage = context.read<StorageService>();
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: ListView(
@@ -78,42 +70,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SettingsSectionLabel('Dane'),
           SettingsGroup(children: [
-            ListTile(
-              leading: const Icon(LucideIcons.sparkles),
-              title: const Text('Asystent AI'),
-              // Skan działa zawsze — ten kafel mówi tylko o wspomaganiu
-              // trudniejszych dokumentów lokalnym silnikiem.
-              subtitle: Text(
-                aiEnabled
-                    ? 'Wspomaganie silnikiem: włączone'
-                    : 'Wspomaganie silnikiem: wyłączone',
-              ),
-              trailing: const Icon(LucideIcons.chevronRight),
-              onTap: () async {
-                await Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => const AiAssistantScreen(),
-                ));
-                if (mounted) setState(() {}); // odśwież podtytuł Włączony/Wyłączony
-              },
-            ),
-            // Archiwum zdjęć: osobna sekcja, bo dotyczy każdego zatwierdzonego
-            // wydatku ze zdjęciem — także odczytanego szybką ścieżką OCR,
-            // bez udziału silnika AI (ADR-017).
-            ListTile(
-              leading: const Icon(LucideIcons.folderArchive),
-              title: const Text('Archiwum paragonów'),
-              subtitle: Text(ReceiptArchiveScreen.labelFor(
-                storage.getReceiptArchiveEnabled(),
-                storage.getReceiptArchiveSubfolder(),
-              )),
-              trailing: const Icon(LucideIcons.chevronRight),
-              onTap: () async {
-                await Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => const ReceiptArchiveScreen(),
-                ));
-                if (mounted) setState(() {}); // odśwież podtytuł
-              },
-            ),
+            // „Asystent AI" i „Archiwum paragonów" zniknęły razem ze skanem
+            // paragonów (ADR-035): zaplanowany wydatek to pozycja planu.
             Consumer<SyncService>(
               builder: (_, sync, _) => ListTile(
                 leading: const Icon(LucideIcons.users),

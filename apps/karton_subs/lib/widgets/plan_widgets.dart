@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart' as lucide;
 import 'package:provider/provider.dart';
 import '../models/plan_position.dart';
 import '../services/plan_service.dart';
@@ -336,72 +335,6 @@ class PlanSummaryCard extends StatelessWidget {
               ],
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Koperta „Na bieżące wydatki" jako wiersz sumy w wydatkach planu — tapnięcie
-/// otwiera Planner (ten sam ekran co z „Bieżących").
-class PlannerEnvelopeRow extends StatelessWidget {
-  final double total;
-  final int itemCount;
-  final VoidCallback onTap;
-
-  const PlannerEnvelopeRow({
-    super.key,
-    required this.total,
-    required this.itemCount,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final c = context.semanticColors;
-    final isSet = total > 0 || itemCount > 0;
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadii.tile),
-        side: BorderSide(color: c.border),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              Icon(lucide.LucideIcons.receiptText, size: 20, color: c.primary),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Planner', style: theme.textTheme.bodyMedium),
-                    Text(
-                      isSet
-                          ? 'Na bieżące wydatki — co miesiąc'
-                          : 'Zaplanuj kwotę na bieżące wydatki',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: c.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                isSet ? '−${budgetNf.format(total)}' : 'Brak',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: isSet ? c.negative : c.textMuted,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-              const SizedBox(width: 4),
-              Icon(LucideIcons.chevronRight, size: 18, color: c.textMuted),
-            ],
-          ),
         ),
       ),
     );

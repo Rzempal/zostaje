@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:karton_subs/models/budget_entry.dart';
 import 'package:karton_subs/models/plan_position.dart';
+import 'package:karton_subs/models/spending_allocation_item.dart';
 import 'package:karton_subs/models/subscription.dart'
     show BillingCycle, Currency;
 import 'package:karton_subs/services/plan_conversion.dart';
@@ -388,6 +389,63 @@ void main() {
       expect(p.note, 'konto wspólne');
       expect(p.createdAt, DateTime(2026, 2, 3));
       expect(p.updatedAt, DateTime(2026, 9, 1));
+    });
+  });
+
+  group('Planner „Na bieżące wydatki" → pozycje planu', () {
+    final items = {
+      kBudgetPersonal: const [
+        SpendingAllocationItem(
+          id: 'a',
+          name: 'Jedzenie',
+          amount: 1500,
+          categoryId: 'cat_food',
+          paymentMethod: 'Revolut',
+        ),
+        SpendingAllocationItem(
+          id: 'b',
+          name: 'Stara',
+          amount: 99,
+          deleted: true,
+        ),
+        SpendingAllocationItem(id: 'c', name: 'Pusta', amount: 0),
+      ],
+      kBudgetHousehold: const [
+        SpendingAllocationItem(id: 'd', name: 'Paliwo', amount: 400),
+      ],
+    };
+
+    test('każda pozycja koperty osobno, z kategorią i metodą, co miesiąc', () {
+      final positions = PlanConversion.envelopePositions(
+        itemsByBudget: items,
+        currency: Currency.PLN,
+        today: _today,
+      );
+      expect(positions.map((p) => p.id), ['envelope:a', 'envelope:d']);
+      final food = positions.first;
+      expect(food.budgetId, kBudgetPersonal);
+      expect(food.kind, PlanKind.expense);
+      expect(food.name, 'Jedzenie');
+      expect(food.categoryId, 'cat_food');
+      expect(food.paymentMethod, 'Revolut');
+      expect(_keys(food), hasLength(24));
+      expect(food.months.values.every((m) => m.amount == 1500), isTrue);
+      expect(positions.last.budgetId, kBudgetHousehold);
+    });
+
+    test('pełna konwersja dokłada pozycje koperty do planu', () {
+      final r = PlanConversion.convert(
+        entriesByBudget: {
+          kBudgetPersonal: [_e()],
+        },
+        today: _today,
+        envelopeByBudget: items,
+      );
+      expect(r.positions.map((p) => p.id), containsAll(['e1', 'envelope:a']));
+      expect(
+        r.notesOf(PlanNoteKind.remark).map((n) => n.entryId),
+        containsAll(['envelope:a', 'envelope:d']),
+      );
     });
   });
 

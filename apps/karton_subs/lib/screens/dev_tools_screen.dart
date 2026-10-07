@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../models/subscription.dart';
-import '../controllers/receipt_scan_controller.dart';
 import '../controllers/subscription_controller.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
@@ -120,65 +118,6 @@ class DevToolsScreen extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-          const SettingsSectionLabel('Diagnostyka skanu'),
-          SettingsGroup(
-            children: [
-              ListTile(
-                leading: const Icon(LucideIcons.fileText),
-                title: const Text('Ostatni odczyt OCR'),
-                subtitle: const Text(
-                  'Surowy tekst, ktory model zwrocil dla ostatniego skanu',
-                ),
-                onTap: () => _showLastOcr(context),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Podglad surowego odczytu OCR.
-  ///
-  /// Reguly szybkiej sciezki dostaja tekst zlozony z BLOKOW, ktorych kolejnosc
-  /// nie musi odpowiadac ukladowi na ekranie — bez tego podgladu kazda
-  /// nietrafiona regula konczyla sie zgadywaniem ukladu i kolejnym wydaniem
-  /// „na probe". Tekst zostaje na telefonie; stad da sie go tylko skopiowac.
-  void _showLastOcr(BuildContext context) {
-    final text = context.read<ReceiptScanController>().lastOcrText;
-    showDialog<void>(
-      context: context,
-      builder: (dctx) => AlertDialog(
-        title: const Text('Ostatni odczyt OCR'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: SingleChildScrollView(
-            child: SelectableText(
-              text.isEmpty
-                  ? 'Brak odczytu — zeskanuj cokolwiek szybka sciezka '
-                        '(aparat, galeria albo „Udostepnij").'
-                  : text,
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-            ),
-          ),
-        ),
-        actions: [
-          if (text.isNotEmpty)
-            TextButton(
-              onPressed: () async {
-                await Clipboard.setData(ClipboardData(text: text));
-                if (!dctx.mounted) return;
-                Navigator.pop(dctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Skopiowano odczyt')),
-                );
-              },
-              child: const Text('Kopiuj'),
-            ),
-          TextButton(
-            onPressed: () => Navigator.pop(dctx),
-            child: const Text('Zamknij'),
           ),
         ],
       ),

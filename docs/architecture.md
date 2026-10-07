@@ -72,18 +72,14 @@ lib/
 │   ├── subscription_controller.dart # Stan subskrypcji (CRUD + analytics)
 │   ├── budget_controller.dart   # Stan budzetu domowego (CRUD + agregaty), aktywny zakres, odhaczenia platnosci, koperta
 │   ├── plan_controller.dart     # Plan roczny aktywnego budzetu (ADR-035): pozycje, miesiace, karta, plan na kolejny rok
-│   └── receipt_scan_controller.dart # Skan paragonow AI: kolejka pozycji oczekujacych + OCR w tle (ADR-013)
 ├── models/
 │   ├── subscription.dart        # Glowna encja + PaymentMethod
 │   ├── category.dart            # Kategorie subskrypcji
 │   ├── usage_event.dart         # Logowanie uzycia
 │   ├── budget_entry.dart        # Pozycja budzetu (wplyw/cykliczny/biezacy/rata/przelew) — ADR-018
 │   ├── plan_position.dart       # Plan roczny: pozycja z miesiacami „RRRR-MM → kwota" (ADR-035, Faza 16 w toku)
-│   └── pending_receipt_scan.dart # Paragon rozpoznany ze zdjecia, czeka na zatwierdzenie (lokalny, poza bilansem)
 ├── utils/
 │   ├── cycle_math.dart          # Wspolna normalizacja cyklu -> kwota/mies + projekcja wystapien (ADR-020)
-│   ├── expenses_filter.dart     # Reguly widocznosci listy „Cykliczne"/„Wplywy" (typ, kategoria, czas, ukryte) — ADR-027
-│   └── credit_group.dart        # Role pozycji karty (splata / lustro / pozyczka) + zwijanie ich w jeden wiersz listy (ADR-034)
 ├── services/
 │   ├── app_logger.dart          # Circular log buffer
 │   ├── backup_crypto_service.dart # Szyfrowanie kopii (AES-256-GCM) + kod odzyskiwania (ADR-024)
@@ -95,11 +91,6 @@ lib/
 │   ├── plan_conversion.dart     # Konwersja starych pozycji na plan roczny + raport zgodnosci (ADR-035); stare dane nietkniete
 │   ├── plan_service.dart        # Obliczenia planu: kwoty okresu, sumy miesiaca, statystyki roku, kalendarz, subskrypcje w miesiacach
 │   ├── excel_service.dart       # Import/eksport .xlsx (subskrypcje + budzet)
-│   ├── ai_engine_service.dart   # Mostek do Lokalnego Silnika AI (kanal platformowy -> usluga AIDL silnika)
-│   ├── receipt_scan_service.dart # Parser odpowiedzi silnika (JSON paragonow) + dopasowanie kategorii
-│   ├── text_ocr_service.dart    # Szybka sciezka: zwykly OCR tekstowy (ML Kit bundled) + obroty zdjecia
-│   ├── receipt_text_parser.dart # Szybka sciezka: reguly (paragon fiskalny, zrzut platnosci) — ADR-017
-│   ├── receipt_crop_service.dart # Przyciecie zdjecia paragonu (natywny uCrop, kadr wolny)
 │   ├── sync_crypto_service.dart # Synchronizacja: klucz z hasla + szyfrowanie paczki (ADR-009)
 │   ├── sync_merge.dart          # Synchronizacja: scalanie LWW + nagrobki + snapshot
 │   ├── sync_service.dart        # Synchronizacja: orkiestracja (pull/scal/push CAS) + RPC relay
@@ -115,14 +106,8 @@ lib/
 │   ├── plan_position_form_screen.dart # Formularz pozycji planu (nowa: kwota + siatka miesiecy; edycja: dane wspolne)
 │   ├── card_loan_form_screen.dart # Pozyczka z karty: para pozyczka–splata po okresie bezodsetkowym
 │   ├── plan_copy_year_screen.dart # „Zaplanuj kolejny rok" na bazie poprzedniego
-│   ├── spending_screen.dart     # „Biezace": wejscie do Plannera -> karta miesiaca -> lista wydatkow (ADR-011)
-│   ├── spending_planner_screen.dart # Planner: koperta „Na biezace wydatki" (ADR-012) — wejscie z Biezacych i z Planowania
-│   ├── add_spending_screen.dart # Formularz wydatku biezacego (BudgetEntryType.spending)
 │   ├── add_subscription_screen.dart # Formularz subskrypcji (zakres bierze z listy, na ktorej stoi uzytkownik)
-│   ├── budget_dashboard_screen.dart  # NIEUZYWANY od Fazy 16 (dawne „Cykliczne"/„Wplywy") — do usuniecia w E5
-│   ├── add_budget_entry_screen.dart  # Formularz pozycji budzetu (typy planowalne)
 │   ├── household_sync_screen.dart # Parowanie QR + haslo, ponowne wystawienie kodu QR, sync budzetu domowego (ADR-009)
-│   ├── receipt_archive_screen.dart # Archiwum zdjec paragonow (osobna sekcja Ustawien)
 │   ├── data_export_screen.dart  # Eksport/import XLSX (subskrypcje, budzet) + raport PDF — Ustawienia -> Dane
 │   ├── settings_screen.dart     # Ustawienia, backup, OTA, synchronizacja domowego
 │   ├── dev_tools_screen.dart    # Developer Tools (tylko DEV): override daty, testy powiadomien, podglad surowego odczytu OCR
@@ -147,7 +132,6 @@ lib/
 │   ├── plan_progress_bar.dart   # Wspolny pasek plan/realny — po przekroczeniu dzieli sie na plan i nadwyzke (ADR-030)
 │   ├── filter_bars.dart         # Wspolne paski filtrow list: kategorie i czas (ze skrotem „Dzisiaj")
 │   ├── selection_bar.dart       # Tryb zaznaczania wielu pozycji: pasek akcji zbiorczych + wiersz z kolkiem
-│   ├── credit_group_row.dart    # Zwiniety wiersz pozycji karty (splaty na „Biezacych", lustra na „Wplywach") — ADR-034
 │   ├── month_picker_dialog.dart # Wybor miesiaca (rok + siatka 12 miesiecy, „Dzisiaj")
 │   ├── sync_refresh.dart        # Przeciagnij w dol = synchronizacja (RefreshIndicator)
 │   ├── workspace_top_bar.dart   # Wspolny pasek: zakres Osobisty/Domowy + opis sekcji
@@ -216,22 +200,20 @@ Ten sam styl jest w `appBarTheme.systemOverlayStyle` (podekrany), a klatke
 startowa (przed pierwsza klatka Fluttera) pokrywa `windowLightStatusBar`
 w `android/app/src/main/res/values{,-night}/styles.xml`.
 
-Kolejnosc (ADR-035): Budzet | Planowanie | Biezace | ⋮ Ustawienia — przeglad
-planu, sam plan (wplywy, wydatki, karta i subskrypcje na jednym ekranie), potem
-datowane wydatki. „Wplywy" i „Cykliczne" zlaly sie w „Planowanie" (do 2026-10
-osobne zakladki — ADR-019/027/032). Separator oddziela Ustawienia od trojki
-funkcyjnej (`GlassNavBar` liczy go dynamicznie). Indeks zakladki Biezace jest
-stala `_spendingTab` w `main.dart` — po „Udostepnij -> Zostaje" ladujemy wlasnie
-tam, wiec kolejna zmiana kolejnosci nie moze go rozjechac po cichu. Pasek pokazuje
-etykiete TYLKO aktywnej pozycji (reszta to ikony), a `FittedBox(scaleDown)`
-chroni pigulke od wyjscia za krawedz na waskim ekranie.
+Kolejnosc (ADR-035): Budzet | Planowanie | ⋮ Ustawienia — przeglad planu i sam
+plan (wplywy, wydatki, karta i subskrypcje na jednym ekranie). „Wplywy" i
+„Cykliczne" zlaly sie w „Planowanie" (do 2026-10 osobne zakladki — ADR-019/027/032),
+a „Biezace" (dziennik wydatkow i skan paragonow) odpadly — zaplanowany wydatek
+to zwykla pozycja planu. Separator oddziela Ustawienia od dwojki funkcyjnej
+(`GlassNavBar` liczy go dynamicznie). Pasek pokazuje etykiete TYLKO aktywnej
+pozycji (reszta to ikony), a `FittedBox(scaleDown)` chroni pigulke od wyjscia
+za krawedz na waskim ekranie.
 
 | Zakladka | Tresc |
 |----------|-------|
-| **Budzet** (przeglad) | Dwie pod-zakladki (ADR-035). **Statystyki** — wybrany rok planu: karta „Srednio miesiecznie" (wplywy, wydatki stale, Planner, subskrypcje, karta netto, zostaje + sumy roczne), wykres 12 miesiecy (wplywy vs wydatki) i podzial wydatkow na kategorie (srednio/mies., z koperta i subskrypcjami); pod spodem „Limity i okresy probne" subskrypcji. **Kalendarz** — dawny „Bilans miesiaca" bez realnego bilansu: siatka miesiaca, „Platnosci" do odhaczenia i „Podsumowanie miesiaca"; dane z planu (miesiace pozycji z dniem platnosci), odnowien subskrypcji i Biezacych (`PlanService.calendarForMonth`). Odhaczenia maja klucz `zakres|id|data`, a pozycje planu zachowaly identyfikatory starych pozycji — odhaczenia sprzed przebudowy zostaly. Porownania plan/realne, podsumowanie roczne i „poczatek ewidencji" usuniete (ADR-028/029 zastapione) |
-| **Planowanie** | Plan roczny aktywnego budzetu (ADR-035): sekcje **Wplywy · Wydatki** (z koperta Planner przypieta na gorze) **· Karta kredytowa · Subskrypcje** i karta „Zostaje" dla okresu. Filtr czasu bez „Wszystkie lata": rok = srednie miesieczne, miesiac = kwoty tego miesiaca (pozycja widoczna, gdy w nim obowiazuje); „Dzisiaj", kategorie z podgrupami, sortowanie, „pokaz ukryte". Wiersz pozycji ma pasek 12 kratek (miesiace roku). Tap → szczegoly pozycji: 12 miesiecy wybranego roku, kazdy z kwota i dniem; przytrzymanie = zaznaczanie miesiecy (ustaw kwote / dzien / usun z planu). Formularz nowej pozycji: kwota + siatka miesiecy (caly rok, co kwartal, raty od pierwszego zaznaczonego). „Zaplanuj kolejny rok" przenosi miesiace i kwoty (konczace sie raty domyslnie odznaczone). **Pozyczka z karty** — para pozycji (pozyczka w miesiacu uzycia, splata po okresie bezodsetkowym) spieta `linkId`, liczona osobno jako „karta netto". Subskrypcje zostaja osobnym modulem — w planie kwota miesiaca z ich cyklu (okres probny i po anulowaniu = 0). Zaznaczanie wielu pozycji: kategoria, metoda, ukryj/przywroc, usun |
-| **Biezace** (dawniej „Rachunki") | Datowane wydatki jednorazowe (`billPayment`, ADR-018): zakupy, paliwo, wyjscia, zajecia, wieksze jednorazowe. Uklad jak na liscie „Cykliczne": **paski filtrow** (kategorie + czas ze skrotem „Dzisiaj"), **karta „Planner"** (suma planu, wejscie do `BillsPlannerScreen`, ADR-012) i **naglowek sekcji „Biezace"** z suma pozycji AKTUALNIE widocznych po filtrach; przy wybranym jednym miesiacu naglowek dokłada porownanie z koperta (pasek plan/realny). Domyslny filtr to biezacy miesiac, ale „Wszystkie lata" otwieraja cale archiwum. Sortowanie (data / kwota / A-Z) przyklejone na koncu paska filtrow. **Zaznaczanie wielu pozycji** (dlugie przytrzymanie): pasek zaznaczania ZASTEPUJE pasek kategorii, a akcje zbiorcze to kategoria, metoda platnosci, data (przenosi wydatek do innego miesiaca razem z odhaczeniem platnosci), **scalenie w jeden wpis** i usuniecie. **Scalanie** (ADR-034): suma kwot, data NAJSTARSZEJ pozycji, wzorzec nazwy/kategorii/metody wybierany z listy zaznaczonych; formularz jest podgladem propozycji (Anuluj nie rusza niczego), a zapis tworzy wpis i kasuje zrodla jedna operacja. Pozycje spiete (`creditLinkId` karty, `linkId` przelewu) sa ODRZUCANE — ich usuniecie kasuje kaskada pozycje spoza zaznaczenia. **Splaty karty** tej samej metody, miesiaca i waluty rysuja sie jako **jeden zwiniety wiersz z suma** (prog 2 pozycje, rozwiniecie tapnieciem, w trybie zaznaczania zawsze rozwiniete) — to wylacznie sposob rysowania listy, dane i sumy sekcji zostaja bez zmian. „Dodaj wydatek"; **skan paragonu AI** (aparat/galeria/Udostepnij) z sekcja „Do zatwierdzenia" (miniatura + Zatwierdz/Edytuj/Odrzuc; tap w miniature -> podglad z „Przytnij") — ADR-011, ADR-013 |
-| **Ustawienia** | Trzy sekcje. **Personalizacja**: wyglad, waluta i limit, **wybor budzetow** (tryb: Osobisty / Domowy / oba — ADR-014), powiadomienia, **kategorie i metody platnosci** (slowniki, ktorymi uzytkownik opisuje SWOJ budzet — stad przy personalizacji, nie przy danych). **Dane**: **Asystent AI** (opt-in wspomagania skanu silnikiem), **Archiwum paragonow** (zapis zdjec do `Documents/<podfolder>`), **Budzet domowy** (parowanie i synchronizacja), **Backup** (kopia zapasowa i odtwarzanie) oraz **Eksport/import danych** (XLSX subskrypcji i budzetu w OBIE strony, raport PDF — wczesniej ikony w paskach ekranow; arkusz to nie kopia zapasowa: import DOKLADA pozycje, nie odtwarza zdjec, odhaczen ani ustawien). **Aplikacja**: **aktualizacje OTA inline**, polityka prywatnosci, Developer Tools (tylko DEV). Karty frost |
+| **Budzet** (przeglad) | Dwie pod-zakladki (ADR-035). **Statystyki** — wybrany rok planu: karta „Srednio miesiecznie" (wplywy, wydatki, subskrypcje, karta netto, zostaje + sumy roczne), wykres 12 miesiecy (wplywy vs wydatki) i podzial wydatkow na kategorie (srednio/mies., z subskrypcjami); pod spodem „Limity i okresy probne" subskrypcji. **Kalendarz** — dawny „Bilans miesiaca" bez realnego bilansu: siatka miesiaca, „Platnosci" do odhaczenia i „Podsumowanie miesiaca"; dane z planu (miesiace pozycji z dniem platnosci) i odnowien subskrypcji (`PlanService.calendarForMonth`). Odhaczenia maja klucz `zakres|id|data`, a pozycje planu zachowaly identyfikatory starych pozycji — odhaczenia sprzed przebudowy zostaly. Porownania plan/realne, podsumowanie roczne i „poczatek ewidencji" usuniete (ADR-028/029 zastapione) |
+| **Planowanie** | Plan roczny aktywnego budzetu (ADR-035): sekcje **Wplywy · Wydatki** **· Karta kredytowa · Subskrypcje** i karta „Zostaje" dla okresu. Filtr czasu bez „Wszystkie lata": rok = srednie miesieczne, miesiac = kwoty tego miesiaca (pozycja widoczna, gdy w nim obowiazuje); „Dzisiaj", kategorie z podgrupami, sortowanie, „pokaz ukryte". Wiersz pozycji ma pasek 12 kratek (miesiace roku). Tap → szczegoly pozycji: 12 miesiecy wybranego roku, kazdy z kwota i dniem; przytrzymanie = zaznaczanie miesiecy (ustaw kwote / dzien / usun z planu). Formularz nowej pozycji: kwota + siatka miesiecy (caly rok, co kwartal, raty od pierwszego zaznaczonego). „Zaplanuj kolejny rok" przenosi miesiace i kwoty (konczace sie raty domyslnie odznaczone). **Pozyczka z karty** — para pozycji (pozyczka w miesiacu uzycia, splata po okresie bezodsetkowym) spieta `linkId`, liczona osobno jako „karta netto". Subskrypcje zostaja osobnym modulem — w planie kwota miesiaca z ich cyklu (okres probny i po anulowaniu = 0). Zaznaczanie wielu pozycji: kategoria, metoda, ukryj/przywroc, usun |
+| **Ustawienia** | Trzy sekcje. **Personalizacja**: wyglad, waluta i limit, **wybor budzetow** (tryb: Osobisty / Domowy / oba — ADR-014), powiadomienia, **kategorie i metody platnosci** (slowniki, ktorymi uzytkownik opisuje SWOJ budzet — stad przy personalizacji, nie przy danych). **Dane**: **Budzet domowy** (parowanie i synchronizacja), **Backup** (kopia zapasowa i odtwarzanie) oraz **Eksport/import danych** (XLSX subskrypcji i budzetu w OBIE strony, raport PDF — wczesniej ikony w paskach ekranow; arkusz to nie kopia zapasowa: import DOKLADA pozycje, nie odtwarza zdjec, odhaczen ani ustawien). **Aplikacja**: **aktualizacje OTA inline**, polityka prywatnosci, Developer Tools (tylko DEV). Karty frost |
 
 **Tryb budzetu (ADR-014):** globalny zakres w `BudgetController` ma tryb (`budgetMode`,
 lokalny). `both` = przelacznik zakresu na kartach + swipe zmienia zakres (`ScopeSwipeArea`).
@@ -239,13 +221,15 @@ Tryb jednozakresowy (`personalOnly`/`householdOnly`) chowa przelacznik (`scopeSe
 a `ScopeSwipeArea(enabled: false)` oddaje swipe dziecku — w Budzecie `TabBarView`
 przelacza Statystyki/Kalendarz. Dane obu zakresow zostaja; tryb je tylko chowa/odslania.
 
-**Rachunek auto-oplacony:** przy tworzeniu `billPayment` (log JUZ zaplaconej pozycji,
-ADR-008) `BudgetController.create` od razu ustawia jego stan „wykonane" w platnosciach
-miesiaca (ten sam klucz co kalendarz) — bez recznego odhaczania.
-
 ---
 
 ## Domena Budzet domowy (rownolegla warstwa)
+
+> **Uwaga (Faza 16, ADR-035):** ponizszy opis dotyczy modelu SPRZED przebudowy
+> (pozycje z cyklem, korekty, raty, przelewy, Biezace, karta, Planner). Stary
+> zapis zostaje w bazie jako archiwum i zrodlo konwersji (`plan_conversion.dart`),
+> ale aplikacja liczy wszystko z planu rocznego (`PlanPosition`, `PlanService`).
+> Pelna aktualizacja tej sekcji — etap E5.
 
 > **ADR:** [ADR-029 Podsumowanie roczne i poczatek ewidencji](adr/ADR-029-podsumowanie-roczne-i-poczatek-ewidencji.md)
 > | [ADR-028 Plan vs rzeczywistosc na wykresach](adr/ADR-028-plan-vs-rzeczywistosc-na-wykresach.md)
@@ -382,141 +366,13 @@ telefonu, wiec pozycje nie przepinaja sie w kolko).
 
 ---
 
-## Skan paragonow — Lokalny Silnik AI (ADR-013)
+## Skan paragonow — usuniety (Faza 16)
 
-> **ADR:** [ADR-013 Skan rachunkow lokalnym silnikiem AI](adr/ADR-013-skan-rachunkow-lokalny-silnik-ai.md)
-> | [ADR-015 Przycinanie zdjecia rachunku (uCrop)](adr/ADR-015-przycinanie-zdjecia-rachunku-ucrop.md)
-> | [ADR-016 Skan w usludze pierwszoplanowej](adr/ADR-016-skan-rachunku-usluga-pierwszoplanowa.md)
-> | [ADR-017 Szybka sciezka OCR przed silnikiem](adr/ADR-017-szybka-sciezka-ocr-przed-silnikiem-ai.md)
-> | Silnik: repo `karton-ai` (osobna apka, model Gemma 4 E4B on-device)
-
-Zero chmury: zdjecie rachunku idzie do apki-silnika NA TYM SAMYM telefonie
-(usluga AIDL, straznik podpisu). Klienci — takze build dev Zostaje — binduja
-wylacznie pakiet PRODUKCYJNY silnika `app.michalrapala.ai_engine`.
-
-**Skan NIE jest opcja, silnik jest.** Odczyt paragonow i potwierdzen platnosci
-robi model OCR wbudowany w APK (ADR-017), wiec skanowanie dziala zawsze — bez
-sieci, bez apki silnika i bez zadnego opt-inu (menu „Dodaj", „Udostepnij ->
-Zostaje"). Przelacznik **Asystent AI** (`aiAssistantEnabled`, domyslnie OFF)
-decyduje wylacznie o tym, czy dokument nierozpoznany regulami idzie do silnika.
-Przy wylaczonym asystencie (albo braku modelu) taka pozycja konczy jako
-„Uzupelnij recznie" — zostaje w „Do zatwierdzenia" ze zdjeciem i przyciskiem
-edycji, wiec rachunek da sie dokonczyc bez zadnego automatu.
-
-```
-Zdjecie (aparat / galeria)          Udostepnij -> Zostaje
-  │  ReceiptCropService.crop:         │  bez przerywania (fire-and-forget)
-  │  natywny uCrop, kadr wolny        │  crop pozniej, z poczekalni
-  └──────────────┬────────────────────┘
-  │  BillScanController.startScan: kopia do bill_scans/, pozycja "processing"
-  ▼
-TextOcrService + ReceiptTextParser (szybka sciezka, ~1-2 s, ADR-017)
-  │  paragon fiskalny / zrzut platnosci -> pozycja gotowa OD RAZU
-  │  brak trafienia ▼
-AiEngineService (Dart) ── MethodChannel ──► AiEngineBridge (Kotlin)
-  │                                            │ zlecenie (wraca od razu)
-  │                                            ▼
-  │                              BillScanService (usluga pierwszoplanowa):
-  │                              EngineClient.bind + PFD + callback
-  │                                            │
-  │                                            ▼
-  │                              Lokalny Silnik AI: recognizeBill (~30-45 s, CPU)
-  │                                            │
-  │       ScanResultStore (skrzynka na dysku) ◄┘
-  ▼
-BillScanParser (JSON -> pola) ──► PendingBillScan "done" (sekcja "Do zatwierdzenia",
-  miniatura zdjecia; tap -> podglad + "Przytnij") ──► Zatwierdz/Edytuj -> zwykly
-  billPayment | Odrzuc -> kasacja
-```
-
-**Praca w tle (ADR-016).** Rozpoznawanie prowadzi natywna usluga pierwszoplanowa
-Zostaje (`BillScanService`, powiadomienie „Rozpoznaje rachunek…"), nie warstwa
-Dart — inaczej wyjscie z apki konczylo sie ubiciem zbuforowanego procesu przez
-system (silnik zajmuje pamiec modelem) i utrata skanu.
-
-**Kolejka rozpoznan jest po stronie uslugi, nie Dart.** `BillScanController`
-przepuszcza zdjecia przez szybka sciezke pojedynczo (OCR w procesie apki), ale
-nietrafione zleca uslugach OD RAZU i nie czeka na wynik — serializuje je
-`BillScanService` (ma wlasna kolejke). Powod: zlecenie musi wyjsc, gdy apka jest
-jeszcze na wierzchu, bo Android 12+ blokuje start uslugi pierwszoplanowej z tla.
-Wczesniej drugi skan ruszal dopiero po ~45 s (zwykle przy schowanym telefonie),
-dostawal odmowe i szedl sciezka awaryjna w procesie apki, skad system wymiatal
-go razem z procesem. `activeScanId` = pierwszy z listy zleconych (kolejnosc
-`ScanResultStore.inFlightIds()` odpowiada kolejnosci pracy uslugi), a limit czasu
-(`_watchdog`, 420 s) pilnuje tylko skanu aktualnie liczonego — liczenie go od
-zlecenia falszywie zabijaloby pozycje czekajace w kolejce. Wynik trafia do skrzynki
-`ScanResultStore` na dysku, wiec przezywa takze zniszczenie ekranu aplikacji;
-Dart oproznia skrzynke przy starcie i na ping z warstwy natywnej. Bindowanie do
-silnika uzywa `FLAG_INCLUDE_STOPPED_PACKAGES` — bez tego uspiona lub swiezo
-zainstalowana apka silnika wymagala recznego uruchomienia przed pierwszym skanem.
-
-**Szybka sciezka (ADR-017).** Zanim ruszy silnik, zdjecie czyta zwykly OCR
-tekstowy (`TextOcrService`, model ML Kit wbudowany w APK — bez Google Play
-Services i bez sieci) i reguly (`ReceiptTextParser`). Paragon fiskalny
-(`SUMA PLN`, data ISO), zrzut platnosci telefonem (kwota `X,XX zl`, „sobota,
-25 lip") oraz **faktura** sa odczytane w ~1-2 s, z data wzieta wprost
-z dokumentu.
-
-Reguly faktury opieraja sie na ETYKIETACH, nie na pozycji tekstu: kwota z
-„Pozostalo/Razem do zaplaty" (szukana tylko w przod — nad ta etykieta stoi ogon
-tabeli VAT), a gdy jej nie ma albo wynosi 0,00 (dokument juz oplacony) — suma
-przy „Razem" (z okna bierzemy NAJWIEKSZA kwote, bo obok stoja netto i podatek).
-Data: termin platnosci, potem data wystawienia, potem data sprzedazy; szukana
-w obie strony, bo w ukladzie dwukolumnowym etykieta bywa POD wartoscia.
-Wystawca: linia przy „Sprzedawca" (pod nia, a gdy tam sa dane rejestrowe — nad).
-Daty sa wycinane przed szukaniem kwot, bo „15.09.2023" pasuje do wzorca kwoty
-jako „15,09". Regul NIE opieramy na naglowku „wartosc brutto" — to etykieta
-kolumny, pod ktora ida kolejno netto, podatek i brutto. Nietrafiony
-wzorzec albo brak pewnej kwoty → dokument przejmuje silnik AI. Przy braku
-trafienia zdjecie jest jeszcze obracane (90/270/180 stopni) — paragony
-fotografuje sie w poprzek.
-
-**Rok w dacie.** Silnik nie mial zegara: gdy na dokumencie widnieje sam dzien
-i miesiac, model rok zmyslal (zwykle rok poprzedni). Od wersji silnika z promptem
-`Prompts.billOcr(today)` model dostaje **dzisiejsza date z zegara telefonu**
-(silnik dziala na tym samym urzadzeniu, wiec interfejs AIDL zostaje bez zmian
-i klienci nie wymagaja przebudowy) wraz z regula: uzupelnij brakujacy rok, ale
-nigdy nie wstawiaj dzisiejszej daty jako zapchajdziury. Kotwica po stronie apki
-zostaje jako siatka bezpieczenstwa — prompt nie daje gwarancji, a starsze wersje
-silnika chodza dalej. Szybka sciezka bierze rok
-z dokumentu (paragon — data ISO; zrzut platnosci — dzien tygodnia jednoznacznie
-wskazuje rok). Dla wyniku z silnika `BillScanParser` dokłada rok wiarygodny
-wobec „dzisiaj": data spoza okna −9/+3 miesiecy zachowuje dzien i miesiac,
-a rok dostaje najblizszy dzisiejszej dacie (remis → rok biezacy). Okno musi byc
-krotsze niz rok, inaczej „ta sama data rok temu" przechodzi jako wiarygodna.
-
-Pozycje oczekujace sa LOKALNE (settings, poza sync/backupem/bilansem) — do
-budzetu wchodza dopiero po zatwierdzeniu. Duplikaty plikow AIDL w
-`android/app/src/main/aidl/` musza byc identyczne z repo silnika.
-
-**Przycinanie zdjecia (uCrop, bez Google Play Services).** Zdjecie z aparatu i
-galerii jest docinane od razu po wyborze — sam paragon, bez reki i tla: mniej
-szumu dla silnika i lzejszy plik w archiwum. Zdjecie z „Udostepnij" leci prosto
-do rozpoznania (nie przerywamy fire-and-forget), a docic je mozna pozniej z
-poczekalni: tap w miniature -> podglad -> „Przytnij". Crop z poczekalni podmienia
-TYLKO obraz (`BillScanController.recrop` zapisuje nowy plik i kasuje stary, o ile
-nie dzieli go inna pozycja) — **nie uruchamia OCR ponownie**, wiec odczytane pola
-zostaja; kto ich nie ma, uzywa „Ponow" i silnik dostaje juz dociety kadr.
-Przycinanie jest zablokowane w trakcie rozpoznawania (silnik czyta ten plik).
-
-Crop jest takze w **formularzu edycji** rachunku (`AddBillPaymentScreen`, tap w
-miniature). Dwie sciezki zapisu: dla skanu przed zatwierdzeniem docieta sciezka
-wraca z formularza (rekord `entry`+`imagePath`) i trafia do prywatnej kopii oraz
-archiwum przy `finalizeApproval`; dla juz zapisanego rachunku podmieniana jest
-prywatna kopia (`BillScanController.replaceReceiptPhoto`) **i odswiezane
-publiczne archiwum**.
-
-**Podmiana w archiwum wymaga pamieci o nazwie pliku.** Nazwa to
-`RRRR-MM-DD_Nazwa_Kwota.jpg`, a MediaStore nie nadpisuje po nazwie — dokłada
-„nazwa (1).jpg". Dlatego przy kazdej archiwizacji zapamietujemy nazwe pod
-`entryId` (`archivedReceiptNames` w ustawieniach) i przy nastepnej kasujemy
-stary plik PRZED zapisem nowego (natywne `deleteArchivedReceipt`). Bez tej mapy
-nie dalo by sie trafic we wlasciwy plik, bo po edycji rachunku nazwa jest inna.
-Blad archiwizacji nie cofa dociecia — archiwum to kopia dodatkowa. Usuniecie
-rachunku czysci mape, ale **nie kasuje pliku z archiwum**: to trwaly slad.
-
-Poniewaz `startScan` kopiuje zdjecie raz, a OCR, prywatna kopia i archiwum biora
-ten sam plik — dociecie na wejsciu dziedziczy sie w cala reszte lancucha.
+Skan paragonow (aparat, galeria, „Udostepnij -> Zostaje", OCR ML Kit, Lokalny
+Silnik AI przez AIDL, usluga pierwszoplanowa, archiwum zdjec) zniknal razem
+z zakladka Biezace — [ADR-035](adr/ADR-035-plan-roczny-pozycje-z-miesiacami.md).
+Opis i kod zostaja w historii: ADR-013/015/016/017 i tag `v0.26.26100600`.
+Z czesci natywnej zostal tylko sejf na kod odzyskiwania kopii (`KeyVaultBridge`).
 
 ---
 
@@ -533,4 +389,4 @@ ten sam plik — dociecie na wejsciu dziedziczy sie w cala reszte lancucha.
 
 ---
 
-> **Ostatnia aktualizacja:** 2026-10-06
+> **Ostatnia aktualizacja:** 2026-10-07

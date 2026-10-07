@@ -1,7 +1,7 @@
 # ADR-020: Cykl „wybrane miesiące roku" zamiast osobnego „co N miesięcy"
 
 Data: 2026-07-26
-Status: zaakceptowany
+Status: częściowo zastąpiony przez [ADR-035](ADR-035-plan-roczny-pozycje-z-miesiacami.md) (2026-10-07) — pozycje planu nie mają cykli (miesiące wprost); cykl wybranych miesięcy zostaje w subskrypcjach
 
 ## Kontekst
 

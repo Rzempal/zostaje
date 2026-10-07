@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../controllers/budget_controller.dart';
 import '../controllers/plan_controller.dart';
 import '../controllers/subscription_controller.dart';
-import '../models/category.dart';
 import '../models/subscription.dart';
 import '../services/analytics_service.dart' show MonthlyDataPoint;
 import '../services/budget_service.dart' show DayCashflow;
@@ -207,16 +206,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           amount: pick(stats.months[m - 1]),
         ),
     ];
-    final categories = [
-      ...context.read<StorageService>().getCategories(),
-      const Category(
-        id: PlanService.envelopeCategoryKey,
-        name: 'Na bieżące (Planner)',
-        colorHex: '#94A3B8',
-        iconName: 'receipt',
-        order: 999,
-      ),
-    ];
+    final categories = context.read<StorageService>().getCategories();
     final scope = budget.isHousehold
         ? SubscriptionScope.household
         : SubscriptionScope.personal;
@@ -471,9 +461,7 @@ class _YearAveragesCard extends StatelessWidget {
           Text('Średnio miesięcznie', style: theme.textTheme.titleMedium),
           const SizedBox(height: 10),
           row('Wpływy', avg.income, color: c.positive),
-          row('Wydatki stałe', -avg.expense, color: c.negative),
-          if (avg.envelope != 0)
-            row('Na bieżące (Planner)', -avg.envelope, color: c.negative),
+          row('Wydatki', -avg.expense, color: c.negative),
           if (avg.subscriptions != 0)
             row('Subskrypcje', -avg.subscriptions, color: c.negative),
           if (total.cardLoans != 0 || total.cardRepayments != 0)

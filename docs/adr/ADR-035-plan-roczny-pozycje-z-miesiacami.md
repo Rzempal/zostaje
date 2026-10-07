@@ -60,14 +60,34 @@ później bez ponownej konwersji danych.
   anulowaniu = 0).
 - **Kalendarz z listą płatności do odhaczenia** — zostaje (bez realnego
   bilansu miesiąca).
-- **Bieżące** — na razie bez zmian.
+
+### 3b. Bieżące i Planner usunięte (aktualizacja 2026-10-07)
+
+Pierwotnie Bieżące miały zostać „na razie bez zmian". Po E2–E3 właściciel
+zdecydował: zaplanowany wydatek to zwykła pozycja planu, więc odpadają:
+
+- **zakładka Bieżące** — dziennik wydatków z datą, formularz, scalanie
+  (ADR-018/034), automat karty (ADR-033);
+- **skan paragonów** — aparat, galeria, „Udostępnij → Zostaje", rozpoznawanie
+  tekstu (ML Kit), mostek do Lokalnego Silnika AI, usługa w tle, archiwum
+  zdjęć (ADR-013/015/016/017). Aplikacja zmalała z 44,7 do 32,0 MB;
+- **Planner „Na bieżące wydatki"** (ADR-012) — każda pozycja koperty stała się
+  osobną pozycją planu (ta sama kwota co miesiąc, z kategorią i metodą;
+  identyfikator `envelope:<id pozycji koperty>`, dokładana jednorazowo do już
+  istniejącego planu bez przeliczania całości).
+
+Historia wydatków z Bieżących zostaje w starym zapisie bez widoku (archiwum —
+widoczna w poprzedniej wersji aplikacji i w jej kopiach). Nie trafia do planu:
+liczona obok pozycji z Plannera dawałaby te same pieniądze dwa razy.
+
+Nawigacja: **Budżet | Planowanie | Ustawienia**.
 
 ### 4. Karta kredytowa w planie
 
 „Pożyczka z karty" jako para w planie: wpływ w miesiącu użycia i spłata
 w miesiącu wynikającym z okresu bezodsetkowego karty (kwotę spłaty można
 zmienić osobno, np. o prowizję). Automat w Bieżących (lustro zakupu + spłata,
-ADR-033) zostaje wyłączony — zakup kartą to zwykły wydatek.
+ADR-033) zniknął razem z Bieżącymi.
 
 Zapis: dwie pozycje planu rodzajów `cardLoan` i `cardRepayment`, każda
 z jednym miesiącem, spięte wspólnym `linkId` (usunięcie jednej usuwa drugą).
@@ -80,8 +100,8 @@ w skali roku para się znosi, a wliczona do wpływów i wydatków zawyżałaby o
 Dwie pod-zakładki: **Statystyki** (wybrany rok: średnio miesięcznie, wykres
 12 miesięcy, kategorie, limity i okresy próbne subskrypcji) i **Kalendarz**
 (dawny „Bilans miesiąca" bez realnego bilansu). Kalendarz bierze dane z planu
-(miesiące pozycji z dniem płatności), z odnowień subskrypcji i z Bieżących.
-Pozycja bez dnia płatności nie ma miejsca na kalendarzu.
+(miesiące pozycji z dniem płatności) i z odnowień subskrypcji. Pozycja bez
+dnia płatności nie ma miejsca na kalendarzu.
 
 ### 5. Konwersja danych i powrót
 
@@ -92,8 +112,8 @@ Pozycja bez dnia płatności nie ma miejsca na kalendarzu.
   identyfikator starej pozycji, więc odhaczenia płatności nie przepadają.
 - **Powrót** do poprzedniej wersji: zbudowanie starej rewizji z WYŻSZYM numerem
   wersji (numer nadajemy sami, ADR-031) i zwykła aktualizacja — bez
-  odinstalowania. Stara wersja widzi plan z chwili konwersji, a Bieżące
-  aktualne (zostają w tym samym miejscu).
+  odinstalowania. Stara wersja widzi plan z chwili konwersji, a Bieżące —
+  dziennik z chwili przejścia (nowa wersja go nie zmienia).
 - Raport konwersji w Developer Tools porównuje sumy roku ze starego modelu
   z nowym planem — sprawdzenie na prawdziwych danych bez wynoszenia ich
   z telefonu.
@@ -133,3 +153,9 @@ zostają lokalne.
   zaczęła się aplikacja.
 - **Zastąpienie starego zapisu w miejscu** — odrzucona: odebrałoby powrót do
   poprzedniej wersji przez zwykłą aktualizację.
+- **Skan paragonów tworzący pozycję planu** (zamiast usunięcia) — odrzucona
+  przez właściciela: bez śledzenia realnych wydatków skan nie ma czego zasilać,
+  a utrzymanie go kosztowało usługę w tle, mostek AIDL i 13 MB w każdej
+  aktualizacji.
+- **Historia Bieżących jako sumy miesięcy w planie** — odrzucona: liczyłaby
+  te same pieniądze co pozycje z Plannera.

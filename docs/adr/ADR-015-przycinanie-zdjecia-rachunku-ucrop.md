@@ -1,7 +1,7 @@
 # ADR-015: Przycinanie zdjęcia rachunku natywnym uCrop (bez Google Play Services)
 
 Data: 2026-07-24
-Status: zaakceptowany
+Status: zastąpiony przez [ADR-035](ADR-035-plan-roczny-pozycje-z-miesiacami.md) (2026-10-07) — skan paragonów usunięty
 
 ## Kontekst
 

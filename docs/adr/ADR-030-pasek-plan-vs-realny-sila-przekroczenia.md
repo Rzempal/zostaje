@@ -1,7 +1,7 @@
 # ADR-030: Pasek plan vs realny pokazuje SILE przekroczenia
 
 Data: 2026-08-02
-Status: zaakceptowany
+Status: zastąpiony przez [ADR-035](ADR-035-plan-roczny-pozycje-z-miesiacami.md) (2026-10-07) — bez porównań plan vs realny
 
 > **Powiazane:** [ADR-011 Rachunki (realny log)](ADR-011-rachunki-realny-log-i-scalenie-typow-cyklicznych.md)
 > | [ADR-029 Podsumowanie roczne](ADR-029-podsumowanie-roczne-i-poczatek-ewidencji.md)

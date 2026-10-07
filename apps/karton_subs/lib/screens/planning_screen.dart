@@ -24,7 +24,6 @@ import 'card_loan_form_screen.dart';
 import 'plan_copy_year_screen.dart';
 import 'plan_position_form_screen.dart';
 import 'plan_position_screen.dart';
-import 'spending_planner_screen.dart';
 
 enum _PlanSort { alpha, amountDesc }
 
@@ -335,7 +334,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
                 : subAmount(b).compareTo(subAmount(a));
           });
 
-    final showEnvelope = _filterCategoryId == null;
     final empty = all.isEmpty && subsAll.isEmpty;
 
     final usedCatIds = <String>{
@@ -549,23 +547,12 @@ class _PlanningScreenState extends State<PlanningScreen> {
                           onToggle: () => _toggleSection(_kIncomes),
                           children: _rows(incomes, period, amount, false),
                         ),
-                      if (expenses.isNotEmpty || showEnvelope)
+                      if (expenses.isNotEmpty)
                         PlanSection(
                           title: 'Wydatki',
-                          total:
-                              _sum(expenses, amount) +
-                              (showEnvelope ? plan.envelope : 0),
+                          total: _sum(expenses, amount),
                           collapsed: _collapsed.contains(_kExpenses),
                           onToggle: () => _toggleSection(_kExpenses),
-                          pinnedTop: showEnvelope
-                              ? PlannerEnvelopeRow(
-                                  total: plan.envelope,
-                                  itemCount:
-                                      budget.spendingAllocationItems.length,
-                                  onTap: () =>
-                                      _push(const SpendingPlannerScreen()),
-                                )
-                              : null,
                           children: _rows(expenses, period, amount, true),
                         ),
                       if (cardRows.isNotEmpty)

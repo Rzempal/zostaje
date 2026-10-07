@@ -6,6 +6,7 @@
 
 import '../models/budget_entry.dart';
 import '../models/plan_position.dart';
+import '../models/spending_allocation_item.dart';
 import '../models/subscription.dart' show BillingCycle, Currency;
 import '../utils/cycle_math.dart';
 import 'currency_service.dart';
@@ -67,7 +68,10 @@ class PlanConversionResult {
 ///   wpływ. Powiązanie znika (ADR-035: rezygnacja z przelewów wewnętrznych).
 /// - Premia (wpływ jednorazowy) → wpływ z jednym miesiącem.
 /// - Wstrzymana → pozycja archiwalna.
-/// - Bieżące i pozycje karty zostają w starym zapisie bez zmian.
+/// - Planner (koperta „Na bieżące wydatki") → osobna pozycja planu dla każdej
+///   pozycji koperty, ta sama kwota w każdym miesiącu okna.
+/// - Bieżące (dziennik wydatków) i pozycje karty zostają w starym zapisie bez
+///   zmian i bez widoku — zakładka Bieżące odpadła (ADR-035).
 ///
 /// Identyfikator pozycji = identyfikator starej pozycji: odhaczenia płatności
 /// (`payment_done`) mają go w kluczu, więc nie przepadną.
@@ -84,13 +88,35 @@ class PlanConversion {
   static ({int first, int last}) windowFor(DateTime today) =>
       (first: today.year, last: today.year + 1);
 
+  /// [envelopeByBudget] — pozycje koperty „Na bieżące wydatki" (Planner) każdego
+  /// budżetu; koperta nie ma własnej waluty, więc jej pozycje dostają
+  /// [envelopeCurrency] (waluta domyślna aplikacji).
   static PlanConversionResult convert({
     required Map<String, List<BudgetEntry>> entriesByBudget,
     required DateTime today,
+    Map<String, List<SpendingAllocationItem>> envelopeByBudget = const {},
+    Currency envelopeCurrency = Currency.PLN,
   }) {
     final window = windowFor(today);
     final positions = <PlanPosition>[];
     final notes = <PlanConversionNote>[];
+
+    final envelope = envelopePositions(
+      itemsByBudget: envelopeByBudget,
+      currency: envelopeCurrency,
+      today: today,
+    );
+    positions.addAll(envelope);
+    notes.addAll([
+      for (final p in envelope)
+        PlanConversionNote(
+          budgetId: p.budgetId,
+          entryId: p.id,
+          name: p.name,
+          kind: PlanNoteKind.remark,
+          message: 'Planner → pozycja planu, ta sama kwota co miesiąc',
+        ),
+    ]);
 
     for (final MapEntry(key: budgetId, value: entries)
         in entriesByBudget.entries) {
@@ -180,6 +206,43 @@ class PlanConversion {
       }
     }
     return PlanConversionResult(positions: positions, notes: notes);
+  }
+
+  /// Identyfikator pozycji planu powstałej z pozycji koperty — ten sam przy
+  /// pełnej konwersji i przy dokładaniu do istniejącego planu, więc ta sama
+  /// pozycja koperty nie trafi do planu dwa razy.
+  static String envelopePositionId(String itemId) => 'envelope:$itemId';
+
+  /// Koperta „Na bieżące wydatki" (Planner) jako zwykłe pozycje planu (ADR-035):
+  /// każda pozycja koperty osobno, z kategorią i metodą płatności, ta sama
+  /// kwota w każdym miesiącu okna — tak liczyła się koperta.
+  static List<PlanPosition> envelopePositions({
+    required Map<String, List<SpendingAllocationItem>> itemsByBudget,
+    required Currency currency,
+    required DateTime today,
+  }) {
+    final window = windowFor(today);
+    return [
+      for (final MapEntry(key: budgetId, value: items) in itemsByBudget.entries)
+        for (final item in items)
+          if (!item.deleted && item.amount > 0)
+            PlanPosition(
+              id: envelopePositionId(item.id),
+              budgetId: budgetId,
+              name: item.name,
+              kind: PlanKind.expense,
+              currency: currency,
+              categoryId: item.categoryId,
+              paymentMethod: item.paymentMethod,
+              note: 'Z Plannera „Na bieżące wydatki"',
+              months: {
+                for (var y = window.first; y <= window.last; y++)
+                  for (var m = 1; m <= 12; m++)
+                    planMonthKey(y, m): PlanMonth(amount: item.amount),
+              },
+              createdAt: item.updatedAt ?? today,
+            ),
+    ];
   }
 
   /// Miesiące pozycji cyklicznej w oknie lat. Pozycja startująca po oknie
@@ -467,6 +530,24 @@ class PlanConversionRunner {
       scope.name: _storage.getBudgetEntries(scope),
   };
 
+  Map<String, List<SpendingAllocationItem>> _envelopeItems() => {
+    for (final scope in BudgetScope.values)
+      scope.name: _storage.getSpendingAllocationItems(scope),
+  };
+
+  Currency get _currency => Currency.values.firstWhere(
+    (c) =>
+        c.name == _storage.getCurrency() || c.label == _storage.getCurrency(),
+    orElse: () => Currency.PLN,
+  );
+
+  PlanConversionResult _convert(DateTime today) => PlanConversion.convert(
+    entriesByBudget: _oldEntries(),
+    today: today,
+    envelopeByBudget: _envelopeItems(),
+    envelopeCurrency: _currency,
+  );
+
   /// Konwersja przy starcie — tylko gdy plan nie powstał jeszcze z bieżącej
   /// wersji reguł. Zwraca `null`, gdy nie było nic do zrobienia.
   Future<PlanConversionResult?> ensureConverted(DateTime today) async {
@@ -478,28 +559,37 @@ class PlanConversionRunner {
 
   /// Konwersja od nowa z obecnych starych danych — NADPISUJE plan.
   Future<PlanConversionResult> reconvert(DateTime today) async {
-    final result = PlanConversion.convert(
-      entriesByBudget: _oldEntries(),
-      today: today,
-    );
+    final result = _convert(today);
     await _storage.replacePlanPositions(result.positions);
     await _storage.setPlanConversionVersion(PlanConversion.version);
+    await _storage.setPlanEnvelopeMigrated(true);
     return result;
   }
 
-  /// Raport z konwersji wyliczonej na świeżo z obecnych starych danych.
-  PlanConversionReport report(DateTime today) {
-    final old = _oldEntries();
-    return PlanConversionReport.build(
-      entriesByBudget: old,
-      result: PlanConversion.convert(entriesByBudget: old, today: today),
+  /// Dokłada pozycje koperty do planu, który powstał, zanim Planner stał się
+  /// zwykłymi pozycjami — bez przeliczania całości, więc zmiany w planie
+  /// zostają. Jednorazowo; zwraca liczbę dodanych pozycji.
+  Future<int> ensureEnvelopeMigrated(DateTime today) async {
+    if (_storage.getPlanEnvelopeMigrated()) return 0;
+    var added = 0;
+    for (final p in PlanConversion.envelopePositions(
+      itemsByBudget: _envelopeItems(),
+      currency: _currency,
       today: today,
-      target: Currency.values.firstWhere(
-        (c) =>
-            c.name == _storage.getCurrency() ||
-            c.label == _storage.getCurrency(),
-        orElse: () => Currency.PLN,
-      ),
-    );
+    )) {
+      if (_storage.getPlanPosition(p.id) != null) continue;
+      await _storage.savePlanPosition(p);
+      added++;
+    }
+    await _storage.setPlanEnvelopeMigrated(true);
+    return added;
   }
+
+  /// Raport z konwersji wyliczonej na świeżo z obecnych starych danych.
+  PlanConversionReport report(DateTime today) => PlanConversionReport.build(
+    entriesByBudget: _oldEntries(),
+    result: _convert(today),
+    today: today,
+    target: _currency,
+  );
 }

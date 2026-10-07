@@ -137,7 +137,9 @@ void main() {
     expect(plan.position(p.id)!.paymentMethod, isNull);
   });
 
-  test('kalendarz łączy plan z wydatkami z Bieżących', () async {
+  // Bieżące odpadły (ADR-035): ich stare wydatki zostają w zapisie jako
+  // archiwum, ale nie trafiają już do kalendarza.
+  test('kalendarz: pozycje planu, bez starych wydatków z Bieżących', () async {
     await addMonthly('Czynsz', amount: 2000);
     await budget.create(
       name: 'Zakupy',
@@ -149,6 +151,6 @@ void main() {
     );
     final cal = plan.calendarForMonth(DateTime(2026, 10));
     expect(cal[10]!.items.single.name, 'Czynsz');
-    expect(cal[3]!.items.single.name, 'Zakupy');
+    expect(cal[3], isNull);
   });
 }
