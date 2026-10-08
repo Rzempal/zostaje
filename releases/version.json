@@ -1,8 +1,10 @@
 {
-  "version": "0.26.26100600",
-  "releaseDate": "2026-10-06T17:01:37Z",
-  "versionCode": 2026100600,
+  "releaseDate": "2026-10-08T05:45:13Z",
   "changelog": [
+    {
+      "version": "0.27.26100800",
+      "notes": "- Planowanie: plan roczny, kazdy miesiac z wlasna kwota\n- Budzet: statystyki roku i kalendarz platnosci\n- Pozyczka z karty kredytowej w planie\n- Excel: plan jako tabela roku\n- Kopia zapasowa w wersji 8 (z planem)\n- Usuniete: Biezace, skan paragonow, Planner, synchronizacja"
+    },
     {
       "version": "0.26.26100600",
       "notes": "- Cykliczne i Wplywy: przy wybranym miesiacu suma grupy uwzglednia korekty kwot, tak jak pozycje pod nia"
@@ -38,12 +40,10 @@
     {
       "version": "0.23.26080801",
       "notes": "- Ikona pozycji bez kategorii pokazuje, do ktorej zakladki nalezy; subskrypcje maja wlasna ikone\n- Przy filtrze na jeden miesiac karta pozycji pokazuje po prawej kwote korekty z tego miesiaca, a poza tym licznik korekt\n- W Bilansie miesiaca mozna zwinac liste biezacych do jednego wiersza z suma (Platnosci i Podsumowanie miesiaca)\n- W Platnosciach zwiniety wiersz odhacza wszystkie biezace naraz\n- Menu Dodaj na Cyklicznych: Dodaj wydatek cykliczny zamiast Dodaj recznie"
-    },
-    {
-      "version": "0.22.26080800",
-      "notes": "- Zakladka Rachunki nazywa sie teraz Biezace, a Wydatki - Cykliczne. Nazwy mowia, czym te sekcje sie roznia: biezace to wydatek z konkretna data, cykliczne to koszt usredniany na miesiac\n- Koperta Plannera: Na biezace wydatki\n- Ikona pozycji bez kategorii pokazuje, do ktorej zakladki nalezy; subskrypcje maja wlasna ikone\n- Menu Dodaj na Cyklicznych: Dodaj wydatek cykliczny zamiast Dodaj recznie\n- Eksport Excela pisze Wydatek biezacy; stare arkusze importuja sie bez zmian\n- Zmiana nie rusza zapisanych danych: synchronizacja z telefonem na starszej wersji dziala dalej"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026100600",
-  "releaseNotes": "- Cykliczne i Wplywy: przy wybranym miesiacu suma grupy uwzglednia korekty kwot, tak jak pozycje pod nia"
+  "releaseNotes": "- Planowanie: plan roczny, kazdy miesiac z wlasna kwota\n- Budzet: statystyki roku i kalendarz platnosci\n- Pozyczka z karty kredytowej w planie\n- Excel: plan jako tabela roku\n- Kopia zapasowa w wersji 8 (z planem)\n- Usuniete: Biezace, skan paragonow, Planner, synchronizacja",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026100800",
+  "versionCode": 2026100800,
+  "version": "0.27.26100800"
 }

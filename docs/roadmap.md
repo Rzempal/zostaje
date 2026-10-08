@@ -24,13 +24,13 @@
 | 13 | Karta kredytowa + scalanie wydatkow | ✅ Ukonczona (2026-08-18) |
 | 14 | Proces wydawania wersji | ✅ Ukonczona (2026-08-02) |
 | 15 | Przejscie na Google Play | Planowana (kierunek bez terminu — ADR-031) |
-| 16 | Przebudowa: plan roczny (ADR-035) | 🚧 W trakcie na galezi `przebudowa-plan-roczny` (E0–E3b gotowe) |
+| 16 | Przebudowa: plan roczny (ADR-035) | ✅ Na PROD od 0.27 (2026-10-08); zostaje E7 (Supabase) |
 
-> **Stan na 2026-10-06:** ostatnie wydanie PROD to `v0.26.26100600` (suma grupy
-> z korektami miesiaca) — ostatnia wersja przed przebudowa. Faza 16 idzie na
-> galezi; `main` zostaje wersja PROD do czasu przelaczenia (E6). Zadania
-> z „Nastepnych krokow" dotyczace synchronizacji, korekt i porownan plan/realne
-> traca sens po przebudowie — przejrzec po E6.
+> **Stan na 2026-10-08:** przebudowa scalona do `main` i wydana na PROD (0.27).
+> Ostatnia wersja sprzed przebudowy to `v0.26.26100600` — punkt powrotu (zbudowac
+> te rewizje z wyzszym numerem wersji, ADR-035 §5). Zadania z „Nastepnych krokow"
+> dotyczace synchronizacji, korekt i porownan plan/realne straciły sens — do
+> przejrzenia.
 
 ---
 
@@ -48,7 +48,7 @@ korekt, przelewow wewnetrznych i porownan plan/realne — [ADR-035](adr/ADR-035-
 | E3b | Bez Biezacych i Plannera: koperta → pozycje planu, usuniety skan paragonow (ML Kit, silnik AI, usluga w tle), nawigacja Budzet / Planowanie / Ustawienia; APK 44,7 → 32,0 MB | ✅ 2026-10-07 (do sprawdzenia na DEV) |
 | E4 | Kopia zapasowa v8, Excel jako tabela roku, usuniecie synchronizacji | ✅ |
 | E5 | Sprzatanie kodu, testow i dokumentacji; statusy zastapionych ADR | ✅ |
-| E6 | Przelaczenie PROD po akceptacji testow na DEV | ⏳ |
+| E6 | Przelaczenie PROD po akceptacji testow na DEV (0.27, 2026-10-08) | ✅ |
 | E7 | Po migracji PROD: usuniecie danych synchronizacji domowej z Supabase (projekt „karton", wspoldzielony — tylko obiekty sync tej aplikacji, za zgoda wlasciciela) | ⏳ |
 
 ---

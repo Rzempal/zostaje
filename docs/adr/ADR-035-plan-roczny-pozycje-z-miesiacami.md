@@ -1,7 +1,7 @@
 # ADR-035: Plan roczny — pozycje z miesiącami zamiast cykli i korekt
 
 Data: 2026-10-06
-Status: zaakceptowany — wdrażany etapami na gałęzi `przebudowa-plan-roczny` (Faza 16)
+Status: zaakceptowany — wdrożony na PROD w wersji 0.27 (2026-10-08, Faza 16)
 
 > **Powiązane:** [ADR-008 Rachunek zmienny](ADR-008-rachunek-zmienny-surplus-vs-bilans.md)
 > | [ADR-020 Cykl „wybrane miesiące roku"](ADR-020-cykl-wybrane-miesiace-roku.md)
