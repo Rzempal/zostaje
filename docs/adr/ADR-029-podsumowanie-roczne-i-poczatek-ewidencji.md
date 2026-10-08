@@ -1,7 +1,7 @@
 # ADR-029: Podsumowanie roczne i poczatek ewidencji
 
 Data: 2026-08-01
-Status: zaakceptowany
+Status: zastąpiony przez [ADR-035](ADR-035-plan-roczny-pozycje-z-miesiacami.md) (2026-10-07) — bez podsumowania wykonania planu i początku ewidencji
 
 > **Powiazane:** [ADR-028 Plan vs rzeczywistosc na wykresach](ADR-028-plan-vs-rzeczywistosc-na-wykresach.md)
 > | [ADR-012 Koperta „Na rachunki"](ADR-012-koperta-na-rachunki-lista-pozycji.md)

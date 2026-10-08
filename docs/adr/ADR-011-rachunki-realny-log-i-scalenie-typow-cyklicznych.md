@@ -1,7 +1,7 @@
 # ADR-011: Rachunki jako realny log opłat, scalenie typów cyklicznych, koperta „Na rachunki"
 
 Data: 2026-07-09
-Status: zaakceptowany
+Status: zastąpiony przez [ADR-035](ADR-035-plan-roczny-pozycje-z-miesiacami.md) (2026-10-07) — nie ma już dziennika realnych wydatków ani typów cyklicznych
 
 ## Kontekst
 

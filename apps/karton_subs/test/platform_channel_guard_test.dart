@@ -16,10 +16,9 @@ import 'package:flutter_test/flutter_test.dart';
 ///
 /// Ten test czyta OBIE strony i porównuje je ze sobą.
 void main() {
-  final dartSources = [
-    'lib/services/ai_engine_service.dart',
-    'lib/services/recovery_key_vault.dart',
-  ];
+  // Most do silnika AI zniknął razem ze skanem paragonów (ADR-035); został
+  // sejf na kod odzyskiwania kopii.
+  final dartSources = ['lib/services/recovery_key_vault.dart'];
   const kotlinDir = 'android/app/src/main/kotlin';
 
   /// Nazwy metod, które Dart WYSYŁA.
@@ -79,12 +78,5 @@ void main() {
           'Na telefonie objawi się to jako „funkcja niedostępna", a nie jako '
           'błąd kompilacji. Popraw nazwę po jednej ze stron.',
     );
-  });
-
-  test('nazwa metody skanu jest przypięta do umowy z Kotlinem', () {
-    // Zapisana wprost, nie przez stałą z kodu: gdyby ktoś przemianował stałą
-    // razem z testem, strażnik świeciłby na zielono przy zerwanej umowie.
-    expect(methodsHandledByKotlin(), contains('startBillScan'));
-    expect(methodsSentByDart(), contains('startBillScan'));
   });
 }

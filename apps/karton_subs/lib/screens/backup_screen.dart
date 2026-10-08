@@ -8,7 +8,6 @@ import '../services/backup_crypto_service.dart';
 import '../services/backup_service.dart';
 import '../services/cloud_backup_service.dart';
 import '../services/storage_service.dart';
-import '../services/sync_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/recovery_code_dialog.dart';
 import '../widgets/settings_widgets.dart';
@@ -220,13 +219,7 @@ class _BackupScreenState extends State<BackupScreen> {
     }
   }
 
-  /// Przy wspoldzielonym budzecie najpierw scalamy dane z domownikiem —
-  /// inaczej telefon po offline zapisalby w chmurze uboższą migawkę.
   Future<void> _uploadToCloud() async {
-    final sync = context.read<SyncService>();
-    if (sync.isPaired) await sync.syncNow();
-    if (!mounted) return;
-
     final backup = context.read<BackupService>();
     final crypto = BackupCryptoService();
     await _cloud.uploadSnapshot(

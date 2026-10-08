@@ -27,11 +27,6 @@ android {
         versionName = flutter.versionName
     }
 
-    // AIDL: duplikaty kontraktu Lokalnego Silnika AI (src/main/aidl) - mostek OCR rachunkow.
-    buildFeatures {
-        aidl = true
-    }
-
     flavorDimensions += "channel"
 
     productFlavors {
@@ -52,12 +47,12 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
-            // Reguly R8 (m.in. warianty jezykowe ML Kit, ktorych nie dolaczamy).
+            // Reguly R8 dla buildu release.
             proguardFiles("proguard-rules.pro")
             // Tylko 64-bitowe ARM, czyli kazdy wspolczesny telefon. Flaga
             // --target-platform przycina wylacznie biblioteki Fluttera; natywne
-            // biblioteki wtyczek (ML Kit) leca ze swoich paczek AAR i odsiewa je
-            // dopiero ten filtr - kilkadziesiat MB mniej w kazdej aktualizacji OTA.
+            // biblioteki wtyczek leca ze swoich paczek AAR i odsiewa je dopiero
+            // ten filtr - mniej MB w kazdej aktualizacji OTA.
             // Dotyczy TYLKO buildu release: debug zostaje pelny, wiec emulator
             // x86 dziala jak dotychczas.
             ndk {

@@ -1,7 +1,7 @@
 # ADR-017: Szybka ścieżka skanu — zwykły OCR + reguły przed silnikiem AI
 
 Data: 2026-07-25
-Status: zaakceptowany
+Status: zastąpiony przez [ADR-035](ADR-035-plan-roczny-pozycje-z-miesiacami.md) (2026-10-07) — skan paragonów usunięty, ML Kit nie jest już w aplikacji
 
 ## Kontekst
 

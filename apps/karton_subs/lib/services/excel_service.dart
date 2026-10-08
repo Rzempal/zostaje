@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:excel/excel.dart';
@@ -11,9 +10,9 @@ import 'package:uuid/uuid.dart';
 
 import '../models/category.dart';
 import '../models/subscription.dart';
-import '../models/budget_entry.dart';
 import '../utils/cycle_math.dart';
 import 'app_logger.dart';
+import 'plan_excel.dart';
 import 'storage_service.dart';
 
 /// Eksport/import subskrypcji do arkusza .xlsx.
@@ -53,25 +52,6 @@ class ExcelService {
     'Aktywna',
     'Data startu',
     'Zakres',
-  ];
-
-  static const _budgetSheetName = 'Budżet';
-
-  // Nagłówki kolumn budżetu — kolejność zgodna z [_BudgetHeaderField] niżej.
-  static const List<String> _budgetHeaders = [
-    'Typ',
-    'Nazwa',
-    'Kwota',
-    'Waluta',
-    'Cykl',
-    'Kategoria',
-    'Miesiąc',
-    'Notatka',
-    'Aktywna',
-    'Metoda płatności',
-    'Data startu',
-    'Liczba rat',
-    'Korekty',
   ];
 
   // ── Eksport ────────────────────────────────────────────────────────────────
@@ -302,16 +282,26 @@ class ExcelService {
   ) =>
       _buildWorkbook(subs, categories);
 
-  // ── Budżet: eksport ──────────────────────────────────────────────────────────
+  // ── Plan roczny (ADR-035) ──────────────────────────────────────────────────
 
-  /// Buduje arkusz ze wszystkich pozycji budżetu i udostępnia przez system share.
-  Future<void> exportBudgetToFile() async {
-    final entries = _storage.getBudgetEntries();
-    final bytes = _buildBudgetWorkbook(entries, _storage.getCategories());
+  /// Tabela roku wybranego budżetu (arkusz na każdy rok z [years]) przez
+  /// systemowe okno udostępniania.
+  Future<void> exportPlanToFile({
+    required String budgetId,
+    required String budgetLabel,
+    required List<int> years,
+  }) async {
+    final positions =
+        _storage.getPlanPositions(budgetId).where((p) => !p.archived).toList();
+    final bytes = PlanExcel.build(
+      positions: positions,
+      categories: _storage.getCategories(),
+      years: years,
+    );
 
     final dir = await getTemporaryDirectory();
     final dateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final file = File('${dir.path}/budzet_$dateStr.xlsx');
+    final file = File('${dir.path}/plan_${budgetLabel}_$dateStr.xlsx');
     await file.writeAsBytes(bytes);
 
     await Share.shareXFiles(
@@ -322,9 +312,10 @@ class ExcelService {
               'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         )
       ],
-      subject: 'Zostaje — budżet',
+      subject: 'Zostaje — plan',
     );
 
+    // Plik tymczasowy zawiera jawne dane finansowe — kasujemy po chwili.
     Future.delayed(const Duration(minutes: 2), () {
       try {
         if (file.existsSync()) file.deleteSync();
@@ -333,62 +324,12 @@ class ExcelService {
       }
     });
 
-    _log.info('Wyeksportowano ${entries.length} pozycji budżetu do .xlsx');
+    _log.info('Wyeksportowano plan ($budgetId): ${positions.length} pozycji');
   }
 
-  static Uint8List _buildBudgetWorkbook(
-      List<BudgetEntry> entries, List<Category> categories) {
-    final excel = Excel.createExcel();
-    excel.rename(excel.getDefaultSheet() ?? 'Sheet1', _budgetSheetName);
-    final sheet = excel[_budgetSheetName];
-
-    final catNameById = {for (final c in categories) c.id: c.name};
-    String catName(String? id) => id != null ? (catNameById[id] ?? '') : '';
-
-    sheet.appendRow(
-        _budgetHeaders.map<CellValue?>((h) => TextCellValue(h)).toList());
-
-    for (final e in entries) {
-      sheet.appendRow(<CellValue?>[
-        TextCellValue(_budgetTypeLabel(e.type)),
-        TextCellValue(_sanitizeCell(e.name)),
-        DoubleCellValue(e.amount),
-        TextCellValue(e.currency.label),
-        TextCellValue(e.isOneTime ? '' : _cycleLabel(e.cycle, e.customCycleDays, e.cycleMonths)),
-        TextCellValue(_sanitizeCell(catName(e.categoryId))),
-        TextCellValue(e.isOneTime ? (e.month ?? '') : ''),
-        TextCellValue(_sanitizeCell(e.note ?? '')),
-        TextCellValue(e.isActive ? 'tak' : 'nie'),
-        TextCellValue(_sanitizeCell(e.paymentMethod ?? '')),
-        TextCellValue(e.startDate != null
-            ? DateFormat('yyyy-MM-dd').format(e.startDate!)
-            : ''),
-        TextCellValue(e.installmentCount?.toString() ?? ''),
-        TextCellValue(_encodeOverrides(e.monthOverrides)),
-      ]);
-    }
-
-    final bytes = excel.save();
-    if (bytes == null) {
-      throw const FormatException('Nie udało się zbudować arkusza budżetu');
-    }
-    return Uint8List.fromList(bytes);
-  }
-
-  static String _budgetTypeLabel(BudgetEntryType type) => switch (type) {
-        BudgetEntryType.income => 'Wpływ',
-        BudgetEntryType.spending => 'Wydatek bieżący',
-        BudgetEntryType.recurringCost => 'Koszt cykliczny',
-        BudgetEntryType.oneTimeIncome => 'Wpływ jednorazowy',
-        BudgetEntryType.householdTransfer => 'Przelew do domowego',
-        BudgetEntryType.installment => 'Rata',
-      };
-
-  // ── Budżet: import ───────────────────────────────────────────────────────────
-
-  /// Otwiera file picker, parsuje arkusz budżetu poza głównym wątkiem, mapuje
-  /// wiersze na gotowe pozycje (nowe id). NIE zapisuje — zwraca wynik.
-  Future<BudgetExcelImportResult> pickAndParseBudget() async {
+  /// Otwiera wybór pliku i czyta tabelę roku poza głównym wątkiem. NIE
+  /// zapisuje — zwraca pozycje (nowe id) przypisane do budżetu [budgetId].
+  Future<PlanExcelImportResult> pickAndParsePlan(String budgetId) async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.any,
       withData: true,
@@ -409,26 +350,15 @@ class ExcelService {
       throw const FormatException('Plik jest za duży (limit 5 MB)');
     }
 
-    // Dopasowanie kategorii po nazwie (case-insensitive) — jak przy subskrypcjach.
-    final catByName = <String, String>{};
-    for (final c in _storage.getCategories()) {
-      catByName[c.name.toLowerCase().trim()] = c.id;
-    }
-    return await compute(_parseBudgetWorkbook, (bytes, catByName));
+    final catByName = {
+      for (final c in _storage.getCategories()) c.name.toLowerCase().trim(): c.id,
+    };
+    return await compute(
+      _parsePlanWorkbook,
+      (bytes, budgetId, catByName),
+    );
   }
 
-  /// Hook testowy: parsuje bajty .xlsx budżetu bez dostępu do bazy.
-  /// [catByName] (nazwa małymi literami → id) pozwala przetestować mapowanie kategorii.
-  @visibleForTesting
-  static BudgetExcelImportResult parseBudgetBytesForTest(Uint8List bytes,
-          [Map<String, String> catByName = const <String, String>{}]) =>
-      _parseBudgetWorkbook((bytes, catByName));
-
-  /// Hook testowy: buduje bajty arkusza budżetu (ścieżka eksportu) bez share/IO.
-  @visibleForTesting
-  static Uint8List buildBudgetWorkbookForTest(List<BudgetEntry> entries,
-          [List<Category> categories = const []]) =>
-      _buildBudgetWorkbook(entries, categories);
 }
 
 /// Wynik importu — subskrypcje gotowe do zapisu + raport.
@@ -800,305 +730,14 @@ DateTime _parseDate(String? raw) {
   return parsed;
 }
 
-// ── Budżet: parsowanie (czysty Dart, bez dostępu do bazy) ──────────────────────
-
-/// Wynik importu budżetu — pozycje gotowe do zapisu (nowe id) + raport.
-class BudgetExcelImportResult {
-  final List<BudgetEntry> entries;
-  final List<String> skipped;
-  BudgetExcelImportResult({required this.entries, required this.skipped});
-
-  int get importedCount => entries.length;
-  int get skippedCount => skipped.length;
-}
-
-enum _BudgetHeaderField {
-  type,
-  name,
-  amount,
-  currency,
-  cycle,
-  category,
-  month,
-  note,
-  active,
-  paymentMethod,
-  startDate,
-  installmentCount,
-  overrides
-}
-
-/// Funkcja izolatu (compute): bajty .xlsx → gotowe pozycje budżetu + pominięcia.
-/// Budżet nie wymaga dopasowań w bazie, więc budujemy pozycje od razu tutaj.
-BudgetExcelImportResult _parseBudgetWorkbook(
-    (Uint8List, Map<String, String>) input) {
-  final (bytes, catByName) = input;
-  final Excel excel;
-  try {
-    excel = Excel.decodeBytes(bytes);
-  } catch (_) {
-    throw const FormatException('Nie udało się odczytać pliku Excel (.xlsx)');
-  }
-  if (excel.tables.isEmpty) {
-    throw const FormatException('Plik nie zawiera żadnego arkusza');
-  }
-  final sheet = excel.tables.values.first;
-  final allRows = sheet.rows;
-  if (allRows.isEmpty) {
-    return BudgetExcelImportResult(entries: [], skipped: const ['Arkusz jest pusty']);
-  }
-
-  final headerMap = _detectBudgetHeader(allRows.first);
-  final hasHeader = headerMap.containsKey(_BudgetHeaderField.name) &&
-      headerMap.containsKey(_BudgetHeaderField.amount);
-
-  final Map<_BudgetHeaderField, int> col;
-  final int firstDataRow;
-  if (hasHeader) {
-    col = headerMap;
-    firstDataRow = 1;
-  } else {
-    col = const {_BudgetHeaderField.name: 0, _BudgetHeaderField.amount: 1};
-    firstDataRow = 0;
-  }
-
-  const uuid = Uuid();
-  final now = DateTime.now();
-  final entries = <BudgetEntry>[];
-  final skipped = <String>[];
-
-  for (var r = firstDataRow; r < allRows.length; r++) {
-    final dataIndex = r - firstDataRow + 1;
-    if (entries.length >= _maxDataRows) {
-      skipped.add('Pominięto wiersze powyżej limitu $_maxDataRows');
-      break;
-    }
-    final cells = allRows[r];
-    String? cell(_BudgetHeaderField f) {
-      final i = col[f];
-      if (i == null || i >= cells.length) return null;
-      return _cellText(cells[i]);
-    }
-
-    final isEmptyRow = cells.every((c) {
-      final t = _cellText(c);
-      return t == null || t.trim().isEmpty;
-    });
-    if (isEmptyRow) continue;
-
-    final rawName = cell(_BudgetHeaderField.name)?.trim();
-    if (rawName == null || rawName.isEmpty) {
-      skipped.add('Wiersz $dataIndex: brak nazwy');
-      continue;
-    }
-    final amount = _parseAmount(cell(_BudgetHeaderField.amount)?.trim());
-    if (amount == null) {
-      skipped.add('Wiersz $dataIndex ($rawName): nieprawidłowa kwota');
-      continue;
-    }
-    if (amount <= 0 || amount > _maxAmount) {
-      skipped.add('Wiersz $dataIndex ($rawName): kwota poza zakresem');
-      continue;
-    }
-
-    final name = rawName.length > _maxNameLength
-        ? rawName.substring(0, _maxNameLength)
-        : rawName;
-    final type = _parseBudgetType(cell(_BudgetHeaderField.type));
-    final isOneTime = type == BudgetEntryType.oneTimeIncome ||
-        type == BudgetEntryType.spending;
-    final (cycle, customDays, cycleMonths) = _parseCycle(cell(_BudgetHeaderField.cycle));
-    final month = isOneTime
-        ? (_parseMonth(cell(_BudgetHeaderField.month)) ??
-            BudgetEntry.monthKeyOf(now))
-        : null;
-    // Kategoria/metoda tylko dla wydatków — wpływy ignorują kolumny.
-    final isExpenseType = type == BudgetEntryType.recurringCost ||
-        type == BudgetEntryType.installment ||
-        type == BudgetEntryType.spending;
-    final rawCategory = cell(_BudgetHeaderField.category)?.toLowerCase().trim();
-    final categoryId = isExpenseType &&
-            rawCategory != null &&
-            rawCategory.isNotEmpty
-        ? catByName[rawCategory]
-        : null;
-    final paymentMethod = isExpenseType
-        ? _blankToNull(cell(_BudgetHeaderField.paymentMethod))
-        : null;
-    final rawStart = cell(_BudgetHeaderField.startDate)?.trim();
-    final startDate =
-        (rawStart == null || rawStart.isEmpty) ? null : _parseDate(rawStart);
-    final installmentCount = type == BudgetEntryType.installment
-        ? int.tryParse(cell(_BudgetHeaderField.installmentCount)?.trim() ?? '')
-        : null;
-    final overrides = (type == BudgetEntryType.recurringCost ||
-            type == BudgetEntryType.householdTransfer)
-        ? _decodeOverrides(cell(_BudgetHeaderField.overrides))
-        : null;
-
-    entries.add(BudgetEntry(
-      id: uuid.v4(),
-      name: name,
-      type: type,
-      amount: double.parse(amount.toStringAsFixed(2)),
-      currency: _parseCurrency(cell(_BudgetHeaderField.currency)),
-      cycle: cycle,
-      customCycleDays: isOneTime ? null : customDays,
-      cycleMonths: isOneTime ? null : cycleMonths,
-      month: month,
-      categoryId: categoryId,
-      paymentMethod: paymentMethod,
-      monthOverrides: overrides,
-      installmentCount: installmentCount,
-      startDate: startDate,
-      isActive: _parseActive(cell(_BudgetHeaderField.active)),
-      note: _blankToNull(cell(_BudgetHeaderField.note)),
-      dataDodania: now,
-    ));
-  }
-
-  return BudgetExcelImportResult(entries: entries, skipped: skipped);
-}
-
-Map<_BudgetHeaderField, int> _detectBudgetHeader(List<Data?> headerCells) {
-  final map = <_BudgetHeaderField, int>{};
-  for (var i = 0; i < headerCells.length; i++) {
-    final raw = _cellText(headerCells[i]);
-    if (raw == null) continue;
-    final h = raw.toLowerCase().trim();
-    if (h.isEmpty) continue;
-
-    _BudgetHeaderField? field;
-    if (h.contains('typ') || h.contains('type')) {
-      field = _BudgetHeaderField.type;
-    } else if (h.contains('nazwa') || h.contains('name')) {
-      field = _BudgetHeaderField.name;
-    } else if (h.contains('kwota') || h.contains('amount') || h.contains('cena')) {
-      field = _BudgetHeaderField.amount;
-    } else if (h.contains('walut') || h.contains('currency')) {
-      field = _BudgetHeaderField.currency;
-    } else if (h.contains('cykl') || h.contains('cycle') || h.contains('okres')) {
-      field = _BudgetHeaderField.cycle;
-    } else if (h.contains('kateg') || h.contains('category')) {
-      field = _BudgetHeaderField.category;
-    } else if (h.contains('mies') || h.contains('month')) {
-      field = _BudgetHeaderField.month;
-    } else if (h.contains('notat') || h.contains('note') || h.contains('opis')) {
-      field = _BudgetHeaderField.note;
-    } else if (h.contains('aktyw') || h.contains('active') || h.contains('status')) {
-      field = _BudgetHeaderField.active;
-    } else if (h.contains('metoda') ||
-        h.contains('płatn') ||
-        h.contains('platn') ||
-        h.contains('payment')) {
-      field = _BudgetHeaderField.paymentMethod;
-    } else if (h.contains('liczba') ||
-        h.contains('rat') ||
-        h.contains('installment')) {
-      field = _BudgetHeaderField.installmentCount;
-    } else if (h.contains('start') || h.contains('data')) {
-      field = _BudgetHeaderField.startDate;
-    } else if (h.contains('korekt') || h.contains('override')) {
-      field = _BudgetHeaderField.overrides;
-    }
-    if (field != null && !map.containsKey(field)) {
-      map[field] = i;
-    }
-  }
-  return map;
-}
-
-/// Koduje korekty wydatku do jednej komórki (JSON). Pusta mapa → pusty string.
-String _encodeOverrides(Map<String, MonthAmountOverride>? ov) {
-  if (ov == null || ov.isEmpty) return '';
-  return jsonEncode({for (final e in ov.entries) e.key: e.value.toJson()});
-}
-
-/// Dekoduje korekty z komórki JSON. Uszkodzony/pusty → null (nie przerywa importu).
-Map<String, MonthAmountOverride>? _decodeOverrides(String? raw) {
-  if (raw == null || raw.trim().isEmpty) return null;
-  try {
-    final decoded = jsonDecode(raw.trim());
-    if (decoded is! Map) return null;
-    final map = <String, MonthAmountOverride>{};
-    decoded.forEach((k, v) {
-      if (v is Map) {
-        map['$k'] = MonthAmountOverride.fromJson(Map<String, dynamic>.from(v));
-      }
-    });
-    return map.isEmpty ? null : map;
-  } catch (_) {
-    return null;
-  }
-}
-
-BudgetEntryType _parseBudgetType(String? raw) {
-  if (raw == null) return BudgetEntryType.recurringCost;
-  final t = raw.toLowerCase().trim();
-  final isOneTime =
-      t.contains('jednoraz') || t.contains('onetime') || t.contains('one-time');
-  final isIncomeKw = t.contains('wpływ') ||
-      t.contains('wplyw') ||
-      t.contains('income') ||
-      t.contains('przychód') ||
-      t.contains('przychod') ||
-      t.contains('premia') ||
-      t.contains('bonus');
-
-  if (isOneTime && isIncomeKw) return BudgetEntryType.oneTimeIncome;
-  // „Wydatek jednorazowy" ze starszych arkuszy to dziś wydatek (ADR-018).
-  if (isOneTime) return BudgetEntryType.spending;
-  if (isIncomeKw) return BudgetEntryType.income;
-  if (t.contains('rata') ||
-      t.contains('raty') ||
-      t.contains('installment')) {
-    return BudgetEntryType.installment;
-  }
-  if (t.contains('przelew') || t.contains('transfer')) {
-    return BudgetEntryType.householdTransfer;
-  }
-  // „Rachunek" to nazwa sprzed zmiany na „Bieżące" (ADR-032) — SŁOWO KLUCZOWE
-  // FORMATU, nie nazwa w apce: zostaje na zawsze, bo starych arkuszy na dysku
-  // użytkownika nikt nie przepisze. Wariant bez polskich znaków dla arkuszy
-  // poprawianych ręcznie.
-  if (t.contains('bieżąc') ||
-      t.contains('biezac') ||
-      t.contains('rachunek') ||
-      t.contains('bill')) {
-    return BudgetEntryType.spending;
-  }
-  if (t.contains('cykl') ||
-      t.contains('recurring') ||
-      t.contains('stał') ||
-      t.contains('stal')) {
-    return BudgetEntryType.recurringCost;
-  }
-  return BudgetEntryType.recurringCost;
-}
-
-/// Parsuje miesiąc do formatu "YYYY-MM" z kilku zapisów (YYYY-MM, MM.YYYY, pełna data).
-String? _parseMonth(String? raw) {
-  if (raw == null) return null;
-  final t = raw.trim();
-  if (t.isEmpty) return null;
-
-  final ym = RegExp(r'^(\d{4})[-/.](\d{1,2})').firstMatch(t);
-  if (ym != null) {
-    final y = int.parse(ym.group(1)!);
-    final m = int.parse(ym.group(2)!);
-    if (m >= 1 && m <= 12) {
-      return '${y.toString().padLeft(4, '0')}-${m.toString().padLeft(2, '0')}';
-    }
-  }
-  final my = RegExp(r'^(\d{1,2})[-/.](\d{4})$').firstMatch(t);
-  if (my != null) {
-    final m = int.parse(my.group(1)!);
-    final y = int.parse(my.group(2)!);
-    if (m >= 1 && m <= 12) {
-      return '${y.toString().padLeft(4, '0')}-${m.toString().padLeft(2, '0')}';
-    }
-  }
-  final d = DateTime.tryParse(t);
-  if (d != null) return BudgetEntry.monthKeyOf(d);
-  return null;
+/// Funkcja izolatu (compute) dla [ExcelService.pickAndParsePlan].
+PlanExcelImportResult _parsePlanWorkbook(
+  (Uint8List, String, Map<String, String>) input,
+) {
+  final (bytes, budgetId, catByName) = input;
+  return PlanExcel.parse(
+    bytes,
+    budgetId: budgetId,
+    categoryIdByName: catByName,
+  );
 }

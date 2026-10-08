@@ -1,7 +1,7 @@
 # ADR-018: Scalenie wydatku jednorazowego z rachunkiem (jeden datowany wydatek)
 
 Data: 2026-07-26
-Status: zaakceptowany
+Status: zastąpiony przez [ADR-035](ADR-035-plan-roczny-pozycje-z-miesiacami.md) (2026-10-07) — nie ma już wydatków datowanych; jednorazowy wydatek to pozycja planu z jednym miesiącem
 
 ## Kontekst
 

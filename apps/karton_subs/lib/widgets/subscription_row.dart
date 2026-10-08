@@ -21,11 +21,17 @@ class SubscriptionRow extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
 
+  /// Kwota do pokazania zamiast „kwota/cykl" — w planie rocznym wiersz
+  /// pokazuje kwotę wybranego okresu (miesiąca albo średnią roku), tak jak
+  /// pozycje obok niego (ADR-035).
+  final String? amountText;
+
   const SubscriptionRow({
     super.key,
     required this.subscription,
     this.onTap,
     this.onLongPress,
+    this.amountText,
   });
 
   @override
@@ -44,8 +50,9 @@ class SubscriptionRow extends StatelessWidget {
         : null;
 
     final amountLine =
+        amountText ??
         '−${budgetNf.format(s.amount)}${curLabelSuffix(s.currency.label)}'
-        '/${budgetCycleSuffix(s.billingCycle)}';
+            '/${budgetCycleSuffix(s.billingCycle)}';
 
     // Metoda płatności — ikona ⚡/✋ = automatyczna/manualna (jak w budżecie).
     final method = s.paymentMethod;

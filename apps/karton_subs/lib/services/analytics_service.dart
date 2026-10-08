@@ -3,8 +3,6 @@
 import '../models/subscription.dart';
 import 'currency_service.dart';
 
-DateTime get _now => Subscription.devDateOverride ?? DateTime.now();
-
 class MonthlyDataPoint {
   final DateTime month;
   final double amount;
@@ -75,24 +73,6 @@ class AnalyticsService {
       }
     }
     return total;
-  }
-
-  List<MonthlyDataPoint> getSpendingTrend(
-    List<Subscription> subs, {
-    int months = 6,
-    Currency? target,
-  }) {
-    final now = _now;
-    return [
-      for (int i = months - 1; i >= 0; i--)
-        () {
-          final month = DateTime(now.year, now.month - i, 1);
-          return MonthlyDataPoint(
-            month: month,
-            amount: getMonthlyTotalForMonth(subs, month, target: target),
-          );
-        }(),
-    ];
   }
 
   BudgetStatus? getBudgetStatus(

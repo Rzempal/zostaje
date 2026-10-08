@@ -4,10 +4,8 @@ import 'package:excel/excel.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:karton_subs/models/budget_entry.dart';
 import 'package:karton_subs/models/subscription.dart';
-import 'package:karton_subs/services/budget_service.dart';
 import 'package:karton_subs/services/excel_service.dart';
 
-const _svc = BudgetService();
 final _d = DateTime(2026, 1, 1);
 
 Uint8List _xlsx(List<List<dynamic>> rows) {
@@ -43,21 +41,6 @@ void main() {
       expect(transfer.monthlyAmount, closeTo(1000, 0.001));
       expect(transfer.signedMonthlyAmount, closeTo(-1000, 0.001));
       expect(transfer.isLinked, isTrue);
-    });
-
-    test('liczy się jako koszt budżetu (obniża surplus)', () {
-      final entries = [
-        BudgetEntry(
-            id: 'i',
-            name: 'Pensja',
-            type: BudgetEntryType.income,
-            amount: 5000,
-            currency: Currency.PLN,
-            dataDodania: _d),
-        transfer,
-      ];
-      expect(_svc.monthlyBudgetExpenses(entries), closeTo(1000, 0.001));
-      expect(_svc.monthlySurplus(entries, const []), closeTo(4000, 0.001));
     });
 
     test('linkId przechodzi przez toJson/fromJson i copyWith', () {

@@ -4,8 +4,8 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../models/subscription.dart';
 import '../models/category.dart';
 import '../models/budget_entry.dart';
+import '../models/plan_position.dart';
 import '../models/spending_allocation_item.dart';
-import '../models/pending_receipt_scan.dart';
 import '../utils/money_format.dart';
 import 'app_logger.dart';
 import 'storage_keys.dart';
@@ -25,6 +25,7 @@ class StorageService {
   late Box<String> _paymentMethodsBox;
   late Box<String> _budgetEntriesBox;
   late Box<String> _householdBudgetEntriesBox;
+  late Box<String> _planPositionsBox;
   late Box<bool> _paymentDoneBox;
   late Box<dynamic> _settingsBox;
 
@@ -34,6 +35,7 @@ class StorageService {
   final Map<String, PaymentMethod> _paymentMethodsCache = {};
   final Map<String, BudgetEntry> _budgetEntriesCache = {};
   final Map<String, BudgetEntry> _householdBudgetEntriesCache = {};
+  final Map<String, PlanPosition> _planPositionsCache = {};
   bool _initialized = false;
 
   /// Otwiera pudełka na już zainicjalizowanym Hive — do testów, które robią
@@ -58,6 +60,7 @@ class StorageService {
     _householdBudgetEntriesBox = await Hive.openBox<String>(
       'household_budget_entries',
     );
+    _planPositionsBox = await Hive.openBox<String>('plan_positions');
     _paymentDoneBox = await Hive.openBox<bool>('payment_done');
     _settingsBox = await Hive.openBox('settings');
     setAppDefaultCurrency(
@@ -67,6 +70,7 @@ class StorageService {
     _loadCategoriesCache();
     _loadPaymentMethodsCache();
     _loadBudgetEntriesCache();
+    _loadPlanPositionsCache();
     _seedDefaultCategories();
     _seedDefaultPaymentMethods();
     _initialized = true;
@@ -262,6 +266,71 @@ class StorageService {
     _log.info('Saved budget entry ($scope): ${entry.name}');
   }
 
+  // ── Plan roczny (ADR-035) ───────────────────────────────────────────────────
+  // Osobny box — stare pozycje budżetu zostają nietknięte, więc wcześniejsza
+  // wersja aplikacji (zbudowana z wyższym numerem) widzi swoje dane bez zmian.
+
+  void _loadPlanPositionsCache() {
+    _planPositionsCache.clear();
+    for (final key in _planPositionsBox.keys) {
+      try {
+        final json = jsonDecode(_planPositionsBox.get(key as String)!);
+        _planPositionsCache[key] = PlanPosition.fromJson(
+          json as Map<String, dynamic>,
+        );
+      } catch (e) {
+        _log.warning('Failed to parse plan position $key: $e');
+      }
+    }
+  }
+
+  /// Pozycje planu — wszystkie albo jednego budżetu.
+  List<PlanPosition> getPlanPositions([String? budgetId]) => List.unmodifiable(
+    budgetId == null
+        ? _planPositionsCache.values
+        : _planPositionsCache.values.where((p) => p.budgetId == budgetId),
+  );
+
+  PlanPosition? getPlanPosition(String id) => _planPositionsCache[id];
+
+  Future<void> savePlanPosition(PlanPosition position) async {
+    await _planPositionsBox.put(position.id, jsonEncode(position.toJson()));
+    _planPositionsCache[position.id] = position;
+    _log.info('Saved plan position: ${position.name}');
+  }
+
+  Future<void> deletePlanPosition(String id) async {
+    await _planPositionsBox.delete(id);
+    _planPositionsCache.remove(id);
+    _log.info('Deleted plan position: $id');
+  }
+
+  /// Zastępuje cały plan (konwersja ze starego modelu).
+  Future<void> replacePlanPositions(List<PlanPosition> positions) async {
+    await _planPositionsBox.clear();
+    _planPositionsCache.clear();
+    for (final p in positions) {
+      await _planPositionsBox.put(p.id, jsonEncode(p.toJson()));
+      _planPositionsCache[p.id] = p;
+    }
+    _log.info('Replaced plan: ${positions.length} positions');
+  }
+
+  /// Wersja reguł, którą powstał zapisany plan (0 = konwersji jeszcze nie było).
+  int getPlanConversionVersion() =>
+      _settingsBox.get('planConversionVersion', defaultValue: 0) as int;
+
+  Future<void> setPlanConversionVersion(int version) =>
+      _settingsBox.put('planConversionVersion', version);
+
+  /// Czy pozycje koperty „Na bieżące wydatki" (Planner) trafiły już do planu
+  /// jako zwykłe pozycje (ADR-035).
+  bool getPlanEnvelopeMigrated() =>
+      _settingsBox.get('planEnvelopeMigrated', defaultValue: false) as bool;
+
+  Future<void> setPlanEnvelopeMigrated(bool value) =>
+      _settingsBox.put('planEnvelopeMigrated', value);
+
   // ── Ustawienia w backupie (format v7) ──────────────────────────────────────
   //
   // Tylko preferencje UZYTKOWNIKA, ktore zmieniaja liczby albo dzialanie apki.
@@ -318,8 +387,20 @@ class StorageService {
     bool budgetHousehold = false,
     bool paymentDone = false,
     bool spendingAllocation = false,
+    bool planPositions = false,
   }) async {
-    if (subscriptions) await _subscriptionsBox.clear();
+    // Pudełko i pamięć podręczna razem — inaczej odczyty po odtworzeniu
+    // zwracałyby jeszcze dane sprzed niego (aż do restartu aplikacji).
+    if (subscriptions) {
+      await _subscriptionsBox.clear();
+      _subscriptionsCache.clear();
+    }
+    if (planPositions) {
+      await _planPositionsBox.clear();
+      _planPositionsCache.clear();
+      await setPlanConversionVersion(0);
+      await setPlanEnvelopeMigrated(false);
+    }
     if (budgetPersonal) {
       await _budgetEntriesBox.clear();
       _budgetEntriesCache.clear();
@@ -333,6 +414,7 @@ class StorageService {
       for (final key in _categoriesBox.keys.toList()) {
         if (defaultCategories.any((d) => d.id == key)) continue;
         await _categoriesBox.delete(key);
+        _categoriesCache.remove(key);
       }
     }
     if (spendingAllocation) {
@@ -351,24 +433,6 @@ class StorageService {
     _log.info('Deleted budget entry ($scope): $id');
   }
 
-  /// Zastępuje cały zbiór danego zakresu (po scaleniu przy synchronizacji,
-  /// ADR-009). W odróżnieniu od [saveBudgetEntry] NIE modyfikuje pozycji —
-  /// zachowuje ich `updatedAt`/`deleted` (łącznie z nagrobkami).
-  Future<void> replaceBudgetEntries(
-    BudgetScope scope,
-    List<BudgetEntry> entries,
-  ) async {
-    final box = _budgetBox(scope);
-    final cache = _budgetCache(scope);
-    await box.clear();
-    cache.clear();
-    for (final e in entries) {
-      await box.put(e.id, jsonEncode(e.toJson()));
-      cache[e.id] = e;
-    }
-    _log.info('Replaced ${entries.length} budget entries ($scope) [sync]');
-  }
-
   // ── Platnosci „wykonane" (lokalne, poza backupem) ───────────────────────────
   // Klucz: "<scope>|<sourceId>|<YYYY-MM-DD>". Brak wpisu = niewykonane.
 
@@ -381,26 +445,6 @@ class StorageService {
     } else {
       await _paymentDoneBox.delete(key);
     }
-  }
-
-  /// Przepina odhaczenia płatności na nowy klucz — przy przeniesieniu wydatku
-  /// między budżetami zmienia się i zakres, i `id`, a klucz zawiera oba
-  /// (`zakres|id|data`). Bez tego zapłacony wydatek wróciłby na listę
-  /// „Płatności" do odhaczenia. Zwraca liczbę przeniesionych wpisów.
-  Future<int> movePaymentDone(String fromPrefix, String toPrefix) async {
-    final moved = <String, bool>{};
-    for (final key in _paymentDoneBox.keys.toList()) {
-      final k = '$key';
-      if (!k.startsWith(fromPrefix)) continue;
-      if (_paymentDoneBox.get(key) == true) {
-        moved['$toPrefix${k.substring(fromPrefix.length)}'] = true;
-      }
-      await _paymentDoneBox.delete(key);
-    }
-    for (final e in moved.entries) {
-      await _paymentDoneBox.put(e.key, e.value);
-    }
-    return moved.length;
   }
 
   /// Wszystkie odhaczone płatności (do backupu). Klucz → true.
@@ -534,63 +578,6 @@ class StorageService {
     await _settingsBox.delete(StorageKeys.spendingAllocationLegacy(scope));
   }
 
-  /// Suma koperty „Na bieżące wydatki" danego zakresu (= Σ pozycji). `null` = pusto.
-  /// Silnik obliczeń dostaje jedną liczbę (jak dawniej) — matematyka bez zmian.
-  double? getSpendingAllocation(BudgetScope scope) {
-    final items = getSpendingAllocationItems(scope);
-    if (items.isEmpty) return null;
-    final sum = items.fold<double>(0, (a, b) => a + b.amount);
-    return sum > 0 ? sum : null;
-  }
-
-  /// Powiązanie zdjęcia wydatku z zapisaną pozycją budżetu (id → ścieżka do
-  /// prywatnej kopii w katalogu apki). LOKALNE, poza synchronizacją i backupem
-  /// — ścieżka nie ma sensu na drugim urządzeniu. Służy podglądowi zdjęcia
-  /// przy edycji zatwierdzonego wydatku.
-  Map<String, String> getReceiptPhotoPaths() {
-    final raw = _settingsBox.get(StorageKeys.receiptPhotoPaths);
-    if (raw is String && raw.isNotEmpty) {
-      try {
-        return (jsonDecode(raw) as Map).map((k, v) => MapEntry('$k', '$v'));
-      } catch (e) {
-        _log.warning('Nie udalo sie odczytac receiptPhotoPaths: $e');
-      }
-    }
-    return {};
-  }
-
-  String? getReceiptPhotoPath(String entryId) =>
-      getReceiptPhotoPaths()[entryId];
-
-  Future<void> setReceiptPhotoPath(String entryId, String path) async {
-    final map = getReceiptPhotoPaths()..[entryId] = path;
-    await _settingsBox.put(StorageKeys.receiptPhotoPaths, jsonEncode(map));
-  }
-
-  Future<void> removeReceiptPhotoPath(String entryId) async {
-    final map = getReceiptPhotoPaths();
-    if (map.remove(entryId) != null) {
-      await _settingsBox.put(StorageKeys.receiptPhotoPaths, jsonEncode(map));
-    }
-  }
-
-  /// Bieżące rozpoznane przez lokalny silnik AI, oczekujące na zatwierdzenie.
-  /// LOKALNE (jak koperta): poza synchronizacją, backupem i bilansem — do budżetu
-  /// trafiają dopiero po zatwierdzeniu (wtedy stają się zwykłym billPayment).
-  List<PendingReceiptScan> getPendingReceiptScans() {
-    final raw = _settingsBox.get(StorageKeys.pendingReceiptScans);
-    if (raw is String && raw.isNotEmpty) {
-      try {
-        return (jsonDecode(raw) as List)
-            .map((e) => PendingReceiptScan.fromJson(e as Map<String, dynamic>))
-            .toList();
-      } catch (e) {
-        _log.warning('Nie udalo sie odczytac pendingBillScans: $e');
-      }
-    }
-    return [];
-  }
-
   /// Tryb budżetu (preferencja UI, lokalna — poza sync). Default: oba zakresy
   /// (jak dotąd). Tryb jednozakresowy chowa przełącznik zakresu i zwalnia swipe.
   BudgetMode getBudgetMode() {
@@ -603,113 +590,6 @@ class StorageService {
 
   Future<void> setBudgetMode(BudgetMode mode) =>
       _settingsBox.put('budgetMode', mode.name);
-
-  /// Asystent AI (skan wydatków lokalnym silnikiem): opt-in, domyślnie
-  /// wyłączony. Wyłączony ukrywa opcje skanowania w menu „Dodaj wydatek".
-  bool getAiAssistantEnabled() =>
-      _settingsBox.get('aiAssistantEnabled', defaultValue: false) as bool;
-
-  Future<void> setAiAssistantEnabled(bool value) =>
-      _settingsBox.put('aiAssistantEnabled', value);
-
-  /// Archiwum wydatków: trwały zapis zdjęć zatwierdzonych wydatków do
-  /// publicznego katalogu `Documents/[podfolder]`. Opt-in, lokalne (poza sync).
-  bool getReceiptArchiveEnabled() =>
-      _settingsBox.get(StorageKeys.receiptArchiveEnabled, defaultValue: false)
-          as bool;
-
-  Future<void> setReceiptArchiveEnabled(bool value) =>
-      _settingsBox.put(StorageKeys.receiptArchiveEnabled, value);
-
-  /// Podfolder w Documents dla archiwum (domyślnie „Zostaje").
-  // ── Nazwy plikow w publicznym archiwum (per wydatek) ──────────────────────
-  //
-  // Zapamietujemy, pod jaka nazwa wydatek lezy w `Documents/<podfolder>`, bo
-  // przy podmianie docietego zdjecia trzeba usunac STARY plik — MediaStore nie
-  // nadpisuje po nazwie, tylko dokłada „nazwa (1).jpg". Nazwa zawiera date,
-  // nazwe i kwote, wiec po edycji wydatku nie da sie jej odtworzyc.
-
-  Map<String, String> getArchivedReceiptNames() {
-    final raw = _settingsBox.get('archivedReceiptNames');
-    if (raw is String && raw.isNotEmpty) {
-      try {
-        return (jsonDecode(raw) as Map).map((k, v) => MapEntry('$k', '$v'));
-      } catch (e) {
-        _log.warning('Nie udalo sie odczytac archivedReceiptNames: $e');
-      }
-    }
-    return {};
-  }
-
-  String? getArchivedReceiptName(String entryId) =>
-      getArchivedReceiptNames()[entryId];
-
-  Future<void> setArchivedReceiptName(String entryId, String filename) async {
-    final map = getArchivedReceiptNames()..[entryId] = filename;
-    await _settingsBox.put('archivedReceiptNames', jsonEncode(map));
-  }
-
-  Future<void> removeArchivedReceiptName(String entryId) async {
-    final map = getArchivedReceiptNames();
-    if (map.remove(entryId) != null) {
-      await _settingsBox.put('archivedReceiptNames', jsonEncode(map));
-    }
-  }
-
-  // ── „Udostepnij -> Zostaje": juz obsluzone udostepnienia ───────────────────
-  //
-  // Android przy wznowieniu zadania z listy ostatnich potrafi PONOWIC pierwotny
-  // intent ACTION_SEND, wiec `getInitialMedia()` oddaje to samo zdjecie przy
-  // kolejnych startach aplikacji. Bez trwalej pamieci co juz przyjelismy, ten
-  // sam wydatek dokladal sie do kolejki po kazdym uruchomieniu.
-  //
-  // Klucz to „podpis" pliku (sciezka + rozmiar + czas modyfikacji), nie sama
-  // sciezka: katalog udostepnien bywa recyklingowany pod te sama nazwe.
-
-  /// Podpisy ostatnio obsluzonych udostepnien (najnowsze na koncu).
-  List<String> getHandledShares() {
-    final raw = _settingsBox.get('handledShares');
-    if (raw is String && raw.isNotEmpty) {
-      try {
-        return (jsonDecode(raw) as List).map((e) => '$e').toList();
-      } catch (e) {
-        _log.warning('Failed to parse handledShares: $e');
-      }
-    }
-    return const [];
-  }
-
-  /// Zapisuje podpisy; trzymamy ostatnie [max] — to zabezpieczenie przed
-  /// powtorka, nie historia.
-  Future<void> setHandledShares(List<String> signatures, {int max = 30}) {
-    final trimmed = signatures.length > max
-        ? signatures.sublist(signatures.length - max)
-        : signatures;
-    return _settingsBox.put('handledShares', jsonEncode(trimmed));
-  }
-
-  String getReceiptArchiveSubfolder() =>
-      _settingsBox.get('receiptArchiveSubfolder', defaultValue: 'Zostaje')
-          as String;
-
-  Future<void> setReceiptArchiveSubfolder(String value) {
-    final clean = value.trim().replaceAll(RegExp(r'^/+|/+$'), '');
-    return _settingsBox.put(
-      'receiptArchiveSubfolder',
-      clean.isEmpty ? 'Zostaje' : clean,
-    );
-  }
-
-  Future<void> savePendingReceiptScans(List<PendingReceiptScan> items) async {
-    if (items.isEmpty) {
-      await _settingsBox.delete(StorageKeys.pendingReceiptScans);
-    } else {
-      await _settingsBox.put(
-        StorageKeys.pendingReceiptScans,
-        jsonEncode(items.map((e) => e.toJson()).toList()),
-      );
-    }
-  }
 
   // ── Notification preferences ───────────────────────────────────────────────
 
@@ -725,20 +605,7 @@ class StorageService {
   Future<void> setNotifyRenewalReminders(bool value) async =>
       _settingsBox.put('notifyRenewalReminders', value);
 
-  // ── Personalizacja Dashboardu (full/compact per sekcja) ─────────────────────
-
-  bool getDashboardSummaryCompact() =>
-      _settingsBox.get('dashboardSummaryCompact', defaultValue: false) as bool;
-
-  Future<void> setDashboardSummaryCompact(bool value) async =>
-      _settingsBox.put('dashboardSummaryCompact', value);
-
-  bool getDashboardSubscriptionsCompact() =>
-      _settingsBox.get('dashboardSubscriptionsCompact', defaultValue: false)
-          as bool;
-
-  Future<void> setDashboardSubscriptionsCompact(bool value) async =>
-      _settingsBox.put('dashboardSubscriptionsCompact', value);
+  // ── Zakładka Budżet: zwinięcie sekcji kalendarza ──────────────────────────────
 
   bool getDashboardMonthCompact() =>
       _settingsBox.get('dashboardMonthCompact', defaultValue: false) as bool;
@@ -792,31 +659,6 @@ class StorageService {
   Future<void> setFlowSpendingCollapsed(String section, bool value) async =>
       _settingsBox.put('flowSpendingCollapsed|$section', value);
 
-  bool getDashboardAutoPaymentsCompact() =>
-      _settingsBox.get('dashboardAutoPaymentsCompact', defaultValue: false)
-          as bool;
-
-  Future<void> setDashboardAutoPaymentsCompact(bool value) async =>
-      _settingsBox.put('dashboardAutoPaymentsCompact', value);
-
-  /// Sekcja „Rzeczywisty bilans miesiąca" — domyślnie ROZWINIĘTA: to główne
-  /// pytanie tej zakładki, a rozpis tłumaczy kwotę pod nim.
-  bool getDashboardMonthBalanceCompact() =>
-      _settingsBox.get('dashboardMonthBalanceCompact', defaultValue: false)
-          as bool;
-
-  Future<void> setDashboardMonthBalanceCompact(bool value) async =>
-      _settingsBox.put('dashboardMonthBalanceCompact', value);
-
-  /// Akordeon „Koszty roczne" (Plan) — domyślnie ZWINIĘTY: skala roczna to
-  /// doczytanie, codzienne pytanie dotyczy miesiąca.
-  bool getDashboardAnnualCostsCompact() =>
-      _settingsBox.get('dashboardAnnualCostsCompact', defaultValue: true)
-          as bool;
-
-  Future<void> setDashboardAnnualCostsCompact(bool value) async =>
-      _settingsBox.put('dashboardAnnualCostsCompact', value);
-
   /// Sekcja „Szczegóły" na zakładce Plan — domyślnie ZWINIĘTA: wspólne wykresy
   /// nad nią pokazują całość, a karty pojedynczych strumieni to doczytanie.
   bool getDashboardPlanDetailsCompact() =>
@@ -825,76 +667,6 @@ class StorageService {
 
   Future<void> setDashboardPlanDetailsCompact(bool value) async =>
       _settingsBox.put('dashboardPlanDetailsCompact', value);
-
-  /// Początek ewidencji budżetu („YYYY-MM", per zakres) — od kiedy dane w tej
-  /// aplikacji są kompletne. Miesiące wcześniejsze nie wchodzą do podsumowania
-  /// rocznego ani do planu, z którym się je porównuje: budżet prowadzony od
-  /// lipca wygladalby inaczej na wykonanym w połowie tylko dlatego, że przez
-  /// pół roku nie było czego zapisywać. `null` = cały rok.
-  String? getTrackingStartMonth(BudgetScope scope) {
-    final v = _settingsBox.get('trackingStartMonth|${scope.name}');
-    return v is String && v.isNotEmpty ? v : null;
-  }
-
-  Future<void> setTrackingStartMonth(
-    BudgetScope scope,
-    String? monthKey,
-  ) async {
-    final key = 'trackingStartMonth|${scope.name}';
-    if (monthKey == null) {
-      await _settingsBox.delete(key);
-    } else {
-      await _settingsBox.put(key, monthKey);
-    }
-  }
-
-  /// Ujęcie wykresów na zakładce „Plan" (`plan` / `actual`, ADR-028) — osobno
-  /// dla trendu i dla podziału na kategorie. Osobno, bo oba widoki służą do
-  /// PORÓWNYWANIA: jeden wspólny przełącznik odbierałby możliwość zestawienia
-  /// planowego trendu z realnym podziałem. Domyślnie plan — tak nazywa się
-  /// zakładka, a rzeczywistość jest doczytaniem.
-  String getPlanTrendView() =>
-      _settingsBox.get('planTrendView', defaultValue: 'plan') as String;
-
-  Future<void> setPlanTrendView(String value) async =>
-      _settingsBox.put('planTrendView', value);
-
-  String getPlanCategoriesView() =>
-      _settingsBox.get('planCategoriesView', defaultValue: 'plan') as String;
-
-  Future<void> setPlanCategoriesView(String value) async =>
-      _settingsBox.put('planCategoriesView', value);
-
-  /// Podsumowanie roczne — ujęcie i zwinięcie. Domyślnie `actual`: cała sekcja
-  /// odpowiada na pytanie „ile już wydaliśmy", a plan jest tu tłem porównania.
-  String getPlanYearView() =>
-      _settingsBox.get('planYearView', defaultValue: 'actual') as String;
-
-  Future<void> setPlanYearView(String value) async =>
-      _settingsBox.put('planYearView', value);
-
-  /// Grupy zakładki „Plan" — zwinięcie całej grupy kart tapnięciem w jej
-  /// nagłówek. Domyślnie rozwinięte: to jest treść zakładki, a nie doczytanie.
-  bool getPlanMonthGroupCompact() =>
-      _settingsBox.get('planMonthGroupCompact', defaultValue: false) as bool;
-
-  Future<void> setPlanMonthGroupCompact(bool value) async =>
-      _settingsBox.put('planMonthGroupCompact', value);
-
-  bool getPlanStatsGroupCompact() =>
-      _settingsBox.get('planStatsGroupCompact', defaultValue: false) as bool;
-
-  Future<void> setPlanStatsGroupCompact(bool value) async =>
-      _settingsBox.put('planStatsGroupCompact', value);
-
-  /// Sekcja „Podsumowanie roczne" — domyślnie ZWINIĘTA: dwanaście wierszy to
-  /// doczytanie, a nagłówek z paskiem odpowiada na pytanie od razu.
-  bool getDashboardAnnualSummaryCompact() =>
-      _settingsBox.get('dashboardAnnualSummaryCompact', defaultValue: true)
-          as bool;
-
-  Future<void> setDashboardAnnualSummaryCompact(bool value) async =>
-      _settingsBox.put('dashboardAnnualSummaryCompact', value);
 
   /// Zwinięte sekcje list „Wydatki" i „Wpływy" (klucze sekcji, nie tytuły).
   /// Jedna lista zamiast flagi na sekcję — sekcji przybywa (subskrypcje,

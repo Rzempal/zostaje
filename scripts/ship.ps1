@@ -44,6 +44,26 @@ function Show-Warning($msg) { Write-Host $msg -ForegroundColor Yellow }
 function Show-Error($msg) { Write-Host $msg -ForegroundColor Red }
 function Show-Step($n, $msg) { Write-Host "`n[$n/5] $msg" -ForegroundColor Magenta }
 
+# Ponowienie zapytania przy awarii sieci (jak w publish-release.ps1). Lacze do
+# api.github.com bywa kaprysne: pojedyncze zapytanie potrafi czekac 20 s i pasc,
+# a nastepne przechodzi w ulamku sekundy. Blad 4xx to odpowiedz, nie awaria —
+# ponawianie nic nie da, wiec wychodzi od razu.
+function Invoke-WithRetry {
+    param([scriptblock]$Action, [int]$Attempts = 3, [int]$DelaySeconds = 5, [string]$What = "operacja")
+    for ($i = 1; $i -le $Attempts; $i++) {
+        try {
+            return & $Action
+        }
+        catch {
+            $status = $_.Exception.Response.StatusCode.value__
+            if ($status -ge 400 -and $status -lt 500) { throw }
+            if ($i -eq $Attempts) { throw }
+            Show-Warning "  $What nie powiodla sie ($i/$Attempts): $($_.Exception.Message)"
+            Start-Sleep -Seconds ($DelaySeconds * $i)
+        }
+    }
+}
+
 $PROJECT_ROOT = Split-Path -Parent $PSScriptRoot
 $MOBILE_DIR = Join-Path $PROJECT_ROOT "apps\karton_subs"
 
@@ -63,11 +83,20 @@ Show-Step 0 "Kontrola przed wydaniem"
 
 Push-Location $PROJECT_ROOT
 try {
-    # 1. Galaz: wydajemy z main (workflow trunk-based, CLAUDE.md).
+    # 1. Galaz: PROD wydajemy wylacznie z main (workflow trunk-based, CLAUDE.md).
+    #    DEV wolno wydac z galezi roboczej — przebudowe testujemy na telefonie
+    #    bez scalania jej do main, ktory w tym czasie zostaje wersja PROD.
     $branch = git rev-parse --abbrev-ref HEAD
-    if ($branch -ne "main") {
-        Show-Error "Jestes na galezi '$branch', a wydanie idzie z 'main'."
+    if ($branch -eq "HEAD") {
+        Show-Error "Odlaczony HEAD — wydanie wymaga galezi (tag i push ida za galezia)."
         exit 1
+    }
+    if ($Channel -eq "production" -and $branch -ne "main") {
+        Show-Error "Jestes na galezi '$branch', a wydanie PROD idzie wylacznie z 'main'."
+        exit 1
+    }
+    if ($branch -ne "main") {
+        Show-Warning "  galaz robocza: $branch (wydanie DEV z galezi)"
     }
 
     # 2. Dostep do GitHuba — sprawdzamy TERAZ, bo publikacja jest ostatnim
@@ -108,14 +137,29 @@ try {
                 Accept        = "application/vnd.github+json"
                 "User-Agent"  = "zostaje-release-script"
             }
-            $githubReachable = $true
+            # Tylko odpowiedz 404 znaczy „release nie istnieje". Brak odpowiedzi
+            # w limicie czasu to „nie wiem" — dawniej oba stany konczyly sie
+            # komunikatem o braku wydania i blokowaly PROD bez powodu.
+            $prevState = "published"   # published | missing | unreachable
             try {
-                Invoke-RestMethod -Uri "https://api.github.com/repos/$slug" `
-                    -Headers $ghHeaders -TimeoutSec 20 | Out-Null
+                Invoke-WithRetry -What "polaczenie z GitHubem" -Action {
+                    Invoke-RestMethod -Uri "https://api.github.com/repos/$slug" `
+                        -Headers $ghHeaders -TimeoutSec 20 | Out-Null
+                }
+                try {
+                    Invoke-WithRetry -What "sprawdzenie poprzedniego wydania" -Action {
+                        Invoke-RestMethod -Uri "https://api.github.com/repos/$slug/releases/tags/$prevTag" `
+                            -Headers $ghHeaders -TimeoutSec 20 | Out-Null
+                    }
+                }
+                catch {
+                    if ($_.Exception.Response.StatusCode.value__ -eq 404) { $prevState = "missing" }
+                    else { throw }
+                }
             }
-            catch { $githubReachable = $false }
+            catch { $prevState = "unreachable" }
 
-            if (-not $githubReachable) {
+            if ($prevState -eq "unreachable") {
                 if ($Channel -eq "production") {
                     Show-Error "GitHub nieosiagalny — nie moge sprawdzic, czy poprzednie wydanie jest opublikowane."
                     Show-Info "Wydaj bez publikacji: -SkipRelease (i opublikuj, gdy wroci polaczenie)."
@@ -123,28 +167,19 @@ try {
                 }
                 Show-Warning "  GitHub nieosiagalny — pomijam kontrole publikacji (DEV)."
             }
+            elseif ($prevState -eq "missing") {
+                if ($Channel -eq "production") {
+                    Show-Error "Poprzednie wydanie PROD ($prev) nie ma release'u na GitHubie."
+                    Show-Info "Opublikuj je: .\scripts\publish-release.ps1 -Channel production"
+                    Show-Info "Albo wydaj bez publikacji: -SkipRelease"
+                    exit 1
+                }
+                # DEV bywa wypuszczany kilka razy pod rzad w trakcie pracy —
+                # blokada bylaby tu tylko przeszkoda.
+                Show-Warning "  Poprzednie wydanie DEV ($prev) nie ma release'u — nadrobimy przy tym."
+            }
             else {
-                $prevPublished = $true
-                try {
-                    Invoke-RestMethod -Uri "https://api.github.com/repos/$slug/releases/tags/$prevTag" `
-                        -Headers $ghHeaders -TimeoutSec 20 | Out-Null
-                }
-                catch { $prevPublished = $false }
-
-                if (-not $prevPublished) {
-                    if ($Channel -eq "production") {
-                        Show-Error "Poprzednie wydanie PROD ($prev) nie ma release'u na GitHubie."
-                        Show-Info "Opublikuj je: .\scripts\publish-release.ps1 -Channel production"
-                        Show-Info "Albo wydaj bez publikacji: -SkipRelease"
-                        exit 1
-                    }
-                    # DEV bywa wypuszczany kilka razy pod rzad w trakcie pracy —
-                    # blokada bylaby tu tylko przeszkoda.
-                    Show-Warning "  Poprzednie wydanie DEV ($prev) nie ma release'u — nadrobimy przy tym."
-                }
-                else {
-                    Show-Success "  poprzednie wydanie ($prev) opublikowane"
-                }
+                Show-Success "  poprzednie wydanie ($prev) opublikowane"
             }
         }
     }
@@ -199,7 +234,7 @@ try {
     # ── [2/5] Commit ─────────────────────────────────────────────────────────
     Show-Step 2 "Commit"
     git add .
-    $commitMsg = "$Message`n`nWydanie $Channel $version.`n`nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+    $commitMsg = "$Message`n`nWydanie $Channel $version.`n`nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
     git commit -m $commitMsg
     if ($LASTEXITCODE -ne 0) {
         Show-Warning "Nie bylo czego commitowac — ide dalej."
@@ -208,10 +243,11 @@ try {
     # ── [3/5] Push ───────────────────────────────────────────────────────────
     # Z ponowieniem: chwilowa awaria sieci nie moze zostawiac wydania w polowie
     # (kod zbudowany i wyslany na serwer, ale commit tylko lokalnie).
-    Show-Step 3 "Push na main"
+    Show-Step 3 "Push na $branch"
     $pushed = $false
     foreach ($attempt in 1..3) {
-        git push origin main
+        # -u: pierwszy push galezi roboczej zaklada jej odpowiednik na serwerze.
+        git push -u origin $branch
         if ($LASTEXITCODE -eq 0) { $pushed = $true; break }
         if ($attempt -lt 3) {
             Show-Warning "  push nie powiodl sie ($attempt/3) — ponawiam za $(5 * $attempt) s"
@@ -220,7 +256,7 @@ try {
     }
     if (-not $pushed) {
         Show-Error "Push odrzucony po trzech probach."
-        Show-Info "Zsynchronizuj (git pull --rebase origin main), potem: .\scripts\publish-release.ps1 -Channel $Channel"
+        Show-Info "Zsynchronizuj (git pull --rebase origin $branch), potem: .\scripts\publish-release.ps1 -Channel $Channel"
         exit 1
     }
 

@@ -1,7 +1,7 @@
 # ADR-013: Skanowanie rachunków lokalnym silnikiem AI (zero chmury)
 
 Data: 2026-07-18
-Status: zaakceptowany
+Status: zastąpiony przez [ADR-035](ADR-035-plan-roczny-pozycje-z-miesiacami.md) (2026-10-07) — skan paragonów usunięty razem z zakładką Bieżące (kod w tagu v0.26.26100600)
 
 ## Kontekst
 

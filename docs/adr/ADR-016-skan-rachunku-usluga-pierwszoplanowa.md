@@ -1,7 +1,7 @@
 # ADR-016: Skan rachunku w usłudze pierwszoplanowej + wybudzanie uśpionego silnika
 
 Data: 2026-07-25
-Status: zaakceptowany
+Status: zastąpiony przez [ADR-035](ADR-035-plan-roczny-pozycje-z-miesiacami.md) (2026-10-07) — skan paragonów usunięty, usługa pierwszoplanowa zniknęła
 
 ## Kontekst
 

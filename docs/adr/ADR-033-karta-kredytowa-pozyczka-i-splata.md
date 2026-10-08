@@ -1,7 +1,7 @@
 # ADR-033: Karta kredytowa — pożyczka i spłata jako pozycje spięte `creditLinkId`
 
 Data: 2026-08-09
-Status: zaakceptowany
+Status: częściowo zastąpiony przez [ADR-035](ADR-035-plan-roczny-pozycje-z-miesiacami.md) (2026-10-07) — automat karty w Bieżących usunięty; karta z okresem bezodsetkowym zostaje dla pożyczki z karty w planie
 
 ## Kontekst
 

@@ -24,10 +24,32 @@
 | 13 | Karta kredytowa + scalanie wydatkow | ✅ Ukonczona (2026-08-18) |
 | 14 | Proces wydawania wersji | ✅ Ukonczona (2026-08-02) |
 | 15 | Przejscie na Google Play | Planowana (kierunek bez terminu — ADR-031) |
+| 16 | Przebudowa: plan roczny (ADR-035) | 🚧 W trakcie na galezi `przebudowa-plan-roczny` (E0–E3b gotowe) |
 
-> **Stan na 2026-10-04:** ostatnie wydanie PROD to `v0.26.26082300` (2026-08-23); od tego
-> dnia w repozytorium nie bylo zmian. Otwarte zadania zebrane w sekcji
-> „Nastepne kroki" (przed Backlogiem).
+> **Stan na 2026-10-06:** ostatnie wydanie PROD to `v0.26.26100600` (suma grupy
+> z korektami miesiaca) — ostatnia wersja przed przebudowa. Faza 16 idzie na
+> galezi; `main` zostaje wersja PROD do czasu przelaczenia (E6). Zadania
+> z „Nastepnych krokow" dotyczace synchronizacji, korekt i porownan plan/realne
+> traca sens po przebudowie — przejrzec po E6.
+
+---
+
+## Faza 16: Przebudowa — plan roczny 🚧
+
+**Cel:** budzet planowany rocznie jak arkusz (pozycje × miesiace), bez cykli,
+korekt, przelewow wewnetrznych i porownan plan/realne — [ADR-035](adr/ADR-035-plan-roczny-pozycje-z-miesiacami.md).
+
+| Etap | Zakres | Status |
+|------|--------|--------|
+| E0 | Galaz, wydanie DEV z galezi, odpornosc skryptu na przestoje GitHuba | ✅ 2026-10-06 |
+| E1 | Model pozycji z miesiacami, konwersja (stare dane nietkniete), raport w Developer Tools | ✅ 2026-10-06 (do sprawdzenia na DEV) |
+| E2 | Zakladka „Planowanie" (wplywy + wydatki + karta + subskrypcje), miesiace pozycji z zaznaczaniem, plan na kolejny rok; bez „Wplywow" i „Cyklicznych" | ✅ 2026-10-06 (do sprawdzenia na DEV) |
+| E3 | „Budzet" = statystyki roku (srednie, trend, kategorie) + kalendarz platnosci | ✅ 2026-10-06 (do sprawdzenia na DEV) |
+| E3b | Bez Biezacych i Plannera: koperta → pozycje planu, usuniety skan paragonow (ML Kit, silnik AI, usluga w tle), nawigacja Budzet / Planowanie / Ustawienia; APK 44,7 → 32,0 MB | ✅ 2026-10-07 (do sprawdzenia na DEV) |
+| E4 | Kopia zapasowa v8, Excel jako tabela roku, usuniecie synchronizacji | ✅ |
+| E5 | Sprzatanie kodu, testow i dokumentacji; statusy zastapionych ADR | ✅ |
+| E6 | Przelaczenie PROD po akceptacji testow na DEV | ⏳ |
+| E7 | Po migracji PROD: usuniecie danych synchronizacji domowej z Supabase (projekt „karton", wspoldzielony — tylko obiekty sync tej aplikacji, za zgoda wlasciciela) | ⏳ |
 
 ---
 

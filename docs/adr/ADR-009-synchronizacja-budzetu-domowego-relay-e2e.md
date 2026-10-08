@@ -1,7 +1,7 @@
 # ADR-009: Synchronizacja budzetu domowego — relay w chmurze z szyfrowaniem E2E
 
 Data: 2026-06-18
-Status: zaakceptowany
+Status: zastąpiony przez [ADR-035](ADR-035-plan-roczny-pozycje-z-miesiacami.md) (2026-10-07) — synchronizacja usunięta (nikt jej nie używał); budżet udostępnia się arkuszem planu
 
 ## Kontekst
 

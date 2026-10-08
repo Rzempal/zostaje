@@ -1,7 +1,7 @@
 # ADR-019: Podział sekcji aplikacji — nazwy i właściciele tematów
 
 Data: 2026-07-26
-Status: zaakceptowany (wdrażany etapami)
+Status: zastąpiony przez [ADR-035](ADR-035-plan-roczny-pozycje-z-miesiacami.md) (2026-10-07) — zakładki: Budżet, Planowanie, Ustawienia
 
 ## Kontekst
 

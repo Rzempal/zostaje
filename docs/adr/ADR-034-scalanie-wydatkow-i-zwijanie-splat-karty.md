@@ -1,7 +1,7 @@
 # ADR-034: Scalanie wydatków w jeden wpis i zwijanie spłat karty
 
 Data: 2026-08-17
-Status: zaakceptowany
+Status: zastąpiony przez [ADR-035](ADR-035-plan-roczny-pozycje-z-miesiacami.md) (2026-10-07) — bez Bieżących nie ma scalania wydatków ani zwijania spłat
 
 > **Powiązane:** [ADR-033 Karta kredytowa](ADR-033-karta-kredytowa-pozyczka-i-splata.md)
 > | [ADR-032 „Bieżące" i „Cykliczne"](ADR-032-biezace-i-cykliczne-zamiast-rachunkow.md)

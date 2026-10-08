@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:karton_subs/services/budget_service.dart';
+import 'package:karton_subs/models/cashflow.dart';
 import 'package:karton_subs/widgets/budget_widgets.dart';
 
 CalendarItem _item(String name, double amount, CalendarItemKind kind) =>

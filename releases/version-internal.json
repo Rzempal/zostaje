@@ -1,5 +1,33 @@
 {
+  "releaseNotes": "- Planowanie: grupa Wydatki = pozycje + subskrypcje, pasek proporcji i przelaczniki list\n- Karta kredytowa poza wydatkami",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026100800",
+  "version": "0.26.26100800",
+  "versionCode": 2026100800,
   "changelog": [
+    {
+      "version": "0.26.26100800",
+      "notes": "- Planowanie: grupa Wydatki = pozycje + subskrypcje, pasek proporcji i przelaczniki list\n- Karta kredytowa poza wydatkami"
+    },
+    {
+      "version": "0.26.26100702",
+      "notes": "- Planowanie: Subskrypcje i Karta kredytowa wciete pod Wydatkami\n- Minus przy wydatkach w karcie Zostaje\n- Excel: wydatki jako liczby ujemne\n- Usuniety nieuzywany kod starego budzetu"
+    },
+    {
+      "version": "0.26.26100701",
+      "notes": "- Kopia zapasowa niesie plan roczny (wersja 8)\n- Eksport/import planu w Excelu: tabela roku, arkusz na rok\n- Usunieta synchronizacja budzetu domowego\n- Minus przy sumach wydatkow i subskrypcji w naglowkach\n- Naprawa: po odtworzeniu kopii znikaly stare subskrypcje dopiero po restarcie"
+    },
+    {
+      "version": "0.26.26100700",
+      "notes": "- Przebudowa E3b: zakladka Biezace i skan paragonow usuniete\n- Planner Na biezace wydatki zamieniony na zwykle pozycje planu (co miesiac)\n- Nawigacja: Budzet, Planowanie, Ustawienia\n- Aplikacja mniejsza o ok. 13 MB"
+    },
+    {
+      "version": "0.26.26100602",
+      "notes": "- Przebudowa, etapy 2-3: nowa zakladka Planowanie - wplywy, wydatki, karta i subskrypcje na jednym ekranie\n- Pozycja ma miesiace z wlasnymi kwotami; kilka miesiecy mozna zmienic naraz\n- Pozyczka z karty: wplyw w miesiacu uzycia i splata po okresie bezodsetkowym\n- Budzet: Statystyki roku (srednie, miesiace, kategorie) i Kalendarz platnosci\n- Zakladki Wplywy i Cykliczne zastapione Planowaniem"
+    },
+    {
+      "version": "0.26.26100601",
+      "notes": "- Przebudowa, etap 1: nowy plan roczny liczony w tle ze starych pozycji (stare dane bez zmian)\n- Developer Tools: raport konwersji planu (stary model vs nowy plan)"
+    },
     {
       "version": "0.26.26100600",
       "notes": "- Cykliczne i Wplywy: przy wybranym miesiacu suma grupy uwzglednia korekty kwot, tak jak pozycje pod nia"
@@ -15,35 +43,7 @@
     {
       "version": "0.26.26082201",
       "notes": "- Poprawka: nazwa sklepu w potwierdzeniu z portfela telefonu byla pusta\n- Odczyt nie zaklada juz, ze naglowek stoi przed nazwa — OCR zwraca bloki w dowolnej kolejnosci"
-    },
-    {
-      "version": "0.26.26082200",
-      "notes": "- Potwierdzenie platnosci z Samsung Wallet czytane szybka sciezka OCR w okolo sekunde\n- Kwota, data i nazwa sklepu prosto z dokumentu, bez zgadywania roku\n- Stan platnosci i nazwa karty nie wplywaja na odczyt"
-    },
-    {
-      "version": "0.26.26081801",
-      "notes": "- Jednorazowe wplywy z karty (pozyczki gotowkowe) zwijaja sie we wlasna grupe\n- Lustrzane wplywy z zakupow zostaja w osobnej grupie, bo ich suma znaczy co innego\n- Grupowanie idzie po karcie, a nie po nazwie wpisu"
-    },
-    {
-      "version": "0.26.26081800",
-      "notes": "- Lustrzane wplywy z karty zwijaja sie na Wplywach w jeden wiersz z suma\n- Pozycje rozwinietej grupy karty maja wciecie, wiec widac przynaleznosc\n- Wplyw wpisany recznie (pozyczka gotowkowa) zostaje osobnym wierszem"
-    },
-    {
-      "version": "0.26.26081700",
-      "notes": "- Scalanie zaznaczonych wydatkow w jeden wpis: suma kwot, data najstarszej pozycji, wzorzec wybierany z listy\n- Splaty karty kredytowej zwijaja sie w jeden wiersz z suma skladnikow"
-    },
-    {
-      "version": "0.25.26081401",
-      "notes": "- Pigulka Anuluj / Zapisz ma teraz to samo rozmyte szklo co pasek nawigacji — wczesniej tresc pod nia przeswitywala\n- W arkuszach pigulka plywa nad trescia zamiast zajmowac caly wiersz, wiec przy edycji kategorii nie zaslania juz siatki ikon"
-    },
-    {
-      "version": "0.25.26081400",
-      "notes": "- Zapis w stalym miejscu na dole ekranu zamiast przycisku na koncu przewijanej listy\n- Pigulka Anuluj / Zapisz jedzie nad klawiatura, wiec jest widoczna caly czas\n- Dotyczy dodawania i edycji wydatku biezacego, pozycji budzetu i subskrypcji oraz arkuszy metody platnosci i kategorii\n- Zapis znika z paska tytulu, gdzie przy edycji dublowal przycisk z dolu"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026100600",
-  "version": "0.26.26100600",
-  "versionCode": 2026100600,
-  "releaseDate": "2026-10-06T15:40:12Z",
-  "releaseNotes": "- Cykliczne i Wplywy: przy wybranym miesiacu suma grupy uwzglednia korekty kwot, tak jak pozycje pod nia"
+  "releaseDate": "2026-10-08T05:19:55Z"
 }

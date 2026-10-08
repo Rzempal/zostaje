@@ -2,27 +2,24 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:karton_subs/controllers/receipt_scan_controller.dart';
 import 'package:karton_subs/models/spending_allocation_item.dart';
 import 'package:karton_subs/models/budget_entry.dart';
-import 'package:karton_subs/models/pending_receipt_scan.dart';
 import 'package:karton_subs/models/subscription.dart';
 import 'package:karton_subs/services/backup_service.dart';
 import 'package:karton_subs/services/storage_service.dart';
-import 'package:karton_subs/services/sync_merge.dart';
 
 import 'support/hive_test_env.dart';
 
 /// STRAŻNIK FORMATU ZAPISU (ADR-032).
 ///
 /// Te napisy nie są nazwami w kodzie — są **wartościami leżącymi na dyskach
-/// telefonów**: w bazie Hive, w kopiach `.zostaje` i w paczkach synchronizacji
-/// budżetu domowego. Nazwy w kodzie wolno zmieniać dowolnie; te wartości nie.
+/// telefonów**: w bazie Hive i w kopiach `.zostaje`. Nazwy w kodzie wolno
+/// zmieniać dowolnie; te wartości nie.
 ///
-/// Najostrzejszy przypadek to synchronizacja: dwa telefony aktualizują się
-/// w różnym czasie, więc telefon na starszej wersji musi dalej rozumieć paczkę
-/// z nowszego. Zmiana `"type":"billPayment"` znaczy „pozycje znikają drugiej
-/// osobie", a nie „testy na czerwono".
+/// Najostrzejszy przypadek to powrót do poprzedniej wersji aplikacji
+/// (ADR-035): stara wersja czyta te same pudełka i te same kopie, więc zmiana
+/// `"type":"billPayment"` znaczy „pozycje znikają po powrocie", a nie „testy
+/// na czerwono".
 ///
 /// Jeśli ten plik świeci na czerwono po refaktorze nazw — to nie test jest do
 /// poprawki, tylko refaktor przeciekł do formatu zapisu.
@@ -96,42 +93,9 @@ void main() {
       expect(raw, isNotNull);
       expect(raw.toString(), contains('Paliwo'));
     });
-
-    test('kolejka skanów siedzi pod „pendingBillScans"', () async {
-      await storage.savePendingReceiptScans([
-        PendingReceiptScan(
-          id: 's1',
-          imagePath: '/tmp/a.jpg',
-          scope: BudgetScope.personal,
-          status: PendingScanStatus.values.first,
-          createdAt: DateTime(2026, 1, 1),
-        ),
-      ]);
-
-      expect(Hive.box('settings').get('pendingBillScans'), isNotNull);
-    });
-
-    test('katalog zdjęć skanu to „bill_scans"', () async {
-      // Ścieżka wpisana w kolejce skanów wskazuje na ten katalog. Zmiana nazwy
-      // osierociłaby zdjęcia czekające na zatwierdzenie.
-      expect(ReceiptScanController.scansDirName, 'bill_scans');
-    });
   });
 
-  group('Format zapisu — klucze paczki synchronizacji i kopii', () {
-    test('paczka synchronizacji niesie Planner pod „billsAllocation"', () {
-      final json = SyncMerge.encodeSnapshot(
-        const [],
-        allocation: const [
-          SpendingAllocationItem(id: 'a', name: 'Paliwo', amount: 300),
-        ],
-      );
-
-      // Telefon na starszej wersji szuka DOKŁADNIE tej nazwy sekcji.
-      expect(json, contains('"billsAllocation"'));
-      expect(SyncMerge.decodeSnapshotFull(json).allocation, hasLength(1));
-    });
-
+  group('Format zapisu — klucze kopii', () {
     test('kopia `.zostaje` niesie Planner pod „billsAllocation"', () async {
       await storage.setSpendingAllocationItems(BudgetScope.personal, const [
         SpendingAllocationItem(id: 'a', name: 'Paliwo', amount: 300),

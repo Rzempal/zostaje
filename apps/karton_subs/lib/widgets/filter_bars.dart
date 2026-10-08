@@ -114,6 +114,11 @@ class TimeFilterBar extends StatelessWidget {
   /// Akcja przyklejona na końcu paska lat (np. „pokaż ukryte").
   final Widget? action;
 
+  /// Czy jest „Wszystkie lata" (brak filtra roku). Plan roczny (ADR-035)
+  /// zawsze pokazuje konkretny rok — średnia „ze wszystkich lat" nic by nie
+  /// mówiła — więc tam rok da się tylko przełączyć, nie odznaczyć.
+  final bool allowAllYears;
+
   const TimeFilterBar({
     super.key,
     required this.years,
@@ -125,6 +130,7 @@ class TimeFilterBar extends StatelessWidget {
     required this.onToday,
     this.todaySelected = false,
     this.action,
+    this.allowAllYears = true,
   });
 
   @override
@@ -142,12 +148,15 @@ class TimeFilterBar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         scrollDirection: Axis.horizontal,
         children: [
-          chip('Wszystkie lata', activeYear == null, () => onSelectYear(null)),
+          if (allowAllYears)
+            chip('Wszystkie lata', activeYear == null, () => onSelectYear(null)),
           ...years.map(
             (y) => chip(
               '$y',
               activeYear == y && !todaySelected,
-              () => onSelectYear(activeYear == y ? null : y),
+              () => onSelectYear(
+                allowAllYears && activeYear == y ? null : y,
+              ),
             ),
           ),
           chip('Dzisiaj', todaySelected, onToday),

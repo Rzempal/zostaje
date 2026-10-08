@@ -114,7 +114,35 @@ erDiagram
 
 ---
 
-## Encja: BudgetEntry (budzet domowy)
+## Encja: PlanPosition (plan roczny, ADR-035)
+
+Pozycja planu — wiersz tabeli roku. Box `plan_positions` (JSON, klucz = `id`),
+wszystkie budzety w jednym pudelku.
+
+| Pole | Typ | Wymagane | Opis |
+|------|-----|----------|------|
+| `id` | String | tak | Po konwersji = `id` starej pozycji (odhaczenia platnosci przetrwaly); pozycje z Plannera: `envelope:<id>` |
+| `budgetId` | String | tak | `personal` / `household` (dawne zakresy; docelowo budzety z wlasnymi nazwami) |
+| `name` | String | tak | |
+| `kind` | String | tak | `income` / `expense` / `cardLoan` / `cardRepayment`; nieznana wartosc → `expense` |
+| `currency` | String | tak | Jak w subskrypcjach |
+| `categoryId`, `paymentMethod`, `day`, `note` | — | nie | Metoda platnosci po NAZWIE; `day` = domyslny dzien platnosci |
+| `archived` | bool | nie | Ukryta, poza sumami |
+| `months` | Map | tak | „RRRR-MM" → `{amount, day?}`. Brak miesiaca = pozycja wtedy nie obowiazuje |
+| `linkId` | String | nie | Para karty: `cardLoan` + `cardRepayment` |
+| `createdAt`, `updatedAt` | ISO8601 | — | |
+
+Ustawienia konwersji: `planConversionVersion` (wersja regul, ktora zbudowala plan)
+i `planEnvelopeMigrated` (pozycje Plannera dolozone). Oba zerowane przy odtworzeniu
+kopii z planem.
+
+---
+
+## Encja: BudgetEntry (archiwum sprzed ADR-035)
+
+> Stary model budzetu. Aplikacja go nie zmienia — czyta go tylko konwersja na plan
+> roczny i kopia zapasowa (sekcje archiwalne). Opis zostaje dla powrotu do
+> poprzedniej wersji i dla regul konwersji.
 
 Jeden model dla wszystkich pozycji budzetu. Typ okresla zachowanie
 (normalizacja cykliczna vs przypisanie do konkretnej daty).
@@ -348,8 +376,9 @@ class PaymentMethod {
 | Hive Box: `subscriptions` | JSON subskrypcji (String values) |
 | Hive Box: `categories` | JSON kategorii |
 | Hive Box: `payment_methods` | JSON metod platnosci |
-| Hive Box: `budget_entries` | JSON pozycji budzetu **osobistego** (lokalny) |
-| Hive Box: `household_budget_entries` | JSON pozycji budzetu **domowego** — synchronizowany E2E (ADR-009); pozycje niosa `updatedAt`/`deleted` (nagrobki) |
+| Hive Box: `budget_entries` | JSON pozycji budzetu **osobistego** — archiwum sprzed ADR-035, zrodlo konwersji |
+| Hive Box: `household_budget_entries` | JSON pozycji budzetu **domowego** (archiwum, jak wyzej; `updatedAt`/`deleted` z czasow synchronizacji) |
+| Hive Box: `plan_positions` | JSON pozycji planu rocznego (ADR-035) — wszystkie budzety |
 | Hive Box: `payment_done` | Bool: odhaczone platnosci (klucz `scope\|sourceId\|YYYY-MM-DD`); lokalne, w backupie od v5 |
 | Hive Box: `settings` | Key-value: waluta domyslna, limit budzetu subskrypcji, koperta „Na biezace wydatki" (`billsAllocationItems\|scope` — lista pozycji, per zakres; legacy `billsAllocation\|scope` migrowany w locie), preferencje |
 
@@ -390,11 +419,14 @@ backupu `.zostaje`. Serwis: `lib/services/excel_service.dart`.
 Naglowek jest wykrywany automatycznie. Brak rozpoznawalnego naglowka → uklad
 pozycyjny: kolumna 0 = Nazwa, kolumna 1 = Kwota.
 
-**Arkusz budzetu** (osobny): kolumny Typ / Nazwa / Kwota / Waluta / Cykl / **Kategoria** /
-Miesiac / Notatka / Aktywna / **Metoda platnosci** / **Data startu** / **Liczba rat** /
-**Korekty**. Pelny round-trip (nic nie ginie): metoda i kategoria dopasowywane po nazwie,
-korekty rachunku zakodowane jako JSON w jednej komorce, rata = Typ „Rata" + Data startu +
-Liczba rat. Uszkodzony JSON korekt jest pomijany (nie przerywa importu).
+**Arkusz planu** (ADR-035, `plan_excel.dart`): zakladka „Plan RRRR" na kazdy rok,
+kolumny Rodzaj / Nazwa / Kategoria / Metoda platnosci / Dzien / Waluta / Notatka /
+sty…gru / Suma roku. Pusta komorka miesiaca = pozycja wtedy nie obowiazuje, liczba
+(takze 0) = obowiazuje. Wydatki i splaty karty jako liczby UJEMNE; import czyta
+kwote bez znaku (kierunek niesie „Rodzaj"). Import dokleja pozycje do aktywnego
+budzetu (nowe id); ten sam wiersz z kilku zakladek lat = jedna pozycja. Pozycje
+karty nie wracaja z arkusza (para powstaje w aplikacji). Dawny arkusz „Budzet"
+(kwota + cykl + korekty) usuniety razem ze starym modelem.
 
 ### Reguly bezpieczenstwa importu
 
@@ -411,4 +443,4 @@ Liczba rat. Uszkodzony JSON korekt jest pomijany (nie przerywa importu).
 
 ---
 
-> **Ostatnia aktualizacja:** 2026-06-17
+> **Ostatnia aktualizacja:** 2026-10-07

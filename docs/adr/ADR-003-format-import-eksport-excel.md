@@ -1,8 +1,7 @@
 # ADR-003: Format importu/eksportu Excel i model bezpieczenstwa
 
 Data: 2026-06-16
-Status: zaakceptowany
-
+Status: częściowo zastąpiony przez [ADR-035](ADR-035-plan-roczny-pozycje-z-miesiacami.md) (2026-10-07) — arkusz subskrypcji bez zmian; arkusz budżetu zastąpiła tabela roku planu
 ## Kontekst
 
 Aplikacja ma dwa formaty wyjscia danych: zaszyfrowany backup `.subkarton` (pelny

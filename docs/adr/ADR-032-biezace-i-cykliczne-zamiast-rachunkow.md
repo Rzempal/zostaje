@@ -1,7 +1,7 @@
 # ADR-032: „Bieżące" i „Cykliczne" zamiast „Rachunków" i „Wydatków"
 
 Data: 2026-08-08
-Status: zaakceptowany
+Status: zastąpiony przez [ADR-035](ADR-035-plan-roczny-pozycje-z-miesiacami.md) (2026-10-07) — zakładki Bieżące i Cykliczne zniknęły; słownik nazw w zapisie (StorageKeys) nadal chroni odczyt starych danych
 
 ## Kontekst
 

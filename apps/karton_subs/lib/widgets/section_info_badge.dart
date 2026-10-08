@@ -12,9 +12,17 @@ class SectionInfo {
   const SectionInfo(this.title, this.points);
 
   static const budget = SectionInfo('Budżet — przegląd', [
-    'Podsumowanie całości; pozycje dodajesz w pozostałych sekcjach',
-    '„Plan": ile zostaje miesięcznie i jak przewidywania mają się do rzeczywistości',
-    '„Bilans miesiąca": kalendarz, płatności do odhaczenia, podsumowanie wpływów i wydatków',
+    'Podsumowanie planu; pozycje dodajesz w „Planowaniu"',
+    '„Statystyki": średnio miesięcznie w roku, rozkład na miesiące i kategorie',
+    '„Kalendarz": płatności miesiąca do odhaczenia i podsumowanie wpływów i wydatków',
+  ]);
+
+  static const planning = SectionInfo('Planowanie', [
+    'Plan roczny: wpływy, wydatki, karta i subskrypcje na jednym ekranie',
+    'Przy pozycji zaznaczasz miesiące, w których obowiązuje — każdy ma własną kwotę',
+    'Cały rok = średnio miesięcznie, miesiąc = kwoty tego miesiąca',
+    'Pozycja → miesiące: przytrzymaj, by zmienić kilka naraz',
+    'Nowy rok: „Zaplanuj kolejny rok" przenosi miesiące i kwoty',
   ]);
 
   static const incomes = SectionInfo('Wpływy', [

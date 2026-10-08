@@ -11,55 +11,37 @@ Aplikacja mobilna do zarzadzania domowymi finansami: subskrypcje cyfrowe + budze
 
 **Kluczowe funkcje:**
 - Zero logowania, zero rejestracji -- 100% prywatnosci, wszystko na urzadzeniu
-- Zakladka "Budzet": pelny przeglad budzetu razem z subskrypcjami (bilans miesiaca + plan)
-- Subskrypcje: sekcja zakladki "Cykliczne", obok przelewu wewnetrznego i kosztow stalych
-  (ADR-027) — ten sam styl listy i te same filtry; podsumowanie miesieczne/roczne,
-  trend, podzial wg kategorii, triale i limit sa w zakladce "Budzet"
-- **Podzial wydatkow wg sposobu liczenia (ADR-032):** "Biezace" = wydatek datowany,
-  uderza w bilans konkretnego miesiaca (zakupy, paliwo, wyjscia, zajecia, naprawa auta);
-  "Cykliczne" = koszt usredniany na miesiac (prad, gaz, czynsz, raty, subskrypcje)
-- **Budzet domowy:** wplywy (w tym jednorazowe, np. premia), koszty stale (prad, gaz,
-  czynsz), raty i wydatki biezace -- z podsumowaniem "ile zostaje miesiecznie"
-- **Plan vs Realne:** wykres trendu i podzial wg kategorii maja przelacznik ujecia —
-  plan (kwoty zalozone + koperta „Na biezace wydatki") albo realne kwoty miesiaca
-  z korektami i faktycznymi wydatkami (ADR-028)
-- **Podsumowanie roczne:** ile z rocznego planu juz wydano, miesiac po miesiacu
-  i narastajaco; **poczatek ewidencji** sprawia, ze budzet zaczety w polowie roku
-  porownuje sie z planem na te miesiace, a nie na dwanascie (ADR-029)
-- **Planner** („Na biezace wydatki"): osobny ekran dostepny z „Biezacych" i z
-  „Cyklicznych", z akcja „Uzupelnij do pelnej kwoty" (domkniecie do 10 / 100 / 1000)
-- **Scalanie wydatkow i zwijanie pozycji karty (ADR-034):** kilka zaznaczonych
-  wydatkow laczy sie w jeden wpis (suma kwot, data najstarszej pozycji, wzorzec
-  nazwy i kategorii wybierany z listy); pozycje karty kredytowej sa z tego
-  wylaczone, bo ich usuniecie kasuje kaskada zakup. Splaty karty na „Biezacych"
-  oraz wplywy z karty na „Wplywach" zwijaja sie w jeden wiersz z suma — to tylko
-  sposob rysowania listy, dane i bilans zostaja bez zmian
-- **Kalendarz przeplywow:** widok miesiaca z zaznaczonymi dniami wplywow i wydatkow
-- **Budzet osobisty i domowy:** osobny wspolny budzet (wklady czlonkow, przelew z osobistego);
+- **Plan roczny jak arkusz (ADR-035):** zakladka "Planowanie" — wiersz = pozycja
+  (wplyw albo wydatek), kolumny = 12 miesiecy. Kazdy miesiac ma wlasna kwote,
+  edytowana pojedynczo albo dla kilku zaznaczonych miesiecy naraz. Pozycja nie jest
+  przypieta do roku (rata 09.2026–08.2027 to jedna pozycja); nowy rok powstaje
+  z kopii poprzedniego. Filtr na rok pokazuje srednia miesieczna, na miesiac —
+  kwoty tego miesiaca
+- **Subskrypcje:** osobny modul z okresami probnymi, przypomnieniami i limitem;
+  w planie sa sekcja liczona z ich cyklu (miesiac odnowienia = pelna kwota)
+- **Karta kredytowa:** "pozyczka z karty" jako para w planie — wplyw w miesiacu
+  uzycia, splata po okresie bezodsetkowym; liczona osobno jako "karta netto"
+- **Budzet:** zakladka ze statystykami roku (srednio miesiecznie, wykres 12 miesiecy,
+  kategorie, limity subskrypcji) i kalendarzem platnosci do odhaczania
+- **Budzet osobisty i domowy:** dwa niezalezne plany, przelaczane jednym gestem;
   subskrypcje z przynaleznoscia osobista/domowa
-- **Synchronizacja budzetu domowego (preview):** wspoldzielenie miedzy telefonami bez kont —
-  parowanie kodem QR + haslo, szyfrowanie end-to-end (serwer nie widzi tresci). Budzety
-  osobiste zostaja lokalne. _Funkcja w wersji wczesnej — wymaga dalszych testow._
-- **Skan paragonu (lokalnie):** zdjecie z aparatu/galerii lub "Udostepnij -> Zostaje".
-  Paragon fiskalny i zrzut platnosci telefonem czyta szybka sciezka — zwykly OCR
-  + reguly, ~1-2 s, data wprost z dokumentu (ADR-017); dokument o dowolnym ukladzie
-  przejmuje wlasny silnik AI NA telefonie. Wydatek
-  czeka w sekcji "Do zatwierdzenia" z miniatura zdjecia (ADR-013). Zdjecie mozna
-  przyciac do samego paragonu (mniej szumu dla OCR, lzejsze archiwum) — przy aparacie/
-  galerii od razu, a dla "Udostepnij" i w edycji z podgladu miniatury (ADR-015)
 - Przypomnienia o odnowieniach i trialach
-- Import i eksport do Excela (.xlsx) -- osobno subskrypcje i budzet
-- Szyfrowany backup `.zostaje` — subskrypcje, budzet obu zakresow, Planner i stan platnosci;
-  import pyta, czy **odtworzyc stan z pliku** (domyslnie) czy **scalic** z obecnymi danymi
-  (ADR-021). Stare `.subkarton` nadal importowalne
+- **Excel (.xlsx):** subskrypcje oraz plan jako tabela roku (zakladka na rok,
+  wydatki jako liczby ujemne) — tak udostepnia sie budzet drugiej osobie;
+  import dokleja pozycje
+- Szyfrowany backup `.zostaje` (format v8: plan roczny + subskrypcje + stan
+  platnosci); import pyta, czy **odtworzyc stan z pliku** czy **scalic** (ADR-021).
+  Kopia automatycznie raz na dobe na koncie Google (ADR-024)
+
+**Usuniete w przebudowie (ADR-035):** dziennik wydatkow "Biezace", skan paragonow
+z lokalnym AI, Planner "Na biezace wydatki", przelewy miedzy budzetami, porownanie
+planu z rzeczywistoscia i synchronizacja budzetu domowego. Dane sprzed przebudowy
+leza nietkniete w bazie (powrot do poprzedniej wersji = zwykla aktualizacja
+starszej rewizji z wyzszym numerem wersji).
 
 **Filozofia:**
 - Baza z "Karton z lekami" (APPteczka) -- ta sama architektura, inna domena
-- Ewolucja wygladu: neumorfizm -> "Ledger Glass" (flat M3) -> "Aurora" (premium, jeden ciemny motyw; wdrozenie Faza 6)
-- AI wylacznie LOKALNIE: skan paragonow przez wlasna apke-silnik na urzadzeniu
-  (Gemma 4 E4B, repo karton-ai) -- zero chmury, zero kont, zero API w sieci (ADR-013).
-  Szybka sciezka OCR tez jest offline: model rozpoznawania tekstu siedzi w APK,
-  bez Google Play Services (ADR-017)
+- Ewolucja wygladu: neumorfizm -> "Ledger Glass" (flat M3) -> "Aurora" (premium)
 - Offline-first, dane lokalne
 
 ---
@@ -94,7 +76,7 @@ karton-subs/
 │       │   ├── controllers/    # SubscriptionController, BudgetController
 │       │   ├── utils/          # cycle_math (normalizacja cyklu), expenses_filter (filtry list)
 │       │   ├── theme/          # Motyw (AppTheme, AppColors) -- Aurora od Fazy 6
-│       │   ├── screens/        # Budzet (przeglad), Biezace, Cykliczne (z subskrypcjami), Wplywy, Ustawienia
+│       │   ├── screens/        # Budzet (statystyki + kalendarz), Planowanie (plan roczny), Ustawienia
 │       │   └── widgets/        # Wspolne widgety list, wykresow i nawigacji
 │       └── pubspec.yaml
 ├── docs/
