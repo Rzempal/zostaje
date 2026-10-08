@@ -1,8 +1,13 @@
 {
-  "releaseNotes": "- Planowanie: Subskrypcje i Karta kredytowa wciete pod Wydatkami\n- Minus przy wydatkach w karcie Zostaje\n- Excel: wydatki jako liczby ujemne\n- Usuniety nieuzywany kod starego budzetu",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026100702",
-  "version": "0.26.26100702",
+  "releaseNotes": "- Planowanie: grupa Wydatki = pozycje + subskrypcje, pasek proporcji i przelaczniki list\n- Karta kredytowa poza wydatkami",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026100800",
+  "version": "0.26.26100800",
+  "versionCode": 2026100800,
   "changelog": [
+    {
+      "version": "0.26.26100800",
+      "notes": "- Planowanie: grupa Wydatki = pozycje + subskrypcje, pasek proporcji i przelaczniki list\n- Karta kredytowa poza wydatkami"
+    },
     {
       "version": "0.26.26100702",
       "notes": "- Planowanie: Subskrypcje i Karta kredytowa wciete pod Wydatkami\n- Minus przy wydatkach w karcie Zostaje\n- Excel: wydatki jako liczby ujemne\n- Usuniety nieuzywany kod starego budzetu"
@@ -38,12 +43,7 @@
     {
       "version": "0.26.26082201",
       "notes": "- Poprawka: nazwa sklepu w potwierdzeniu z portfela telefonu byla pusta\n- Odczyt nie zaklada juz, ze naglowek stoi przed nazwa — OCR zwraca bloki w dowolnej kolejnosci"
-    },
-    {
-      "version": "0.26.26082200",
-      "notes": "- Potwierdzenie platnosci z Samsung Wallet czytane szybka sciezka OCR w okolo sekunde\n- Kwota, data i nazwa sklepu prosto z dokumentu, bez zgadywania roku\n- Stan platnosci i nazwa karty nie wplywaja na odczyt"
     }
   ],
-  "versionCode": 2026100702,
-  "releaseDate": "2026-10-07T19:55:16Z"
+  "releaseDate": "2026-10-08T05:19:55Z"
 }

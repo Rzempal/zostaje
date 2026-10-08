@@ -545,26 +545,22 @@ class _PlanningScreenState extends State<PlanningScreen> {
                         onToggle: () => _toggleSection(_kIncomes),
                         children: _rows(incomes, period, amount, false),
                       ),
-                    if (expenses.isNotEmpty)
-                      PlanSection(
-                        title: 'Wydatki',
-                        total: _outflow(_sum(expenses, amount)),
-                        collapsed: _collapsed.contains(_kExpenses),
-                        onToggle: () => _toggleSection(_kExpenses),
-                        children: _rows(expenses, period, amount, true),
-                      ),
-                    if (subs.isNotEmpty)
-                      PlanSection(
-                        title: 'Subskrypcje',
-                        nested: true,
-                        total: _outflow(
-                          subs
-                              .where((s) => s.isActive)
-                              .fold(0.0, (sum, s) => sum + subAmount(s)),
-                        ),
-                        collapsed: _collapsed.contains(_kSubscriptions),
-                        onToggle: () => _toggleSection(_kSubscriptions),
-                        children: _grouped(
+                    if (expenses.isNotEmpty || subs.isNotEmpty)
+                      PlanExpenseGroup(
+                        positionsTotal: _sum(expenses, amount),
+                        subscriptionsTotal: subs
+                            .where((s) => s.isActive)
+                            .fold(0.0, (sum, s) => sum + subAmount(s)),
+                        hasPositions: expenses.isNotEmpty,
+                        hasSubscriptions: subs.isNotEmpty,
+                        positionsOpen: !_collapsed.contains(_kExpenses),
+                        subscriptionsOpen:
+                            !_collapsed.contains(_kSubscriptions),
+                        onTogglePositions: () => _toggleSection(_kExpenses),
+                        onToggleSubscriptions: () =>
+                            _toggleSection(_kSubscriptions),
+                        positions: _rows(expenses, period, amount, true),
+                        subscriptions: _grouped(
                           subs,
                           (s) => s.categoryId,
                           (items) => [
@@ -584,7 +580,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
                     if (cardRows.isNotEmpty)
                       PlanSection(
                         title: 'Karta kredytowa',
-                        nested: true,
                         total: cardRows.fold(0.0, (s, r) => s + r.net),
                         collapsed: _collapsed.contains(_kCard),
                         onToggle: () => _toggleSection(_kCard),
@@ -613,10 +608,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
       ),
     );
   }
-
-  /// Wydatki w nagłówku sekcji ze znakiem minus — jak karta kredytowa, więc
-  /// kierunek pieniędzy widać bez czytania tytułu. Zero zostaje bez znaku.
-  double _outflow(double total) => total == 0 ? 0 : -total;
 
   double _sum(List<PlanPosition> items, double Function(PlanPosition) amount) =>
       items.where((p) => !p.archived).fold(0.0, (s, p) => s + amount(p));

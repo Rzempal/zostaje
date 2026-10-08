@@ -33,9 +33,6 @@ class PlanSection extends StatelessWidget {
   final bool collapsed;
   final VoidCallback onToggle;
 
-  /// Sekcja jako szczególna składowa wydatków (Subskrypcje, Karta kredytowa):
-  /// wcięta i z mniejszym tytułem, żeby było widać, że należy do wydatków.
-  final bool nested;
   final List<Widget> children;
 
   const PlanSection({
@@ -45,14 +42,13 @@ class PlanSection extends StatelessWidget {
     required this.collapsed,
     required this.onToggle,
     required this.children,
-    this.nested = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final c = context.semanticColors;
-    final section = Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         InkWell(
@@ -62,12 +58,7 @@ class PlanSection extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: Text(
-                    title,
-                    style: nested
-                        ? theme.textTheme.titleSmall
-                        : theme.textTheme.titleMedium,
-                  ),
+                  child: Text(title, style: theme.textTheme.titleMedium),
                 ),
                 Text(
                   budgetNf.format(total),
@@ -90,9 +81,166 @@ class PlanSection extends StatelessWidget {
         const SizedBox(height: 16),
       ],
     );
-    return nested
-        ? Padding(padding: const EdgeInsets.only(left: 16), child: section)
-        : section;
+  }
+}
+
+/// Grupa „Wydatki" (ADR-035): suma pozycji planu i subskrypcji, pasek
+/// proporcji i dwa przełączniki, z których każdy rozwija swoją listę.
+/// Subskrypcje to szczególna składowa wydatków — liczą się do sumy grupy
+/// (tak jak w karcie „Zostaje"), ale mają osobny moduł i osobną listę.
+class PlanExpenseGroup extends StatelessWidget {
+  /// Kwoty dodatnie; znak minus dokłada widok.
+  final double positionsTotal;
+  final double subscriptionsTotal;
+  final bool hasPositions;
+  final bool hasSubscriptions;
+  final bool positionsOpen;
+  final bool subscriptionsOpen;
+  final VoidCallback onTogglePositions;
+  final VoidCallback onToggleSubscriptions;
+  final List<Widget> positions;
+  final List<Widget> subscriptions;
+
+  const PlanExpenseGroup({
+    super.key,
+    required this.positionsTotal,
+    required this.subscriptionsTotal,
+    required this.hasPositions,
+    required this.hasSubscriptions,
+    required this.positionsOpen,
+    required this.subscriptionsOpen,
+    required this.onTogglePositions,
+    required this.onToggleSubscriptions,
+    required this.positions,
+    required this.subscriptions,
+  });
+
+  static String _minus(double v) => budgetNf.format(v == 0 ? 0 : -v);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = context.semanticColors;
+    final total = positionsTotal + subscriptionsTotal;
+    final share = total > 0 ? positionsTotal / total : 1.0;
+    final posColor = c.negative;
+    final subColor = c.trial;
+
+    Widget chip(
+      String label,
+      double amount,
+      Color color,
+      bool open,
+      VoidCallback onTap,
+    ) => Material(
+      color: color.withValues(alpha: open ? 0.22 : 0.10),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.control),
+        side: BorderSide(
+          color: open ? color : Colors.transparent,
+          width: 1,
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadii.control),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '$label ${_minus(amount)}',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: c.textPrimary,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                open ? LucideIcons.chevronUp : LucideIcons.chevronDown,
+                size: 14,
+                color: c.textMuted,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    Widget label(String text) => Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 4),
+      child: Text(
+        text,
+        style: theme.textTheme.labelMedium?.copyWith(color: c.textSecondary),
+      ),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 4, bottom: 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text('Wydatki', style: theme.textTheme.titleMedium),
+              ),
+              Text(
+                _minus(total),
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: c.textSecondary,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (hasPositions && hasSubscriptions && total > 0)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(3),
+              child: SizedBox(
+                height: 6,
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: (share * 1000).round(),
+                      child: ColoredBox(color: posColor),
+                    ),
+                    Expanded(
+                      flex: ((1 - share) * 1000).round(),
+                      child: ColoredBox(color: subColor),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            if (hasPositions)
+              chip('Pozycje', positionsTotal, posColor, positionsOpen,
+                  onTogglePositions),
+            if (hasSubscriptions)
+              chip('Subskrypcje', subscriptionsTotal, subColor,
+                  subscriptionsOpen, onToggleSubscriptions),
+          ],
+        ),
+        if (hasPositions && positionsOpen) ...[
+          label('Pozycje'),
+          ...positions,
+        ],
+        if (hasSubscriptions && subscriptionsOpen) ...[
+          label('Subskrypcje'),
+          ...subscriptions,
+        ],
+        const SizedBox(height: 16),
+      ],
+    );
   }
 }
 
