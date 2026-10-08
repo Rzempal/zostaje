@@ -65,6 +65,18 @@ class _PlanningScreenState extends State<PlanningScreen> {
     _collapsed = context.read<StorageService>().getCollapsedBudgetSections();
   }
 
+  /// Rozwija albo zwija kilka sekcji naraz (nagłówek grupy Wydatki).
+  void _setSections(List<String> keys, {required bool open}) {
+    setState(() {
+      if (open) {
+        _collapsed.removeAll(keys);
+      } else {
+        _collapsed.addAll(keys);
+      }
+    });
+    context.read<StorageService>().setCollapsedBudgetSections(_collapsed);
+  }
+
   void _toggleSection(String key) {
     setState(() {
       if (!_collapsed.remove(key)) _collapsed.add(key);
@@ -559,6 +571,10 @@ class _PlanningScreenState extends State<PlanningScreen> {
                         onTogglePositions: () => _toggleSection(_kExpenses),
                         onToggleSubscriptions: () =>
                             _toggleSection(_kSubscriptions),
+                        onToggleAll: (open) => _setSections(
+                          const [_kExpenses, _kSubscriptions],
+                          open: open,
+                        ),
                         positions: _rows(expenses, period, amount, true),
                         subscriptions: _grouped(
                           subs,

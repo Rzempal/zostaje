@@ -98,6 +98,10 @@ class PlanExpenseGroup extends StatelessWidget {
   final bool subscriptionsOpen;
   final VoidCallback onTogglePositions;
   final VoidCallback onToggleSubscriptions;
+
+  /// Nagłówek grupy (chevron, jak w pozostałych sekcjach): rozwija obie
+  /// listy, a gdy obie są już rozwinięte — zwija obie. `true` = rozwiń.
+  final ValueChanged<bool> onToggleAll;
   final List<Widget> positions;
   final List<Widget> subscriptions;
 
@@ -111,6 +115,7 @@ class PlanExpenseGroup extends StatelessWidget {
     required this.subscriptionsOpen,
     required this.onTogglePositions,
     required this.onToggleSubscriptions,
+    required this.onToggleAll,
     required this.positions,
     required this.subscriptions,
   });
@@ -123,6 +128,8 @@ class PlanExpenseGroup extends StatelessWidget {
     final c = context.semanticColors;
     final total = positionsTotal + subscriptionsTotal;
     final share = total > 0 ? positionsTotal / total : 1.0;
+    final allOpen = (!hasPositions || positionsOpen) &&
+        (!hasSubscriptions || subscriptionsOpen);
     final posColor = c.negative;
     final subColor = c.trial;
 
@@ -179,21 +186,30 @@ class PlanExpenseGroup extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 4, bottom: 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text('Wydatki', style: theme.textTheme.titleMedium),
-              ),
-              Text(
-                _minus(total),
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: c.textSecondary,
-                  fontFeatures: const [FontFeature.tabularFigures()],
+        InkWell(
+          onTap: () => onToggleAll(!allOpen),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 4, bottom: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text('Wydatki', style: theme.textTheme.titleMedium),
                 ),
-              ),
-            ],
+                Text(
+                  _minus(total),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: c.textSecondary,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Icon(
+                  allOpen ? LucideIcons.chevronUp : LucideIcons.chevronDown,
+                  size: 18,
+                  color: c.textMuted,
+                ),
+              ],
+            ),
           ),
         ),
         if (hasPositions && hasSubscriptions && total > 0)

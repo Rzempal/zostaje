@@ -1,9 +1,10 @@
 {
-  "releaseNotes": "- Planowanie: grupa Wydatki = pozycje + subskrypcje, pasek proporcji i przelaczniki list\n- Karta kredytowa poza wydatkami",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026100800",
-  "version": "0.26.26100800",
-  "versionCode": 2026100800,
+  "releaseNotes": "- Wydatki: chevron w naglowku rozwija obie listy (albo zwija obie)",
   "changelog": [
+    {
+      "version": "0.27.26100801",
+      "notes": "- Wydatki: chevron w naglowku rozwija obie listy (albo zwija obie)"
+    },
     {
       "version": "0.26.26100800",
       "notes": "- Planowanie: grupa Wydatki = pozycje + subskrypcje, pasek proporcji i przelaczniki list\n- Karta kredytowa poza wydatkami"
@@ -39,11 +40,10 @@
     {
       "version": "0.26.26082300",
       "notes": "- Developer Tools: kafelek Ostatni odczyt OCR z podgladem i kopiowaniem surowego tekstu\n- Nazwa sklepu w potwierdzeniu z portfela odporna na koncowa interpunkcje z OCR"
-    },
-    {
-      "version": "0.26.26082201",
-      "notes": "- Poprawka: nazwa sklepu w potwierdzeniu z portfela telefonu byla pusta\n- Odczyt nie zaklada juz, ze naglowek stoi przed nazwa — OCR zwraca bloki w dowolnej kolejnosci"
     }
   ],
-  "releaseDate": "2026-10-08T05:19:55Z"
+  "versionCode": 2026100801,
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026100801",
+  "version": "0.27.26100801",
+  "releaseDate": "2026-10-08T19:10:18Z"
 }
