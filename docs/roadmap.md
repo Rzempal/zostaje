@@ -15,9 +15,9 @@
 | 4 | Polish + Release | 🟡 Czesciowo (testy logiki gotowe; reszta otwarta) |
 | 5 | Budzet domowy | ✅ Ukonczona (2026-06-17), poza „Powiadomieniami budzetu" |
 | 6 | Redesign Aurora | ✅ Ukonczona (2026-06-17, prod 0.5); „jeden motyw" zastapiony w Fazie 6c |
-| 7 | Synchronizacja budzetu domowego (relay E2E) | 🟡 Dziala w codziennym uzyciu, formalnie nadal PREVIEW |
-| 8 | Rachunki jako realny log + koperta „Planner" | ✅ Ukonczona (2026-07-13) |
-| 9 | Skanowanie rachunkow i paragonow | ✅ Ukonczona (2026-07-27, uzupelnienia do 2026-08-23) |
+| 7 | Synchronizacja budzetu domowego (relay E2E) | ⛔ Usunieta w Fazie 16 (ADR-035) |
+| 8 | Rachunki jako realny log + koperta „Planner" | ✅ Ukonczona (2026-07-13); ⛔ usuniete w Fazie 16 |
+| 9 | Skanowanie rachunkow i paragonow | ✅ Ukonczona (2026-07-27); ⛔ usuniete w Fazie 16 |
 | 10 | Przebudowa sekcji aplikacji | ✅ Ukonczona (2026-08-09) |
 | 11 | Kopia w chmurze + rozbudowa synchronizacji | ✅ Ukonczona (2026-08-04) |
 | 12 | Wygoda i gestosc interfejsu | ✅ Ukonczona (2026-08-14) |
@@ -28,13 +28,11 @@
 
 > **Stan na 2026-10-08:** przebudowa scalona do `main` i wydana na PROD (0.27).
 > Ostatnia wersja sprzed przebudowy to `v0.26.26100600` — punkt powrotu (zbudowac
-> te rewizje z wyzszym numerem wersji, ADR-035 §5). Zadania z „Nastepnych krokow"
-> dotyczace synchronizacji, korekt i porownan plan/realne straciły sens — do
-> przejrzenia.
+> te rewizje z wyzszym numerem wersji, ADR-035 §5).
 
 ---
 
-## Faza 16: Przebudowa — plan roczny 🚧
+## Faza 16: Przebudowa — plan roczny ✅
 
 **Cel:** budzet planowany rocznie jak arkusz (pozycje × miesiace), bez cykli,
 korekt, przelewow wewnetrznych i porownan plan/realne — [ADR-035](adr/ADR-035-plan-roczny-pozycje-z-miesiacami.md).
@@ -502,37 +500,35 @@ Przejscie oznacza instalacje od zera (inny podpis), wiec kolejnosc krokow chroni
 | Wylaczenie OTA w buildzie sklepowym | Wymog zasad Play | ⏳ |
 | Komunikat migracyjny | Ostatnie wydanie OTA: kopia → instalacja z Play → odtworzenie | ⏳ |
 | Reset numeracji | `1.0.0`, versionCode od 1 | ⏳ |
-| Silnik AI a sklep | Decyzja wspolna z APPteczka (jej etap E3): wspolny kod czy `karton-ai` poza sklepem | ⏳ |
-| Synchronizacja po migracji | Wspolnie z APPteczka E2: osobny projekt Supabase / nowy przekaznik | ⏳ |
+| ~~Silnik AI a sklep~~ | Nieaktualne — skan paragonow usuniety (ADR-035) | ⛔ |
+| ~~Synchronizacja po migracji~~ | Nieaktualne — synchronizacja usunieta (ADR-035) | ⛔ |
 
 ---
 
-## Nastepne kroki (stan na 2026-10-04)
+## Nastepne kroki (stan na 2026-10-08)
 
-Zebrane z handoffow sesji, ADR-ow i weryfikacji kodu. Kolejnosc = sugerowany priorytet.
+Po przebudowie (Faza 16). Zadania o synchronizacji, skanie paragonow, korektach
+i porownaniu planu z rzeczywistoscia usuniete — tych funkcji juz nie ma.
 
-**Domkniecie rozpoczetego**
-1. Formalny test synchronizacji na 2 telefonach + zdjecie oznaczenia PREVIEW (Faza 7).
-2. Odciazenie wspolnego Supabase z APPteczka — osobny projekt dla Zostaje albo przekaznik
-   z etapu E2 APPteczki; do tego czasu reczne budzenie uspionego projektu.
-3. Sprzatniecie osieroconej skrzynki starego gospodarstwa na relayu (nieszkodliwa, ale smiec).
+**Domkniecie Fazy 16**
+1. Sprawdzenie PROD 0.27 na prawdziwych danych (pozycje i kwoty miesiecy, odhaczenia, subskrypcje, karta).
+2. Chevron w naglowku grupy Wydatki — na PROD po akceptacji na DEV (0.27.26100801).
+3. E7: sprzatanie danych synchronizacji w Supabase (projekt wspolny z APPteczka — tylko obiekty Zostaje, za zgoda).
 
 **Funkcje**
-4. Powiadomienia budzetu — alert przekroczenia planu / nadchodzacy duzy wydatek (Faza 5).
-5. Daty odnowien subskrypcji w kalendarzu systemowym (Faza 3).
-6. Zaznaczanie wielu pozycji takze dla subskrypcji (ADR-027).
-7. Wskaznik „suma zadluzenia karty" (Faza 13) — po decyzji, co ma pokazywac.
+4. Budzety z wlasnymi nazwami (wiecej niz Osobisty/Domowy) — model gotowy (`budgetId`), brakuje ekranu i przelacznika.
+5. Powiadomienia planu — nadchodzaca duza platnosc z planu.
+6. Daty odnowien subskrypcji w kalendarzu systemowym (Faza 3).
+7. Zaznaczanie wielu pozycji takze dla subskrypcji (ADR-027).
 
 **Jakosc**
-8. Odczyt faktur sprawdzony na zdjeciach z aparatu, nie tylko na tekscie z PDF.
-9. Polaczenie zdublowanego widoku rozpisu (Saldo vs Bilans miesiaca, ~90 linii).
-10. Sprawdzenie Material You + paska stanu na telefonie w obu trybach.
-11. Dostepnosc: wiersz listy ~44 px vs zalecane 48 px; audyt WCAG (Faza 4).
-12. Onboarding — ekran powitalny (Faza 4).
+8. Sprawdzenie Material You + paska stanu na telefonie w obu trybach.
+9. Dostepnosc: wiersz listy ~44 px vs zalecane 48 px; audyt WCAG (Faza 4).
+10. Onboarding — ekran powitalny (Faza 4).
 
 **Publikacja**
-13. Strona `/aplikacje/zostaje` w repo `com` ze zrzutami ekranu.
-14. Przejscie na Google Play (Faza 15).
+11. Strona `/aplikacje/zostaje` w repo `com` ze zrzutami ekranu.
+12. Przejscie na Google Play (Faza 15).
 
 ---
 
@@ -545,16 +541,12 @@ Zebrane z handoffow sesji, ADR-ow i weryfikacji kodu. Kolejnosc = sugerowany pri
 | Wear OS companion | Niski |
 | Grupowanie subskrypcji (np. "Rodzina") | Sredni — czesciowo pokrywa podzial Osobisty/Domowy |
 | ~~Shared subscriptions (split costs)~~ | ✅ Zrealizowane w Fazie 2 |
-| Auto-detect z SMS/email (parsowanie potwierdzen) | Niski (prywatnosc!) — zamiast tego skan i „Udostepnij" (Faza 9) |
-| ~~SelectionController (multi-select batch operations)~~ | ✅ Zrealizowane dla Biezacych i Cyklicznych (Faza 12); **otwarte: subskrypcje** (wlasny model i menu, ADR-027) |
-| Miesieczne migawki kosztow | Do decyzji — dzis historia „Realne" jest odtwarzana z obecnych kosztow (ADR-028) |
-| Koperta Planner zawezona do kategorii | Do decyzji, gdyby duze zakupy zaburzaly porownanie plan/realny |
-| Natywny odbior „Udostepnij" i cala kolejka skanow w warstwie natywnej | Tylko gdy pojawi sie gubienie udostepnien / drugi skan w tle |
-| Dzisiejsza data w poleceniu dla silnika AI (repo `karton-ai`) | Niski — wymaga wydania silnika, dotyka tez APPteczki |
+| Auto-detect z SMS/email (parsowanie potwierdzen) | Niski (prywatnosc!) |
+| ~~SelectionController (multi-select batch operations)~~ | ✅ Zrealizowane dla pozycji planu; **otwarte: subskrypcje** (ADR-027) |
 | Czystka uspionych pol `usageLog`/`isGhost` | Niski |
 | Scalenie dwoch list nazw miesiecy | Niski — gdy pojawi sie trzecia |
 | Tagi DEV `dev-v…` vs `v…-dev` (kosmetyka w Obtainium) | Niski |
 
 ---
 
-> **Ostatnia aktualizacja:** 2026-10-04
+> **Ostatnia aktualizacja:** 2026-10-08
