@@ -24,7 +24,7 @@
 | 13 | Karta kredytowa + scalanie wydatkow | ✅ Ukonczona (2026-08-18) |
 | 14 | Proces wydawania wersji | ✅ Ukonczona (2026-08-02) |
 | 15 | Przejscie na Google Play | Planowana (kierunek bez terminu — ADR-031) |
-| 16 | Przebudowa: plan roczny (ADR-035) | ✅ Na PROD od 0.27 (2026-10-08); zostaje E7 (Supabase) |
+| 16 | Przebudowa: plan roczny (ADR-035) | ✅ Na PROD od 0.27 (2026-10-08); E7 (Supabase) odlozone — TBD |
 
 > **Stan na 2026-10-08:** przebudowa scalona do `main` i wydana na PROD (0.27).
 > Ostatnia wersja sprzed przebudowy to `v0.26.26100600` — punkt powrotu (zbudowac
@@ -47,7 +47,7 @@ korekt, przelewow wewnetrznych i porownan plan/realne — [ADR-035](adr/ADR-035-
 | E4 | Kopia zapasowa v8, Excel jako tabela roku, usuniecie synchronizacji | ✅ |
 | E5 | Sprzatanie kodu, testow i dokumentacji; statusy zastapionych ADR | ✅ |
 | E6 | Przelaczenie PROD po akceptacji testow na DEV (0.27, 2026-10-08) | ✅ |
-| E7 | Po migracji PROD: usuniecie danych synchronizacji domowej z Supabase (projekt „karton", wspoldzielony — tylko `sync_envelopes`, `sync_pull`, `sync_push`; obiekty APPteczki zostaja) | ⏳ zgoda jest; usuniecie zablokowane przez zabezpieczenie trybu automatycznego — do wykonania recznie albo po dodaniu uprawnienia |
+| E7 | Po migracji PROD: usuniecie danych synchronizacji domowej z Supabase (projekt „karton", wspoldzielony — tylko `sync_envelopes`, `sync_pull`, `sync_push`; obiekty APPteczki zostaja) | TBD — odlozone (2026-10-09). Gotowe polecenie SQL: `drop function if exists public.sync_pull(text); drop function if exists public.sync_push(text, text, bigint); drop table if exists public.sync_envelopes;` — uruchomic w SQL Editor projektu „karton" (Claude nie moze: blokada kasowania danych w trybie automatycznym). Obiekty niczego nie psuja: aplikacja od 0.27 sie z nimi nie laczy |
 | E8 | Ekran pozycji: siatka 3×4, szybkie wypelnianie (puste / zaznaczone), okres od–do (raty, start) wyszarzajacy miesiace poza nim; okresy dla planu sprzed nich; kolumny Od/Do w Excelu | ✅ PROD 0.27.26100900 (2026-10-09) |
 
 ---
@@ -514,7 +514,7 @@ i porownaniu planu z rzeczywistoscia usuniete — tych funkcji juz nie ma.
 **Domkniecie Fazy 16**
 1. Sprawdzenie PROD 0.27 na prawdziwych danych (pozycje i kwoty miesiecy, odhaczenia, subskrypcje, karta).
 2. Chevron w naglowku grupy Wydatki — na PROD po akceptacji na DEV (0.27.26100801).
-3. E7: sprzatanie danych synchronizacji w Supabase (projekt wspolny z APPteczka — tylko obiekty Zostaje, za zgoda).
+3. TBD — E7: sprzatanie danych synchronizacji w Supabase (projekt wspolny z APPteczka — tylko obiekty Zostaje; polecenie SQL w tabeli Fazy 16).
 
 **Funkcje**
 4. Budzety z wlasnymi nazwami (wiecej niz Osobisty/Domowy) — model gotowy (`budgetId`), brakuje ekranu i przelacznika.
