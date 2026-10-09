@@ -1,6 +1,10 @@
 {
-  "releaseDate": "2026-10-08T05:45:13Z",
+  "version": "0.27.26100900",
   "changelog": [
+    {
+      "version": "0.27.26100900",
+      "notes": "- Ekran pozycji: siatka roku zamiast dlugiej listy\n- Szybkie wypelnianie: kwota w puste albo zaznaczone miesiace\n- Okres pozycji: miesiace przed startem i po splacie raty wyszarzone\n- Wydatki: chevron w naglowku rozwija obie listy\n- Excel: kolumny Od i Do"
+    },
     {
       "version": "0.27.26100800",
       "notes": "- Planowanie: plan roczny, kazdy miesiac z wlasna kwota\n- Budzet: statystyki roku i kalendarz platnosci\n- Pozyczka z karty kredytowej w planie\n- Excel: plan jako tabela roku\n- Kopia zapasowa w wersji 8 (z planem)\n- Usuniete: Biezace, skan paragonow, Planner, synchronizacja"
@@ -36,14 +40,10 @@
     {
       "version": "0.23.26080900",
       "notes": "- Import budzetu i subskrypcji z Excela przeniesiony z menu Dodaj do Ustawien -> Eksport/import danych\n- Menu Dodaj na Wplywach i Cyklicznych ma teraz tylko dodawanie\n- Import DOKLADA pozycje z arkusza; nie zastepuje kopii zapasowej"
-    },
-    {
-      "version": "0.23.26080801",
-      "notes": "- Ikona pozycji bez kategorii pokazuje, do ktorej zakladki nalezy; subskrypcje maja wlasna ikone\n- Przy filtrze na jeden miesiac karta pozycji pokazuje po prawej kwote korekty z tego miesiaca, a poza tym licznik korekt\n- W Bilansie miesiaca mozna zwinac liste biezacych do jednego wiersza z suma (Platnosci i Podsumowanie miesiaca)\n- W Platnosciach zwiniety wiersz odhacza wszystkie biezace naraz\n- Menu Dodaj na Cyklicznych: Dodaj wydatek cykliczny zamiast Dodaj recznie"
     }
   ],
-  "releaseNotes": "- Planowanie: plan roczny, kazdy miesiac z wlasna kwota\n- Budzet: statystyki roku i kalendarz platnosci\n- Pozyczka z karty kredytowej w planie\n- Excel: plan jako tabela roku\n- Kopia zapasowa w wersji 8 (z planem)\n- Usuniete: Biezace, skan paragonow, Planner, synchronizacja",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026100800",
-  "versionCode": 2026100800,
-  "version": "0.27.26100800"
+  "versionCode": 2026100900,
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026100900",
+  "releaseNotes": "- Ekran pozycji: siatka roku zamiast dlugiej listy\n- Szybkie wypelnianie: kwota w puste albo zaznaczone miesiace\n- Okres pozycji: miesiace przed startem i po splacie raty wyszarzone\n- Wydatki: chevron w naglowku rozwija obie listy\n- Excel: kolumny Od i Do",
+  "releaseDate": "2026-10-09T15:37:00Z"
 }
