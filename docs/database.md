@@ -130,7 +130,13 @@ wszystkie budzety w jednym pudelku.
 | `archived` | bool | nie | Ukryta, poza sumami |
 | `months` | Map | tak | „RRRR-MM" → `{amount, day?}`. Brak miesiaca = pozycja wtedy nie obowiazuje |
 | `linkId` | String | nie | Para karty: `cardLoan` + `cardRepayment` |
+| `periodStart`, `periodEnd` | String „RRRR-MM" | nie | Okres obowiazywania (oba konce wlacznie): rata — oba, pozycja ze startem — samo `periodStart`. Poza okresem pozycja nie ma miesiecy (kontroler pilnuje przy kazdym zapisie). Wersja 0.27 tych kluczy nie zna i je pomija |
 | `createdAt`, `updatedAt` | ISO8601 | — | |
+
+Uzupelnienie okresow: `planPeriodsMigrated` — jednorazowe nadanie okresow planowi sprzed
+okresow (raty i daty startu ze starych pozycji o tym samym `id`; okres poszerza sie, by objac
+istniejace miesiace). Kopia `.zostaje` z okresami niesie znacznik `planPeriods: true` — wtedy
+import okresow nie uzupelnia (takze swiadomie usunietych).
 
 Ustawienia konwersji: `planConversionVersion` (wersja regul, ktora zbudowala plan)
 i `planEnvelopeMigrated` (pozycje Plannera dolozone). Oba zerowane przy odtworzeniu
@@ -421,7 +427,9 @@ pozycyjny: kolumna 0 = Nazwa, kolumna 1 = Kwota.
 
 **Arkusz planu** (ADR-035, `plan_excel.dart`): zakladka „Plan RRRR" na kazdy rok,
 kolumny Rodzaj / Nazwa / Kategoria / Metoda platnosci / Dzien / Waluta / Notatka /
-sty…gru / Suma roku. Pusta komorka miesiaca = pozycja wtedy nie obowiazuje, liczba
+Od / Do / sty…gru / Suma roku. Od/Do = okres pozycji jako tekst „RRRR-MM" (import czyta
+tez „MM.RRRR" i komorke-date); miesiace poza okresem sa przy imporcie pomijane z raportem,
+okres z koncem przed startem — pomijany. Pusta komorka miesiaca = pozycja wtedy nie obowiazuje, liczba
 (takze 0) = obowiazuje. Wydatki i splaty karty jako liczby UJEMNE; import czyta
 kwote bez znaku (kierunek niesie „Rodzaj"). Import dokleja pozycje do aktywnego
 budzetu (nowe id); ten sam wiersz z kilku zakladek lat = jedna pozycja. Pozycje

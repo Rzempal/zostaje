@@ -53,6 +53,8 @@ void main() async {
     // Planner „Na bieżące wydatki" → zwykłe pozycje planu (dokładane do planu,
     // który już istnieje — bez przeliczania całości).
     await runner.ensureEnvelopeMigrated(today);
+    // Okresy rat i dat startu dla planu sprzed okresów (jednorazowo).
+    await runner.ensurePeriodsMigrated(today);
   } catch (e, st) {
     AppLogger.get('PlanConversion')
         .severe('Konwersja planu nie powiodla sie', e, st);

@@ -126,6 +126,34 @@ dnia płatności nie ma miejsca na kalendarzu.
   (nie przyjmuje wersji > 7), więc po powrocie trzeba użyć kopii sprzed
   przejścia albo kopii z konta Google zrobionej przez starą wersję.
 
+### 5a. Okres pozycji (aktualizacja 2026-10-09)
+
+„Wypełnij puste" na ekranie pozycji wpisałby ratę także po spłacie — plan nie
+wiedział, kiedy rata się kończy (koniec był tylko w notatce). Dlatego pozycja
+ma opcjonalny **okres** `periodStart`–`periodEnd` („RRRR-MM", oba końce
+włącznie):
+
+- rata: od pierwszej do ostatniej raty; pozycja ze startem (umowa od
+  listopada): samo „od"; czynsz czy pensja: bez okresu;
+- poza okresem pozycja **nie ma miesięcy** — ekran je wyszarza (nie da się ich
+  zaznaczyć ani wypełnić, dotknięcie mówi dlaczego), a kontroler pomija je
+  przy każdym zapisie; zawężenie okresu z kwotami poza nim pyta o ich
+  usunięcie;
+- „Zaplanuj kolejny rok" przenosi tylko miesiące w okresie;
+- plan sprzed okresów dostaje je jednorazowo ze starych pozycji o tym samym
+  identyfikatorze (raty: data pierwszej raty + liczba rat; start późniejszy
+  niż początek okna konwersji), bez przeliczania planu — okres poszerza się,
+  by objąć istniejące miesiące, więc żadna kwota nie wypada;
+- kopia `.zostaje` (dalej wersja 8) niesie okresy i znacznik `planPeriods`;
+  wersja 0.27 je pomija. Arkusz planu ma kolumny „Od" i „Do".
+
+Subskrypcje nie potrzebują okresu: ich miesiące liczą się same z daty startu
+i cyklu, bez ręcznego wypełniania.
+
+Ekran pozycji: siatka 3×4 (rząd = kwartał) zamiast listy 12 wierszy;
+tapnięcie edytuje miesiąc, przytrzymanie zaznacza (kolejne — zakres), panel
+„Szybkie wypełnianie" wpisuje kwotę i dzień w zaznaczone albo puste miesiące.
+
 ### 6. Synchronizacja budżetu domowego — usunięta
 
 Udostępnianie budżetu: eksport/import arkusza planu — tabela roku (wiersz =

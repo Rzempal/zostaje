@@ -10,13 +10,18 @@ import '../widgets/category_icons.dart'
     show paymentMethodIcon, paymentMethodIconColor;
 import '../widgets/filter_bars.dart' show kMonthsShort;
 import '../widgets/form_action_bar.dart';
+import '../widgets/month_picker_dialog.dart';
+import '../widgets/plan_widgets.dart' show planMonthLabel;
 
 /// Formularz pozycji planu (ADR-035).
 ///
 /// Przy dodawaniu: dane wspólne, kwota i miesiące, w których pozycja ma
 /// obowiązywać — kwota trafia do każdego zaznaczonego miesiąca. Przy edycji
-/// tylko dane wspólne: miesiące i ich kwoty zmienia się w szczegółach
-/// pozycji, gdzie widać każdy z osobna.
+/// tylko dane wspólne i okres: miesiące i ich kwoty zmienia się
+/// w szczegółach pozycji, gdzie widać każdy z osobna.
+///
+/// Okres (od–do) chroni ratę przed wpisaniem po spłacie i pozycję przed
+/// wpisaniem przed startem: miesięcy poza nim nie da się wypełnić.
 class PlanPositionFormScreen extends StatefulWidget {
   final PlanPosition? existing;
   final int? initialYear;
@@ -45,6 +50,8 @@ class _PlanPositionFormScreenState extends State<PlanPositionFormScreen> {
   String? _paymentMethod;
   late int _gridYear;
   final Set<String> _months = {};
+  String? _periodStart;
+  String? _periodEnd;
   bool _saving = false;
 
   bool get _isEditing => widget.existing != null;
@@ -61,6 +68,8 @@ class _PlanPositionFormScreenState extends State<PlanPositionFormScreen> {
     _currency = e?.currency ?? plan.target;
     _categoryId = e?.categoryId;
     _paymentMethod = e?.paymentMethod;
+    _periodStart = e?.periodStart;
+    _periodEnd = e?.periodEnd;
     _gridYear = widget.initialYear ?? plan.today.year;
     if (!_isEditing) {
       final m = widget.initialMonth;
@@ -83,8 +92,38 @@ class _PlanPositionFormScreenState extends State<PlanPositionFormScreen> {
 
   void _selectYear(int year) {
     for (var m = 1; m <= 12; m++) {
-      _months.add(planMonthKey(year, m));
+      final k = planMonthKey(year, m);
+      if (_inPeriod(k)) _months.add(k);
     }
+  }
+
+  bool _inPeriod(String key) =>
+      (_periodStart == null || key.compareTo(_periodStart!) >= 0) &&
+      (_periodEnd == null || key.compareTo(_periodEnd!) <= 0);
+
+  DateTime _monthOf(String key) =>
+      DateTime(int.parse(key.substring(0, 4)), int.parse(key.substring(5)));
+
+  Future<void> _pickPeriod({required bool start}) async {
+    final today = context.read<PlanController>().today;
+    final current = start ? _periodStart : _periodEnd;
+    final picked = await showMonthPicker(
+      context,
+      initialMonth: current != null
+          ? _monthOf(current)
+          : DateTime(_gridYear, today.month),
+      today: today,
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      final key = planMonthKey(picked.year, picked.month);
+      if (start) {
+        _periodStart = key;
+      } else {
+        _periodEnd = key;
+      }
+      _months.removeWhere((k) => !_inPeriod(k));
+    });
   }
 
   /// Co trzy miesiące od pierwszego zaznaczonego w pokazanym roku (albo od
@@ -98,12 +137,14 @@ class _PlanPositionFormScreenState extends State<PlanPositionFormScreen> {
         1;
     _months.removeWhere((k) => k.startsWith('$_gridYear-'));
     for (var m = first; m <= 12; m += 3) {
-      _months.add(planMonthKey(_gridYear, m));
+      final k = planMonthKey(_gridYear, m);
+      if (_inPeriod(k)) _months.add(k);
     }
   }
 
   /// Raty: N kolejnych miesięcy od pierwszego zaznaczonego (także przez
-  /// granicę roku) — rata 09.2026–08.2027 to jedna pozycja.
+  /// granicę roku) — rata 09.2026–08.2027 to jedna pozycja. Ustawia też
+  /// okres pozycji na te miesiące, więc rata nie wydłuży się przez pomyłkę.
   Future<void> _installments() async {
     final ctrl = TextEditingController();
     final n = await showDialog<int>(
@@ -145,22 +186,65 @@ class _PlanPositionFormScreenState extends State<PlanPositionFormScreen> {
         final d = DateTime(y, m + i);
         _months.add(planMonthKey(d.year, d.month));
       }
+      final last = DateTime(y, m + n - 1);
+      _periodStart = start;
+      _periodEnd = planMonthKey(last.year, last.month);
     });
+  }
+
+  void _snack(String text) => ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(text)));
+
+  /// Zawężenie okresu edytowanej pozycji, gdy poza nowym okresem są kwoty —
+  /// zapis by je usunął, więc najpierw pytamy.
+  Future<bool> _confirmTrim(PlanPosition e) async {
+    final outside = e.monthsOutsidePeriod(start: _periodStart, end: _periodEnd);
+    if (outside.isEmpty) return true;
+    final shown = outside.take(6).map(planMonthLabel).join(', ');
+    final more = outside.length > 6 ? ' i ${outside.length - 6} więcej' : '';
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dctx) => AlertDialog(
+        title: Text('Usunąć ${outside.length} mies. poza okresem?'),
+        content: Text(
+          'Poza nowym okresem pozycja ma kwoty: $shown$more. Zapis usunie je '
+          'z planu.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dctx, false),
+            child: const Text('Anuluj'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dctx, true),
+            child: const Text('Usuń i zapisz'),
+          ),
+        ],
+      ),
+    );
+    return ok ?? false;
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (!_isEditing && _months.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Zaznacz choć jeden miesiąc')),
-      );
+    if (_periodStart != null &&
+        _periodEnd != null &&
+        _periodEnd!.compareTo(_periodStart!) < 0) {
+      _snack('Koniec okresu jest przed jego startem');
       return;
     }
+    if (!_isEditing && _months.isEmpty) {
+      _snack('Zaznacz choć jeden miesiąc');
+      return;
+    }
+    final e = widget.existing;
+    if (e != null && !await _confirmTrim(e)) return;
+    if (!mounted) return;
     setState(() => _saving = true);
     final plan = context.read<PlanController>();
     final day = int.tryParse(_day.text.trim());
     final note = _note.text.trim().isEmpty ? null : _note.text.trim();
-    final e = widget.existing;
     if (e != null) {
       await plan.update(
         e.copyWith(
@@ -175,6 +259,10 @@ class _PlanPositionFormScreenState extends State<PlanPositionFormScreen> {
           clearDay: day == null,
           note: note,
           clearNote: note == null,
+          periodStart: _periodStart,
+          clearPeriodStart: _periodStart == null,
+          periodEnd: _periodEnd,
+          clearPeriodEnd: _periodEnd == null,
         ),
       );
     } else {
@@ -185,11 +273,16 @@ class _PlanPositionFormScreenState extends State<PlanPositionFormScreen> {
         name: _name.text.trim(),
         kind: _kind,
         currency: _currency,
-        months: {for (final k in _months) k: PlanMonth(amount: amount)},
+        months: {
+          for (final k in _months)
+            if (_inPeriod(k)) k: PlanMonth(amount: amount),
+        },
         categoryId: _categoryId,
         paymentMethod: _paymentMethod,
         day: day,
         note: note,
+        periodStart: _periodStart,
+        periodEnd: _periodEnd,
       );
     }
     if (mounted) Navigator.of(context).pop();
@@ -295,6 +388,39 @@ class _PlanPositionFormScreenState extends State<PlanPositionFormScreen> {
                 return d == null || d < 1 || d > 31 ? 'Dzień 1–31' : null;
               },
             ),
+            const SizedBox(height: 24),
+            const _Label('Okres (opcjonalnie)'),
+            Row(
+              children: [
+                Expanded(
+                  child: _PeriodField(
+                    label: 'Od',
+                    value: _periodStart,
+                    onTap: () => _pickPeriod(start: true),
+                    onClear: () => setState(() => _periodStart = null),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _PeriodField(
+                    label: 'Do',
+                    value: _periodEnd,
+                    onTap: () => _pickPeriod(start: false),
+                    onClear: () => setState(() => _periodEnd = null),
+                  ),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                'Rata: od pierwszej do ostatniej raty; umowa: od startu. '
+                'Miesięcy poza okresem nie da się wypełnić.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: c.textMuted,
+                ),
+              ),
+            ),
             if (!_isEditing) ...[
               const SizedBox(height: 24),
               const _Label('Miesiące'),
@@ -325,10 +451,13 @@ class _PlanPositionFormScreenState extends State<PlanPositionFormScreen> {
                     FilterChip(
                       label: Text(kMonthsShort[m - 1]),
                       selected: _months.contains(planMonthKey(_gridYear, m)),
-                      onSelected: (on) => setState(() {
-                        final k = planMonthKey(_gridYear, m);
-                        on ? _months.add(k) : _months.remove(k);
-                      }),
+                      // Poza okresem — wyszarzony, nie do zaznaczenia.
+                      onSelected: _inPeriod(planMonthKey(_gridYear, m))
+                          ? (on) => setState(() {
+                              final k = planMonthKey(_gridYear, m);
+                              on ? _months.add(k) : _months.remove(k);
+                            })
+                          : null,
                     ),
                 ],
               ),
@@ -412,6 +541,40 @@ class _PlanPositionFormScreenState extends State<PlanPositionFormScreen> {
       ),
     );
   }
+}
+
+/// Pole okresu: miesiąc z wyboru albo „—", z krzyżykiem do wyczyszczenia.
+class _PeriodField extends StatelessWidget {
+  final String label;
+  final String? value;
+  final VoidCallback onTap;
+  final VoidCallback onClear;
+
+  const _PeriodField({
+    required this.label,
+    required this.value,
+    required this.onTap,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(AppRadii.control),
+    child: InputDecorator(
+      decoration: InputDecoration(
+        labelText: label,
+        suffixIcon: value == null
+            ? const Icon(LucideIcons.calendar, size: 18)
+            : IconButton(
+                tooltip: 'Bez ograniczenia',
+                icon: const Icon(LucideIcons.x, size: 18),
+                onPressed: onClear,
+              ),
+      ),
+      child: Text(value == null ? '—' : planMonthLabel(value!)),
+    ),
+  );
 }
 
 class _Label extends StatelessWidget {

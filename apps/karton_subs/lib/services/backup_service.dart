@@ -259,6 +259,10 @@ class BackupService {
           .getPlanPositions()
           .map((p) => p.toJson())
           .toList(),
+      // Plan z okresami pozycji (raty, starty) — import nie uzupełnia ich
+      // wtedy ze starych pozycji. Kopia bez tego znacznika dostaje okresy
+      // po wczytaniu.
+      'planPeriods': true,
     });
   }
 
@@ -397,6 +401,15 @@ class BackupService {
       }
       await _storage.setPlanConversionVersion(PlanConversion.version);
       await _storage.setPlanEnvelopeMigrated(true);
+      // Kopia z wersji z okresami niesie je sama (także świadomie usunięte —
+      // tych nie odtwarzamy). Kopia sprzed okresów dostaje je od razu.
+      if (data['planPeriods'] == true) {
+        await _storage.setPlanPeriodsMigrated(true);
+      } else {
+        await PlanConversionRunner(
+          _storage,
+        ).ensurePeriodsMigrated(Subscription.devDateOverride ?? DateTime.now());
+      }
     } else if (budgetImported > 0 || removed > 0) {
       await PlanConversionRunner(
         _storage,

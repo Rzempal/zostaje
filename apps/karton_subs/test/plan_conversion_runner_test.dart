@@ -138,6 +138,74 @@ void main() {
     },
   );
 
+  group('Okresy dla planu sprzed okresów (jednorazowo)', () {
+    BudgetEntry rata() => BudgetEntry(
+      id: 'fold',
+      name: 'Fold 8',
+      type: BudgetEntryType.installment,
+      amount: 2488.31,
+      currency: Currency.PLN,
+      cycle: BillingCycle.monthly,
+      installmentCount: 11,
+      startDate: DateTime(2026, 9, 28),
+      dataDodania: DateTime(2026, 9, 1),
+    );
+
+    PlanPosition withoutPeriod(String id, Map<String, PlanMonth> months) =>
+        PlanPosition(
+          id: id,
+          budgetId: kBudgetPersonal,
+          name: id,
+          kind: PlanKind.expense,
+          currency: Currency.PLN,
+          months: months,
+          createdAt: DateTime(2026, 9, 1),
+        );
+
+    test('rata ze starego budżetu dostaje okres, miesiące zostają', () async {
+      await _storage.saveBudgetEntry(rata());
+      // Plan powstał przed okresami; użytkownik dopisał już sierpień 2027.
+      await _storage.savePlanPosition(
+        withoutPeriod('fold', {
+          '2026-09': const PlanMonth(amount: 226.21),
+          '2027-08': const PlanMonth(amount: 226.21),
+        }),
+      );
+      final runner = PlanConversionRunner(_storage);
+
+      expect(await runner.ensurePeriodsMigrated(_today), 1);
+      final p = _storage.getPlanPosition('fold')!;
+      expect(p.periodStart, '2026-09');
+      // Okres poszerzony o dopisany miesiąc — żadna kwota nie wypada.
+      expect(p.periodEnd, '2027-08');
+      expect(p.months, hasLength(2));
+      expect(_storage.getPlanPeriodsMigrated(), isTrue);
+
+      // Drugi raz nic nie robi.
+      expect(await runner.ensurePeriodsMigrated(_today), 0);
+    });
+
+    test('pozycja z okresem i pozycja bez starej pary zostają', () async {
+      await _storage.saveBudgetEntry(rata());
+      await _storage.savePlanPosition(
+        withoutPeriod('fold', const {}).copyWith(periodStart: '2026-10'),
+      );
+      await _storage.savePlanPosition(withoutPeriod('nowa', const {}));
+
+      await PlanConversionRunner(_storage).ensurePeriodsMigrated(_today);
+      expect(_storage.getPlanPosition('fold')!.periodStart, '2026-10');
+      expect(_storage.getPlanPosition('fold')!.periodEnd, isNull);
+      expect(_storage.getPlanPosition('nowa')!.hasPeriod, isFalse);
+    });
+
+    test('przeliczenie od nowa ustawia okresy i znacznik', () async {
+      await _storage.saveBudgetEntry(rata());
+      await PlanConversionRunner(_storage).reconvert(_today);
+      expect(_storage.getPlanPosition('fold')!.periodEnd, '2027-07');
+      expect(_storage.getPlanPeriodsMigrated(), isTrue);
+    });
+  });
+
   test('przeliczenie od nowa zawiera Planner i nie dubluje go', () async {
     await _storage.setSpendingAllocationItems(BudgetScope.household, const [
       SpendingAllocationItem(id: 'p', name: 'Paliwo', amount: 400),

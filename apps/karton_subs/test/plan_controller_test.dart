@@ -116,6 +116,66 @@ void main() {
     expect(plan.position(b.id)!.hasYear(2027), isFalse);
   });
 
+  group('Okres pozycji (rata, start)', () {
+    Future<PlanPosition> addRata() => plan.create(
+      name: 'Fold 8',
+      kind: PlanKind.expense,
+      currency: Currency.PLN,
+      months: {
+        // Styczeń 2026 jest przed startem — formularz by go nie przepuścił,
+        // ale kontroler też nie może.
+        '2026-01': const PlanMonth(amount: 226.21),
+        for (var m = 9; m <= 12; m++)
+          planMonthKey(2026, m): const PlanMonth(amount: 226.21),
+      },
+      periodStart: '2026-09',
+      periodEnd: '2027-07',
+    );
+
+    test('nowa pozycja nie dostaje miesięcy spoza okresu', () async {
+      final p = await addRata();
+      expect(p.periodEnd, '2027-07');
+      expect(plan.position(p.id)!.months.keys, isNot(contains('2026-01')));
+      expect(plan.position(p.id)!.months, hasLength(4));
+    });
+
+    test('wypełnianie pomija miesiące poza okresem i liczy zmiany', () async {
+      final p = await addRata();
+      final n = await plan.setMonths(p.id, {
+        '2026-08': const PlanMonth(amount: 1),
+        '2027-07': const PlanMonth(amount: 226.21),
+        '2027-08': const PlanMonth(amount: 1),
+      });
+      expect(n, 1);
+      final after = plan.position(p.id)!;
+      expect(after.months.containsKey('2026-08'), isFalse);
+      expect(after.months.containsKey('2027-08'), isFalse);
+      expect(after.amountIn('2027-07'), 226.21);
+    });
+
+    test('zawężenie okresu w edycji usuwa miesiące spoza niego', () async {
+      final p = await addRata();
+      await plan.update(plan.position(p.id)!.copyWith(periodEnd: '2026-10'));
+      expect(plan.position(p.id)!.months.keys, ['2026-09', '2026-10']);
+    });
+
+    test('zakończona rata nie jest kandydatem do kolejnego roku', () async {
+      final p = await addRata();
+      await plan.update(plan.position(p.id)!.copyWith(periodEnd: '2026-12'));
+      await addMonthly('Czynsz');
+      expect(plan.copyCandidates(2026).map((e) => e.name), ['Czynsz']);
+    });
+
+    test('kopiowanie roku nie wydłuża raty poza jej koniec', () async {
+      final p = await addRata();
+      await plan.copyYear(2026, 2027, {p.id});
+      final keys2027 = plan.position(p.id)!.monthsOfYear(2027).map((e) => e.key);
+      // Wrzesień–grudzień 2026 przeniesione na 2027 tylko w okresie
+      // (do lipca) — w 2027 nic z tego nie mieści się w okresie.
+      expect(keys2027, isEmpty);
+    });
+  });
+
   test('kaskady słowników z Ustawień obejmują plan', () async {
     final p = await plan.create(
       name: 'Internet',

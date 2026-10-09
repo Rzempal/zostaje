@@ -186,6 +186,7 @@ class PlanConversion {
           _applyOverrides(e, months);
         }
 
+        final period = periodCovering(periodFor(e, window), months.keys);
         positions.add(
           PlanPosition(
             id: e.id,
@@ -199,6 +200,8 @@ class PlanConversion {
             note: e.note,
             archived: !e.isActive,
             months: months,
+            periodStart: period.start,
+            periodEnd: period.end,
             createdAt: e.dataDodania,
             updatedAt: e.updatedAt,
           ),
@@ -206,6 +209,47 @@ class PlanConversion {
       }
     }
     return PlanConversionResult(positions: positions, notes: notes);
+  }
+
+  /// Okres obowiązywania pozycji planu ze starej pozycji budżetu: rata — od
+  /// pierwszej do ostatniej raty; pozycja cykliczna ze startem późniejszym niż
+  /// początek okna konwersji — od startu (start sprzed okna niczego nie
+  /// blokuje, a zaśmiecałby opis pozycji). Reszta bez okresu.
+  static ({String? start, String? end}) periodFor(
+    BudgetEntry e,
+    ({int first, int last}) window,
+  ) {
+    const none = (start: null, end: null);
+    final s = e.startDate;
+    if (s == null || e.type == BudgetEntryType.oneTimeIncome) return none;
+    if (e.isInstallment) {
+      final n = e.installmentCount;
+      if (n == null || n <= 0) return none;
+      return (
+        start: BudgetEntry.monthKeyOf(s),
+        end: BudgetEntry.monthKeyOf(DateTime(s.year, s.month + n - 1)),
+      );
+    }
+    final key = BudgetEntry.monthKeyOf(s);
+    return key.compareTo(planMonthKey(window.first, 1)) > 0
+        ? (start: key, end: null)
+        : none;
+  }
+
+  /// Okres poszerzony tak, by objął wszystkie [months] — konwersja
+  /// i uzupełnianie okresów nigdy nie wyrzucają z planu istniejących kwot.
+  static ({String? start, String? end}) periodCovering(
+    ({String? start, String? end}) period,
+    Iterable<String> months,
+  ) {
+    final sorted = months.toList()..sort();
+    if (sorted.isEmpty) return period;
+    var (:start, :end) = period;
+    if (start != null && sorted.first.compareTo(start) < 0) {
+      start = sorted.first;
+    }
+    if (end != null && sorted.last.compareTo(end) > 0) end = sorted.last;
+    return (start: start, end: end);
   }
 
   /// Identyfikator pozycji planu powstałej z pozycji koperty — ten sam przy
@@ -563,6 +607,7 @@ class PlanConversionRunner {
     await _storage.replacePlanPositions(result.positions);
     await _storage.setPlanConversionVersion(PlanConversion.version);
     await _storage.setPlanEnvelopeMigrated(true);
+    await _storage.setPlanPeriodsMigrated(true);
     return result;
   }
 
@@ -583,6 +628,38 @@ class PlanConversionRunner {
     }
     await _storage.setPlanEnvelopeMigrated(true);
     return added;
+  }
+
+  /// Okresy (raty, daty startu) dla planu, który powstał, zanim pozycje je
+  /// miały — ze starych pozycji o tym samym identyfikatorze. Bez przeliczania
+  /// planu: miesiące zostają, a okres w razie potrzeby się poszerza, żeby
+  /// żadna kwota nie wypadła. Pozycja, która ma już okres, zostaje.
+  /// Jednorazowo; zwraca liczbę pozycji, które dostały okres.
+  Future<int> ensurePeriodsMigrated(DateTime today) async {
+    if (_storage.getPlanPeriodsMigrated()) return 0;
+    final window = PlanConversion.windowFor(today);
+    final old = {
+      for (final list in _oldEntries().values)
+        for (final e in list)
+          if (!e.deleted) e.id: e,
+    };
+    var changed = 0;
+    for (final p in _storage.getPlanPositions()) {
+      if (p.hasPeriod || p.isCard) continue;
+      final e = old[p.id];
+      if (e == null) continue;
+      final period = PlanConversion.periodCovering(
+        PlanConversion.periodFor(e, window),
+        p.months.keys,
+      );
+      if (period.start == null && period.end == null) continue;
+      await _storage.savePlanPosition(
+        p.copyWith(periodStart: period.start, periodEnd: period.end),
+      );
+      changed++;
+    }
+    await _storage.setPlanPeriodsMigrated(true);
+    return changed;
   }
 
   /// Raport z konwersji wyliczonej na świeżo z obecnych starych danych.

@@ -271,6 +271,61 @@ void main() {
       expect(byId['wspolna']!.amountIn('2026-10'), closeTo(120, 0.001));
     });
 
+    test('eksport oznacza plan z okresami', () {
+      final data =
+          jsonDecode(_backup.buildJsonPayloadForTest()) as Map<String, dynamic>;
+      expect(data['planPeriods'], isTrue);
+    });
+
+    test('kopia sprzed okresów: rata dostaje okres zaraz po wczytaniu',
+        () async {
+      final rata = BudgetEntry(
+        id: 'fold',
+        name: 'Fold 8',
+        type: BudgetEntryType.installment,
+        amount: 2488.31,
+        currency: Currency.PLN,
+        cycle: BillingCycle.monthly,
+        installmentCount: 11,
+        startDate: DateTime(2026, 9, 28),
+        dataDodania: DateTime(2026, 9, 1),
+      );
+      await _backup.importFromBytes(
+        _file(v8([position('fold', 226.21)], personal: [rata])),
+        replace: true,
+      );
+
+      final p = _storage.getPlanPositions().single;
+      expect(p.periodStart, '2026-09');
+      expect(p.periodEnd, '2027-07');
+      expect(p.amountIn('2026-10'), closeTo(226.21, 0.001));
+    });
+
+    test('kopia z okresami: okresów nie uzupełnia (także usuniętych)',
+        () async {
+      final rata = BudgetEntry(
+        id: 'fold',
+        name: 'Fold 8',
+        type: BudgetEntryType.installment,
+        amount: 2488.31,
+        currency: Currency.PLN,
+        cycle: BillingCycle.monthly,
+        installmentCount: 11,
+        startDate: DateTime(2026, 9, 28),
+        dataDodania: DateTime(2026, 9, 1),
+      );
+      await _backup.importFromBytes(
+        _file({
+          ...v8([position('fold', 226.21)], personal: [rata]),
+          'planPeriods': true,
+        }),
+        replace: true,
+      );
+
+      expect(_storage.getPlanPositions().single.hasPeriod, isFalse);
+      expect(_storage.getPlanPeriodsMigrated(), isTrue);
+    });
+
     test('plik v7 (bez planu) dalej przelicza plan ze starych pozycji',
         () async {
       await _backup.importFromBytes(

@@ -152,18 +152,89 @@ void main() {
     expect(find.textContaining('Plan jest pusty'), findsOneWidget);
   });
 
-  testWidgets('Szczegóły pozycji: dwanaście miesięcy roku', (tester) async {
+  testWidgets('Szczegóły pozycji: siatka roku i szybkie wypełnianie', (
+    tester,
+  ) async {
     await tester.runAsync(seed);
     await pump(
       tester,
       const PlanPositionScreen(positionId: 'czynsz', initialYear: 2026),
+      height: 1400,
     );
-    expect(find.text('Październik'), findsOneWidget);
+    expect(find.text('paź'), findsOneWidget);
+    expect(find.text('Szybkie wypełnianie'), findsOneWidget);
 
-    // Rok bez planu — każdy miesiąc „poza planem".
+    // Rok bez planu — każdy miesiąc bez kwoty, „Puste" obejmie wszystkie.
     await tester.tap(find.byIcon(LucideIcons.chevronRight).first);
     await tester.pumpAndSettle();
-    expect(find.text('poza planem'), findsNWidgets(12));
+    expect(find.text('brak kwoty'), findsNWidgets(12));
+    expect(find.text('Puste (12)'), findsOneWidget);
+
+    // „Puste" bez kwoty nie robi nic po cichu — mówi, czego brakuje.
+    await tester.tap(find.text('Puste (12)'));
+    await tester.pumpAndSettle();
+    expect(find.text('Wpisz kwotę'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Szczegóły pozycji: miesiące poza okresem raty są zablokowane', (
+    tester,
+  ) async {
+    await tester.runAsync(
+      () => storage.savePlanPosition(
+        PlanPosition(
+          id: 'rata',
+          budgetId: kBudgetPersonal,
+          name: 'ING / Alior: Fold 8',
+          kind: PlanKind.expense,
+          currency: Currency.PLN,
+          day: 28,
+          months: {
+            for (final m in [9, 10, 12])
+              planMonthKey(2026, m): const PlanMonth(amount: 226.21),
+          },
+          periodStart: '2026-09',
+          periodEnd: '2027-07',
+          createdAt: DateTime(2026, 9, 1),
+        ),
+      ),
+    );
+    // Szerzej niż telefon: pasek zaznaczania („Zaznacz wszystkie") w czcionce
+    // testowej (litery jak kwadraty) nie mieści się w 360 px, choć na
+    // telefonie ma zapas. Siatkę i panel w 360 px sprawdza test obok.
+    await pump(
+      tester,
+      const PlanPositionScreen(positionId: 'rata', initialYear: 2026),
+      width: 480,
+      height: 1400,
+    );
+    expect(find.textContaining('wrz 2026 – lip 2027 · 11 mies.'), findsOneWidget);
+    expect(find.text('przed startem'), findsNWidgets(8));
+    // Listopad bez kwoty to jedyny „pusty" miesiąc w okresie.
+    expect(find.text('Puste (1)'), findsOneWidget);
+
+    // Dotknięcie szarego miesiąca wyjaśnia, zamiast nic nie robić…
+    await tester.tap(find.text('sty'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('przed startem pozycji'), findsOneWidget);
+
+    // …a przytrzymanie go nie zaznacza.
+    await tester.longPress(find.text('lut'));
+    await tester.pumpAndSettle();
+    expect(find.text('Zaznaczone (0)'), findsOneWidget);
+
+    // Przytrzymanie zaczyna zaznaczanie, kolejne zaznacza zakres.
+    await tester.longPress(find.text('wrz'));
+    await tester.pumpAndSettle();
+    expect(find.text('Zaznaczone (1)'), findsOneWidget);
+    await tester.longPress(find.text('gru'));
+    await tester.pumpAndSettle();
+    expect(find.text('Zaznaczone (4)'), findsOneWidget);
+
+    // Rok 2027: po lipcu rata się kończy.
+    await tester.tap(find.byIcon(LucideIcons.chevronRight).first);
+    await tester.pumpAndSettle();
+    expect(find.text('po zakończeniu'), findsNWidgets(5));
     expect(tester.takeException(), isNull);
   });
 

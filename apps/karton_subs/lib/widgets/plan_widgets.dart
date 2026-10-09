@@ -25,6 +25,25 @@ String planPeriodLabel(PlanPeriod period) => period.isYear
     ? 'średnio/mies. ${period.year}'
     : '${kMonthsShort[period.month! - 1]} ${period.year}';
 
+/// Miesiąc planu "RRRR-MM" po ludzku: „wrz 2026".
+String planMonthLabel(String key) =>
+    '${kMonthsShort[int.parse(key.substring(5)) - 1]} ${key.substring(0, 4)}';
+
+/// Okres pozycji do opisu: „wrz 2026 – lip 2027 · 11 mies.", „od lis 2026",
+/// „do lip 2027"; `null` = pozycja bez okresu.
+String? planPositionPeriodText(PlanPosition p) {
+  final start = p.periodStart, end = p.periodEnd;
+  if (start != null && end != null) {
+    int index(String k) =>
+        int.parse(k.substring(0, 4)) * 12 + int.parse(k.substring(5));
+    final count = index(end) - index(start) + 1;
+    return '${planMonthLabel(start)} – ${planMonthLabel(end)} · $count mies.';
+  }
+  if (start != null) return 'od ${planMonthLabel(start)}';
+  if (end != null) return 'do ${planMonthLabel(end)}';
+  return null;
+}
+
 /// Sekcja listy: nagłówek z sumą (tapnięcie zwija) i wiersze pod nim. Suma
 /// zostaje widoczna po zwinięciu — po to się sekcję zwija.
 class PlanSection extends StatelessWidget {

@@ -363,13 +363,18 @@ class PlanService {
   /// Czy pozycję domyślnie przenieść z [fromYear] na kolejny rok.
   ///
   /// Nie: archiwalne, karta (para pożyczka–spłata dotyczy konkretnej
-  /// operacji), pozycje mające już miesiące w kolejnym roku i pozycje, które
+  /// operacji), pozycje mające już miesiące w kolejnym roku, pozycje, których
+  /// okres kończy się przed kolejnym rokiem, i pozycje bez okresu, które
   /// wyglądają na zakończone — biegną z poprzedniego roku i urywają się przed
-  /// grudniem bez przerwy od stycznia (typowo ostatnie raty). Pozycja roczna
-  /// czy kwartalna nie biegnie od stycznia bez przerwy, więc się nie łapie.
+  /// grudniem bez przerwy od stycznia (typowo ostatnie raty sprzed okresów).
+  /// Pozycja roczna czy kwartalna nie biegnie od stycznia bez przerwy, więc
+  /// się nie łapie.
   bool defaultCopySelected(PlanPosition p, int fromYear) {
     if (p.archived || p.isCard) return false;
     if (p.hasYear(fromYear + 1)) return false;
+    if (endsBefore(p, fromYear + 1)) return false;
+    // Okres sięga kolejnego roku — rozstrzyga on, nie zgadywanie z kształtu.
+    if (p.periodEnd != null) return true;
     final keys = p.monthsOfYear(fromYear).map((e) => e.key).toList();
     if (keys.isEmpty) return false;
     final lastMonth = int.parse(keys.last.substring(5));
@@ -380,8 +385,15 @@ class PlanService {
     return !endsMidYear;
   }
 
+  /// Czy okres pozycji kończy się przed rokiem [year] (bez końca — nie).
+  static bool endsBefore(PlanPosition p, int year) =>
+      p.periodEnd != null &&
+      p.periodEnd!.compareTo(planMonthKey(year, 1)) < 0;
+
   /// Miesiące pozycji z dopisanym rokiem [toYear] — te same miesiące, kwoty
-  /// i dni co w [fromYear]. Miesiąc, który już jest w roku docelowym, zostaje.
+  /// i dni co w [fromYear]. Miesiąc, który już jest w roku docelowym, zostaje,
+  /// a miesiąc poza okresem pozycji się nie dopisuje (rata nie przedłuża się
+  /// sama o kolejny rok).
   Map<String, PlanMonth> monthsWithYearCopied(
     PlanPosition p,
     int fromYear,
@@ -389,8 +401,8 @@ class PlanService {
   ) {
     final out = Map<String, PlanMonth>.of(p.months);
     for (final e in p.monthsOfYear(fromYear)) {
-      final month = int.parse(e.key.substring(5));
-      out.putIfAbsent(planMonthKey(toYear, month), () => e.value);
+      final key = planMonthKey(toYear, int.parse(e.key.substring(5)));
+      if (p.inPeriod(key)) out.putIfAbsent(key, () => e.value);
     }
     return out;
   }

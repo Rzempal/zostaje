@@ -329,6 +329,39 @@ void main() {
       expect(_svc.defaultCopySelected(yearly, 2027), isTrue);
     });
 
+    test('okres rozstrzyga zamiast zgadywania z kształtu miesięcy', () {
+      // Wygląda na kończącą się ratę (od stycznia, urywa się w lipcu), ale
+      // okres sięga dalej — więc do przeniesienia.
+      final longer = _pos(
+        'umowa',
+        months: {
+          for (var m = 1; m <= 7; m++)
+            planMonthKey(2027, m): const PlanMonth(amount: 50),
+          '2026-12': const PlanMonth(amount: 50),
+        },
+      ).copyWith(periodStart: '2026-12', periodEnd: '2028-06');
+      expect(_svc.defaultCopySelected(longer, 2027), isTrue);
+
+      // Okres kończy się przed kolejnym rokiem — odznaczona.
+      final ended = _pos(
+        'rata',
+        months: _everyMonth(2026, 100),
+      ).copyWith(periodEnd: '2026-12');
+      expect(_svc.defaultCopySelected(ended, 2026), isFalse);
+    });
+
+    test('kopia roku nie dopisuje miesięcy poza okresem', () {
+      final p = _pos(
+        'rata',
+        months: _everyMonth(2026, 100),
+      ).copyWith(periodEnd: '2027-03');
+      final out = _svc.monthsWithYearCopied(p, 2026, 2027);
+      expect(
+        out.keys.where((k) => k.startsWith('2027-')),
+        ['2027-01', '2027-02', '2027-03'],
+      );
+    });
+
     test('kończące się raty, archiwalne i karta — domyślnie odznaczone', () {
       final installment = _pos(
         'rata',

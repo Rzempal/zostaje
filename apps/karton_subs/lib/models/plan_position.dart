@@ -114,6 +114,14 @@ class PlanPosition {
   /// Usunięcie jednej usuwa drugą — sama pożyczka bez spłaty zawyżałaby
   /// wpływy, a sama spłata zostawiłaby wydatek bez źródła.
   final String? linkId;
+
+  /// Okres obowiązywania ("RRRR-MM", oba końce włącznie): rata ma oba,
+  /// pozycja ze startem (umowa od listopada) samo [periodStart], pozycja
+  /// bez końca (czynsz, pensja) — żadnego. Poza okresem pozycja nie ma
+  /// miesięcy: ekran pozycji ich nie wypełni, a kontroler ich nie zapisze —
+  /// to zabezpieczenie przed „wypełnij puste" wpisującym ratę po spłacie.
+  final String? periodStart;
+  final String? periodEnd;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -130,6 +138,8 @@ class PlanPosition {
     this.archived = false,
     this.months = const {},
     this.linkId,
+    this.periodStart,
+    this.periodEnd,
     required this.createdAt,
     this.updatedAt,
   });
@@ -144,6 +154,27 @@ class PlanPosition {
 
   /// Czy pieniądze przychodzą (wpływ, pożyczka z karty) — kierunek przepływu.
   bool get isInflow => kind == PlanKind.income || kind == PlanKind.cardLoan;
+
+  bool get hasPeriod => periodStart != null || periodEnd != null;
+
+  /// Czy miesiąc mieści się w okresie pozycji (bez okresu — każdy).
+  /// Klucze "RRRR-MM" porównują się jak tekst, bo mają stałą długość.
+  bool inPeriod(String monthKey) =>
+      (periodStart == null || monthKey.compareTo(periodStart!) >= 0) &&
+      (periodEnd == null || monthKey.compareTo(periodEnd!) <= 0);
+
+  /// Czy miesiąc jest przed startem okresu (do opisu zablokowanego miesiąca).
+  bool beforePeriod(String monthKey) =>
+      periodStart != null && monthKey.compareTo(periodStart!) < 0;
+
+  /// Klucze miesięcy z kwotą, które leżą poza okresem — do pytania „usunąć?"
+  /// przy zawężaniu okresu.
+  List<String> monthsOutsidePeriod({String? start, String? end}) {
+    bool inside(String k) =>
+        (start == null || k.compareTo(start) >= 0) &&
+        (end == null || k.compareTo(end) <= 0);
+    return months.keys.where((k) => !inside(k)).toList()..sort();
+  }
 
   /// Kwota w miesiącu (0, gdy pozycja w nim nie obowiązuje).
   double amountIn(String monthKey) => months[monthKey]?.amount ?? 0;
@@ -189,6 +220,8 @@ class PlanPosition {
         ) ??
         const {},
     linkId: json['linkId'] as String?,
+    periodStart: json['periodStart'] as String?,
+    periodEnd: json['periodEnd'] as String?,
     createdAt: DateTime.parse(json['createdAt'] as String),
     updatedAt: json['updatedAt'] != null
         ? DateTime.parse(json['updatedAt'] as String)
@@ -212,6 +245,8 @@ class PlanPosition {
       for (final k in (months.keys.toList()..sort())) k: months[k]!.toJson(),
     },
     'linkId': ?linkId,
+    'periodStart': ?periodStart,
+    'periodEnd': ?periodEnd,
     'createdAt': createdAt.toIso8601String(),
     if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
   };
@@ -231,6 +266,10 @@ class PlanPosition {
     bool clearNote = false,
     bool? archived,
     Map<String, PlanMonth>? months,
+    String? periodStart,
+    bool clearPeriodStart = false,
+    String? periodEnd,
+    bool clearPeriodEnd = false,
     DateTime? updatedAt,
   }) => PlanPosition(
     id: id,
@@ -247,6 +286,8 @@ class PlanPosition {
     archived: archived ?? this.archived,
     months: months ?? this.months,
     linkId: linkId,
+    periodStart: clearPeriodStart ? null : (periodStart ?? this.periodStart),
+    periodEnd: clearPeriodEnd ? null : (periodEnd ?? this.periodEnd),
     createdAt: createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );

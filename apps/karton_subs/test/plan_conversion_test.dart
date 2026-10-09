@@ -268,6 +268,52 @@ void main() {
       expect(_keys(long).last, '2028-12');
     });
 
+    test('rata dostaje okres od pierwszej do ostatniej raty', () {
+      final rata = _single([
+        _e(
+          type: BudgetEntryType.installment,
+          installmentCount: 11,
+          startDate: DateTime(2026, 9, 28),
+        ),
+      ]);
+      expect(rata.periodStart, '2026-09');
+      expect(rata.periodEnd, '2027-07');
+    });
+
+    test('start w oknie konwersji → okres „od"; start sprzed okna → bez', () {
+      final later = _single([_e(startDate: DateTime(2026, 11, 5))]);
+      expect(later.periodStart, '2026-11');
+      expect(later.periodEnd, isNull);
+
+      final earlier = _single([_e(startDate: DateTime(2024, 3, 1))]);
+      expect(earlier.hasPeriod, isFalse);
+    });
+
+    test('wpływ jednorazowy i pozycja bez daty — bez okresu', () {
+      final bonus = _single([
+        _e(type: BudgetEntryType.oneTimeIncome, month: '2026-12'),
+      ]);
+      expect(bonus.hasPeriod, isFalse);
+      expect(_single([_e()]).hasPeriod, isFalse);
+    });
+
+    test('okres poszerza się, by objąć istniejące miesiące', () {
+      final period = PlanConversion.periodCovering(
+        (start: '2026-09', end: '2027-07'),
+        ['2026-08', '2026-10', '2027-09'],
+      );
+      expect(period.start, '2026-08');
+      expect(period.end, '2027-09');
+      // Brak końca zostaje brakiem — „od" nie zamienia się w „od–do".
+      expect(
+        PlanConversion.periodCovering(
+          (start: '2026-11', end: null),
+          ['2027-05'],
+        ).end,
+        isNull,
+      );
+    });
+
     test('rata bez liczby rat → pominięta z uwagą', () {
       final r = _convert([
         _e(type: BudgetEntryType.installment, startDate: DateTime(2026, 1, 1)),

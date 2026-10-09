@@ -123,4 +123,59 @@ void main() {
       expect(planMonthKey(2027, 12), '2027-12');
     });
   });
+
+  // Okres (od–do) chroni ratę przed wpisaniem po spłacie i pozycję przed
+  // wpisaniem przed startem.
+  group('PlanPosition — okres', () {
+    final rata = _position(months: const {}).copyWith(
+      periodStart: '2026-09',
+      periodEnd: '2027-07',
+    );
+
+    test('miesiące w okresie i poza nim, oba końce włącznie', () {
+      expect(rata.hasPeriod, isTrue);
+      expect(rata.inPeriod('2026-08'), isFalse);
+      expect(rata.inPeriod('2026-09'), isTrue);
+      expect(rata.inPeriod('2027-07'), isTrue);
+      expect(rata.inPeriod('2027-08'), isFalse);
+      expect(rata.beforePeriod('2026-08'), isTrue);
+      expect(rata.beforePeriod('2027-08'), isFalse);
+    });
+
+    test('pozycja bez okresu obowiązuje w każdym miesiącu', () {
+      final p = _position();
+      expect(p.hasPeriod, isFalse);
+      expect(p.inPeriod('1999-01'), isTrue);
+    });
+
+    test('samo „od" — bez końca', () {
+      final p = _position().copyWith(periodStart: '2026-11');
+      expect(p.inPeriod('2026-10'), isFalse);
+      expect(p.inPeriod('2099-12'), isTrue);
+    });
+
+    test('okres w JSON tam i z powrotem; brak okresu nie zapisuje kluczy', () {
+      final back = PlanPosition.fromJson(rata.toJson());
+      expect(back.periodStart, '2026-09');
+      expect(back.periodEnd, '2027-07');
+      expect(_position().toJson().containsKey('periodStart'), isFalse);
+    });
+
+    test('miesiące z kwotą poza nowym okresem — do pytania przy zawężaniu', () {
+      final p = _position();
+      expect(
+        p.monthsOutsidePeriod(start: '2026-06', end: '2026-12'),
+        ['2026-01', '2027-02'],
+      );
+      expect(p.monthsOutsidePeriod(), isEmpty);
+    });
+
+    test('copyWith czyści okres na życzenie', () {
+      final cleared = rata.copyWith(
+        clearPeriodStart: true,
+        clearPeriodEnd: true,
+      );
+      expect(cleared.hasPeriod, isFalse);
+    });
+  });
 }

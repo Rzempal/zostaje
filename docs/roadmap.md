@@ -47,7 +47,8 @@ korekt, przelewow wewnetrznych i porownan plan/realne — [ADR-035](adr/ADR-035-
 | E4 | Kopia zapasowa v8, Excel jako tabela roku, usuniecie synchronizacji | ✅ |
 | E5 | Sprzatanie kodu, testow i dokumentacji; statusy zastapionych ADR | ✅ |
 | E6 | Przelaczenie PROD po akceptacji testow na DEV (0.27, 2026-10-08) | ✅ |
-| E7 | Po migracji PROD: usuniecie danych synchronizacji domowej z Supabase (projekt „karton", wspoldzielony — tylko obiekty sync tej aplikacji, za zgoda wlasciciela) | ⏳ |
+| E7 | Po migracji PROD: usuniecie danych synchronizacji domowej z Supabase (projekt „karton", wspoldzielony — tylko `sync_envelopes`, `sync_pull`, `sync_push`; obiekty APPteczki zostaja) | ⏳ zgoda jest; usuniecie zablokowane przez zabezpieczenie trybu automatycznego — do wykonania recznie albo po dodaniu uprawnienia |
+| E8 | Ekran pozycji: siatka 3×4, szybkie wypelnianie (puste / zaznaczone), okres od–do (raty, start) wyszarzajacy miesiace poza nim; okresy dla planu sprzed nich; kolumny Od/Do w Excelu | ✅ DEV (2026-10-09) |
 
 ---
 

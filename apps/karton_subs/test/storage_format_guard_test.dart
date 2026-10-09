@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:karton_subs/models/spending_allocation_item.dart';
 import 'package:karton_subs/models/budget_entry.dart';
+import 'package:karton_subs/models/plan_position.dart';
 import 'package:karton_subs/models/subscription.dart';
 import 'package:karton_subs/services/backup_service.dart';
 import 'package:karton_subs/services/storage_service.dart';
@@ -116,6 +117,33 @@ void main() {
       final items = storage.getSpendingAllocationItemsRaw(BudgetScope.personal);
       expect(items, hasLength(1));
       expect(items.single.amount, 420.0);
+    });
+  });
+
+  group('Format zapisu — pozycja planu (ADR-035)', () {
+    test('okres pozycji leży pod „periodStart" i „periodEnd"', () {
+      final json = PlanPosition(
+        id: 'r',
+        budgetId: 'personal',
+        name: 'Rata',
+        kind: PlanKind.expense,
+        currency: Currency.PLN,
+        periodStart: '2026-09',
+        periodEnd: '2027-07',
+        createdAt: DateTime(2026, 9, 1),
+      ).toJson();
+
+      // Wersja 0.27 tych kluczy nie zna i je pomija — zmiana nazwy w nowej
+      // wersji zgubiłaby okresy zapisane w kopiach i w bazie.
+      expect(json['periodStart'], '2026-09');
+      expect(json['periodEnd'], '2027-07');
+    });
+
+    test('kopia niesie znacznik planu z okresami', () {
+      final payload =
+          jsonDecode(BackupService(storage).buildJsonPayloadForTest())
+              as Map<String, dynamic>;
+      expect(payload['planPeriods'], isTrue);
     });
   });
 }

@@ -331,6 +331,14 @@ class StorageService {
   Future<void> setPlanEnvelopeMigrated(bool value) =>
       _settingsBox.put('planEnvelopeMigrated', value);
 
+  /// Czy pozycje planu dostały okresy (raty, daty startu) ze starych pozycji
+  /// budżetu — jednorazowe uzupełnienie planu sprzed okresów (ADR-035).
+  bool getPlanPeriodsMigrated() =>
+      _settingsBox.get('planPeriodsMigrated', defaultValue: false) as bool;
+
+  Future<void> setPlanPeriodsMigrated(bool value) =>
+      _settingsBox.put('planPeriodsMigrated', value);
+
   // ── Ustawienia w backupie (format v7) ──────────────────────────────────────
   //
   // Tylko preferencje UZYTKOWNIKA, ktore zmieniaja liczby albo dzialanie apki.
@@ -400,6 +408,7 @@ class StorageService {
       _planPositionsCache.clear();
       await setPlanConversionVersion(0);
       await setPlanEnvelopeMigrated(false);
+      await setPlanPeriodsMigrated(false);
     }
     if (budgetPersonal) {
       await _budgetEntriesBox.clear();

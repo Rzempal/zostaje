@@ -93,8 +93,19 @@ class PlanController extends ChangeNotifier {
 
   // ── Pozycje ────────────────────────────────────────────────────────────────
 
-  Future<void> _save(PlanPosition p) =>
-      _storage.savePlanPosition(p.copyWith(updatedAt: DateTime.now()));
+  /// Każdy zapis pilnuje okresu: miesiąc poza nim nie trafia do planu, skąd
+  /// by nie przyszedł (formularz, szybkie wypełnianie, kopiowanie roku).
+  Future<void> _save(PlanPosition p) => _storage.savePlanPosition(
+    p.copyWith(
+      months: p.hasPeriod
+          ? {
+              for (final e in p.months.entries)
+                if (p.inPeriod(e.key)) e.key: e.value,
+            }
+          : null,
+      updatedAt: DateTime.now(),
+    ),
+  );
 
   Future<PlanPosition> create({
     required String name,
@@ -105,6 +116,8 @@ class PlanController extends ChangeNotifier {
     String? paymentMethod,
     int? day,
     String? note,
+    String? periodStart,
+    String? periodEnd,
   }) async {
     final p = PlanPosition(
       id: _uuid.v4(),
@@ -117,6 +130,8 @@ class PlanController extends ChangeNotifier {
       day: day,
       note: note,
       months: months,
+      periodStart: periodStart,
+      periodEnd: periodEnd,
       createdAt: DateTime.now(),
     );
     await _save(p);
@@ -141,20 +156,25 @@ class PlanController extends ChangeNotifier {
   }
 
   /// Zmiany miesięcy jednej pozycji: klucz → nowy miesiąc, `null` = usuń
-  /// miesiąc z planu.
-  Future<void> setMonths(String id, Map<String, PlanMonth?> changes) async {
+  /// miesiąc z planu. Miesiąc poza okresem pozycji jest pomijany. Zwraca
+  /// liczbę miesięcy, które faktycznie się zmieniły.
+  Future<int> setMonths(String id, Map<String, PlanMonth?> changes) async {
     final p = position(id);
-    if (p == null) return;
+    if (p == null) return 0;
     final months = Map<String, PlanMonth>.of(p.months);
+    var applied = 0;
     for (final MapEntry(key: key, value: m) in changes.entries) {
       if (m == null) {
-        months.remove(key);
-      } else {
+        if (months.remove(key) != null) applied++;
+      } else if (p.inPeriod(key)) {
         months[key] = m;
+        applied++;
       }
     }
+    if (applied == 0) return 0;
     await _save(p.copyWith(months: months));
     notifyListeners();
+    return applied;
   }
 
   /// Identyfikatory razem z partnerami z pary karty — operacja na połowie
@@ -211,10 +231,14 @@ class PlanController extends ChangeNotifier {
   // ── Plan na kolejny rok ────────────────────────────────────────────────────
 
   /// Pozycje, które da się przenieść z [fromYear] — wszystkie poza kartą,
-  /// które mają w tym roku choć jeden miesiąc.
+  /// które mają w tym roku choć jeden miesiąc, a ich okres sięga kolejnego
+  /// roku (zakończonej raty nie ma czego przenosić).
   List<PlanPosition> copyCandidates(int fromYear) => [
     for (final p in positions)
-      if (!p.isCard && p.hasYear(fromYear)) p,
+      if (!p.isCard &&
+          p.hasYear(fromYear) &&
+          !PlanService.endsBefore(p, fromYear + 1))
+        p,
   ];
 
   bool defaultCopySelected(PlanPosition p, int fromYear) =>

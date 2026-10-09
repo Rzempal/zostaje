@@ -99,6 +99,28 @@ void main() {
       expect(czynsz.kind, PlanKind.expense);
     });
 
+    test('okres (Od/Do) wraca z arkusza razem z ratą', () {
+      final bytes = PlanExcel.build(
+        positions: [
+          _pos('r', 'Fold 8', {
+            '2026-11': 226.21,
+            '2026-12': 226.21,
+            '2027-01': 226.21,
+          }).copyWith(periodStart: '2026-11', periodEnd: '2027-01'),
+        ],
+        categories: const [],
+        years: [2026, 2027],
+      );
+
+      final fold = PlanExcel.parse(
+        bytes,
+        budgetId: kBudgetPersonal,
+      ).positions.single;
+      expect(fold.periodStart, '2026-11');
+      expect(fold.periodEnd, '2027-01');
+      expect(fold.months, hasLength(3));
+    });
+
     test('pozycje karty idą do arkusza, ale z niego nie wracają', () {
       final bytes = PlanExcel.build(
         positions: [
@@ -144,14 +166,21 @@ void main() {
         PlanExcel.headers.map<CellValue?>(TextCellValue.new).toList();
 
     test('złe kwoty i wiersz bez kwot są raportowane, reszta wchodzi', () {
+      // Komórki po nazwie kolumny, nie po pozycji — arkusz dostaje nowe
+      // kolumny (np. Od/Do), a test ma sprawdzać kwoty, nie układ.
+      List<CellValue?> row(Map<String, CellValue> cells) => [
+        for (final h in PlanExcel.headers) cells[h],
+      ];
       final bytes = sheet([
         header(),
-        [
-          TextCellValue('Wydatek'), TextCellValue('Prąd'), null, null, null,
-          null, null, TextCellValue('1 234,50'), TextCellValue('abc'),
-        ],
-        [TextCellValue('Wydatek'), TextCellValue('Pusty')],
-        [null, null, null, null, null, null, null, DoubleCellValue(5)],
+        row({
+          'Rodzaj': TextCellValue('Wydatek'),
+          'Nazwa': TextCellValue('Prąd'),
+          'sty': TextCellValue('1 234,50'),
+          'lut': TextCellValue('abc'),
+        }),
+        row({'Rodzaj': TextCellValue('Wydatek'), 'Nazwa': TextCellValue('Pusty')}),
+        row({'sty': DoubleCellValue(5)}),
       ]);
 
       final result =
@@ -162,6 +191,49 @@ void main() {
       expect(prad.months, hasLength(1));
       expect(prad.amountIn('2026-01'), closeTo(1234.5, 0.001));
       expect(result.skipped, hasLength(3)); // zła kwota, pusty, brak nazwy
+    });
+
+    test('miesiące poza okresem z arkusza są pomijane z raportem', () {
+      final header = PlanExcel.headers;
+      final bytes = sheet([
+        header.map<CellValue?>(TextCellValue.new).toList(),
+        [
+          for (final h in header)
+            switch (h) {
+              'Rodzaj' => TextCellValue('Wydatek'),
+              'Nazwa' => TextCellValue('Rata'),
+              'Od' => TextCellValue('03.2026'),
+              'Do' => TextCellValue('2026-04'),
+              'lut' || 'mar' || 'kwi' || 'maj' => DoubleCellValue(-100),
+              _ => null,
+            },
+        ],
+        [
+          for (final h in header)
+            switch (h) {
+              'Nazwa' => TextCellValue('Zły okres'),
+              'Od' => TextCellValue('2026-05'),
+              'Do' => TextCellValue('2026-01'),
+              'sty' => DoubleCellValue(10),
+              _ => null,
+            },
+        ],
+      ]);
+
+      final result = PlanExcel.parse(
+        Uint8List.fromList(bytes),
+        budgetId: kBudgetPersonal,
+      );
+      final rata = result.positions.firstWhere((p) => p.name == 'Rata');
+      expect(rata.months.keys.toList()..sort(), ['2026-03', '2026-04']);
+      expect(result.skipped, contains('Rata: pominięto 2 mies. poza okresem'));
+
+      final bad = result.positions.firstWhere((p) => p.name == 'Zły okres');
+      expect(bad.hasPeriod, isFalse);
+      expect(
+        result.skipped,
+        contains('Zły okres: koniec okresu przed startem — okres pominięty'),
+      );
     });
 
     test('plik bez zakładki „Plan RRRR" jest odrzucany', () {

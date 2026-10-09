@@ -35,6 +35,8 @@ class PlanExcel {
     'Dzień',
     'Waluta',
     'Notatka',
+    'Od',
+    'Do',
     ...monthLabels,
     'Suma roku',
   ];
@@ -87,6 +89,9 @@ class PlanExcel {
           p.day == null ? null : IntCellValue(p.day!),
           TextCellValue(p.currency.label),
           TextCellValue(sanitizeCell(p.note ?? '')),
+          // Okres jako tekst „RRRR-MM" — Excel nie zamieni go na datę.
+          TextCellValue(p.periodStart ?? ''),
+          TextCellValue(p.periodEnd ?? ''),
           for (var m = 1; m <= 12; m++) _monthCell(p, year, m),
           DoubleCellValue(_signed(p, p.yearTotal(year))),
         ]);
@@ -223,11 +228,15 @@ class PlanExcel {
           continue;
         }
 
+        final start = _monthKeyOf(col[_Col.start], cells);
+        final end = _monthKeyOf(col[_Col.end], cells);
         final key = '${kind.name}|${name.toLowerCase()}';
         final existing = byKey[key];
         if (existing != null) {
           byKey[key] = existing.copyWith(
             months: {...existing.months, ...months},
+            periodStart: existing.periodStart ?? start,
+            periodEnd: existing.periodEnd ?? end,
           );
           continue;
         }
@@ -247,6 +256,8 @@ class PlanExcel {
           day: day != null && day >= 1 && day <= 31 ? day : null,
           note: _stripApostrophe(cell(_Col.note)),
           months: months,
+          periodStart: start,
+          periodEnd: end,
           createdAt: created,
         );
       }
@@ -258,9 +269,65 @@ class PlanExcel {
       );
     }
     return PlanExcelImportResult(
-      positions: byKey.values.toList(),
+      positions: [
+        for (final p in byKey.values) ?_withinPeriod(p, skipped),
+      ],
       skipped: skipped,
     );
+  }
+
+  /// Pozycja z okresem bez miesięcy spoza niego — jak w aplikacji, gdzie
+  /// takich miesięcy nie da się wpisać. Okres z końcem przed startem
+  /// pomijamy (błąd w arkuszu), a pozycję bez kwot w okresie — całą.
+  static PlanPosition? _withinPeriod(PlanPosition p, List<String> skipped) {
+    var q = p;
+    final start = q.periodStart, end = q.periodEnd;
+    if (start != null && end != null && end.compareTo(start) < 0) {
+      skipped.add('${q.name}: koniec okresu przed startem — okres pominięty');
+      q = q.copyWith(clearPeriodStart: true, clearPeriodEnd: true);
+    }
+    final outside = q.monthsOutsidePeriod(
+      start: q.periodStart,
+      end: q.periodEnd,
+    ).toSet();
+    if (outside.isNotEmpty) {
+      skipped.add('${q.name}: pominięto ${outside.length} mies. poza okresem');
+      q = q.copyWith(
+        months: {
+          for (final e in q.months.entries)
+            if (!outside.contains(e.key)) e.key: e.value,
+        },
+      );
+    }
+    if (q.months.isEmpty) {
+      skipped.add('${q.name}: brak kwot w okresie');
+      return null;
+    }
+    return q;
+  }
+
+  /// Miesiąc „RRRR-MM" z komórki okresu: tekst „2026-09", „09.2026",
+  /// „9/2026", pełna data albo komórka-data Excela. Pusta lub nieczytelna
+  /// = brak (pozycja bez tego końca okresu).
+  static String? _monthKeyOf(int? index, List<Data?> cells) {
+    if (index == null || index >= cells.length) return null;
+    final v = cells[index]?.value;
+    if (v is DateCellValue) return planMonthKey(v.year, v.month);
+    if (v is DateTimeCellValue) {
+      final d = v.asDateTimeLocal();
+      return planMonthKey(d.year, d.month);
+    }
+    final t = cellText(cells[index])?.trim() ?? '';
+    final ym = RegExp(r'^(\d{4})[-/.](\d{1,2})').firstMatch(t);
+    final my = RegExp(r'^(\d{1,2})[-/.](\d{4})$').firstMatch(t);
+    final (y, m) = ym != null
+        ? (int.parse(ym.group(1)!), int.parse(ym.group(2)!))
+        : my != null
+        ? (int.parse(my.group(2)!), int.parse(my.group(1)!))
+        : (0, 0);
+    return y >= 2000 && y <= 2100 && m >= 1 && m <= 12
+        ? planMonthKey(y, m)
+        : null;
   }
 
   static int? _yearOfSheet(String name) {
@@ -294,6 +361,10 @@ class PlanExcel {
         c = _Col.currency;
       } else if (h.startsWith('notat')) {
         c = _Col.note;
+      } else if (h == 'od' || h.startsWith('od ')) {
+        c = _Col.start;
+      } else if (h == 'do' || h.startsWith('do ')) {
+        c = _Col.end;
       }
       if (c != null) map.putIfAbsent(c, () => i);
     }
@@ -360,6 +431,8 @@ enum _Col {
   day,
   currency,
   note,
+  start,
+  end,
   month1,
   month2,
   month3,
