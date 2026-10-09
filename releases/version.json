@@ -1,6 +1,14 @@
 {
-  "version": "0.27.26100900",
+  "versionCode": 2026100901,
+  "version": "0.27.26100901",
+  "releaseDate": "2026-10-09T15:49:13Z",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026100901",
+  "releaseNotes": "- Wydatki: przelacznik czesci stoi nad jej lista, przy prawej krawedzi (bez powtorzonego podtytulu)",
   "changelog": [
+    {
+      "version": "0.27.26100901",
+      "notes": "- Wydatki: przelacznik czesci stoi nad jej lista, przy prawej krawedzi (bez powtorzonego podtytulu)"
+    },
     {
       "version": "0.27.26100900",
       "notes": "- Ekran pozycji: siatka roku zamiast dlugiej listy\n- Szybkie wypelnianie: kwota w puste albo zaznaczone miesiace\n- Okres pozycji: miesiace przed startem i po splacie raty wyszarzone\n- Wydatki: chevron w naglowku rozwija obie listy\n- Excel: kolumny Od i Do"
@@ -36,14 +44,6 @@
     {
       "version": "0.24.26080901",
       "notes": "- Sortowanie sekcji miesiaca ma trzeci tryb: od najwiekszej kwoty (przycisk cykluje data / A-Z / kwota)\n- Platnosci i Podsumowanie miesiaca maja osobne ustawienia widoku — sortowanie, grupowanie i zwijanie dzialaja niezaleznie\n- Ustawienia widoku sa zapamietywane i przezywaja wyjscie z zakladki"
-    },
-    {
-      "version": "0.23.26080900",
-      "notes": "- Import budzetu i subskrypcji z Excela przeniesiony z menu Dodaj do Ustawien -> Eksport/import danych\n- Menu Dodaj na Wplywach i Cyklicznych ma teraz tylko dodawanie\n- Import DOKLADA pozycje z arkusza; nie zastepuje kopii zapasowej"
     }
-  ],
-  "versionCode": 2026100900,
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026100900",
-  "releaseNotes": "- Ekran pozycji: siatka roku zamiast dlugiej listy\n- Szybkie wypelnianie: kwota w puste albo zaznaczone miesiace\n- Okres pozycji: miesiace przed startem i po splacie raty wyszarzone\n- Wydatki: chevron w naglowku rozwija obie listy\n- Excel: kolumny Od i Do",
-  "releaseDate": "2026-10-09T15:37:00Z"
+  ]
 }
