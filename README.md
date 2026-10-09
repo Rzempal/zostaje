@@ -25,8 +25,9 @@ Aplikacja mobilna do zarzadzania domowymi finansami: subskrypcje cyfrowe + budze
   liczone osobno jako "pozyczki netto" (ADR-036)
 - **Budzet:** zakladka ze statystykami roku (srednio miesiecznie, wykres 12 miesiecy,
   kategorie, limity subskrypcji) i kalendarzem platnosci do odhaczania
-- **Budzet osobisty i domowy:** dwa niezalezne plany, przelaczane jednym gestem;
-  subskrypcje z przynaleznoscia osobista/domowa
+- **Budzety z nazwami i ikonami:** dowolnie wiele oddzielnych budzetow (domyslnie
+  Osobisty i Domowy) — kazdy z wlasnym planem i subskrypcjami; przelacznik u gory
+  i gest przesuniecia; ukrywanie, przenoszenie i kopiowanie zawartosci (ADR-037)
 - Przypomnienia o odnowieniach i trialach
 - **Excel (.xlsx):** subskrypcje oraz plan jako tabela roku (zakladka na rok,
   wydatki jako liczby ujemne) — tak udostepnia sie budzet drugiej osobie;

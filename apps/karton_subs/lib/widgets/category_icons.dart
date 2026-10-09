@@ -70,6 +70,12 @@ Color? paymentMethodIconColor(PaymentMethod pm, AppSemanticColors c) =>
 /// wcześniej i nie ma po co ich migrować.
 IconData categoryIcon(String? name) {
   return switch (name) {
+    // ── Ludzie i pieniądze (także ikony budżetów, ADR-037) ──
+    'user' => LucideIcons.user,
+    'users' => LucideIcons.users,
+    'briefcase' => LucideIcons.briefcase,
+    'piggyBank' || 'piggy-bank' => LucideIcons.piggyBank,
+
     // ── Dom i wydatki bieżące ──
     'home' => LucideIcons.home,
     'bed' => LucideIcons.bed,
@@ -139,6 +145,8 @@ IconData categoryIcon(String? name) {
 /// transport, zdrowie, rozrywka, praca), żeby przy kilkudziesięciu pozycjach
 /// dało się szukać wzrokiem, a nie tylko przewijać.
 const List<String> availableIconNames = [
+  // Ludzie i pieniądze (także ikony budżetów)
+  'user', 'users', 'briefcase', 'piggyBank',
   // Dom i wydatki bieżące
   'home', 'bed', 'zap', 'wifi', 'phone', 'mail',
   'drill', 'soapDispenserDroplet', 'swatchBook',

@@ -14,6 +14,7 @@ import '../widgets/aurora_add_menu.dart';
 import '../widgets/budget_widgets.dart' show BudgetEntryList, budgetNf;
 import '../widgets/category_icons.dart' show subscriptionIcon;
 import '../widgets/filter_bars.dart';
+import '../widgets/budget_picker.dart' show moveOrCopyPositions;
 import '../widgets/plan_widgets.dart';
 import '../widgets/scope_swipe_area.dart';
 import '../widgets/selection_bar.dart';
@@ -168,6 +169,42 @@ class _PlanningScreenState extends State<PlanningScreen> {
     }
   }
 
+  /// Zaznaczone pozycje do innego budżetu (ADR-037): najpierw „przenieś czy
+  /// kopiuj", potem budżet docelowy.
+  Future<void> _bulkToBudget(Set<String> ids) async {
+    final copy = await showModalBottomSheet<bool>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetCtx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(LucideIcons.arrowRightLeft),
+              title: Text('Przenieś ${ids.length} poz. do budżetu…'),
+              subtitle: const Text('Razem z odhaczonymi płatnościami'),
+              onTap: () => Navigator.pop(sheetCtx, false),
+            ),
+            ListTile(
+              leading: const Icon(LucideIcons.copy),
+              title: Text('Kopiuj ${ids.length} poz. do budżetu…'),
+              subtitle: const Text('Pozycje zostają też tutaj'),
+              onTap: () => Navigator.pop(sheetCtx, true),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (copy == null || !mounted) return;
+    final done = await moveOrCopyPositions(
+      context,
+      ids,
+      copy: copy,
+      fromBudgetId: context.read<BudgetController>().budgetId,
+    );
+    if (done && mounted) _endSelection();
+  }
+
   Future<void> _bulkDelete(Set<String> ids) async {
     final plan = context.read<PlanController>();
     final ok = await showDialog<bool>(
@@ -201,10 +238,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
   Future<void> _push(Widget screen) =>
       Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
 
-  SubscriptionScope get _subscriptionScope =>
-      context.read<BudgetController>().isHousehold
-      ? SubscriptionScope.household
-      : SubscriptionScope.personal;
 
   void _showSubscriptionActions(Subscription sub) {
     final subs = context.read<SubscriptionController>();
@@ -393,7 +426,11 @@ class _PlanningScreenState extends State<PlanningScreen> {
             icon: subscriptionIcon,
             label: 'Dodaj subskrypcję',
             onTap: () =>
-                _push(AddSubscriptionScreen(initialScope: _subscriptionScope)),
+                _push(
+                  AddSubscriptionScreen(
+                    initialBudgetId: context.read<BudgetController>().budgetId,
+                  ),
+                ),
           ),
           AuroraAddAction(
             icon: LucideIcons.creditCard,
@@ -447,6 +484,11 @@ class _PlanningScreenState extends State<PlanningScreen> {
                       ? 'Ukryj zaznaczone'
                       : 'Przywróć zaznaczone',
                   onPressed: () => _bulkArchive(selection, anyActiveSelected),
+                ),
+                SelectionAction(
+                  icon: LucideIcons.arrowRightLeft,
+                  tooltip: 'Przenieś lub kopiuj do innego budżetu',
+                  onPressed: () => _bulkToBudget(selection),
                 ),
                 SelectionAction(
                   icon: LucideIcons.trash2,
@@ -535,7 +577,7 @@ class _PlanningScreenState extends State<PlanningScreen> {
           ),
           Expanded(
             child: ScopeSwipeArea(
-              enabled: budget.scopeSelectable,
+              enabled: budget.canSwitch,
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
                 physics: const AlwaysScrollableScrollPhysics(),

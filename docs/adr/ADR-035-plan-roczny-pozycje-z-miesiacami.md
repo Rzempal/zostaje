@@ -48,6 +48,9 @@ wymagana — z jednym warunkiem: nie stracić pozycji.
 
 ### 2. Budżety jako identyfikatory
 
+> Rozwinięte w [ADR-037](ADR-037-budzety-z-nazwami.md): budżety z własnymi
+> nazwami i ikonami, przenoszenie i kopiowanie zawartości.
+
 Pozycja niesie `budgetId`, a nie wartość wyliczeniową. Na start dwa budżety
 (`personal`, `household` — dawne zakresy); budżety z własnymi nazwami dojdą
 później bez ponownej konwersji danych.

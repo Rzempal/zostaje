@@ -8,7 +8,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:uuid/uuid.dart';
 
+import '../models/budget.dart';
 import '../models/category.dart';
+import '../models/plan_position.dart' show kBudgetHousehold, kBudgetPersonal;
 import '../models/subscription.dart';
 import '../utils/cycle_math.dart';
 import 'app_logger.dart';
@@ -60,7 +62,7 @@ class ExcelService {
   Future<void> exportToFile() async {
     final subs = _storage.getSubscriptions();
     final categories = _storage.getCategories();
-    final bytes = _buildWorkbook(subs, categories);
+    final bytes = _buildWorkbook(subs, categories, _storage.getBudgets());
 
     final dir = await getTemporaryDirectory();
     final dateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
@@ -92,8 +94,10 @@ class ExcelService {
 
   static Uint8List _buildWorkbook(
     List<Subscription> subs,
-    List<Category> categories,
-  ) {
+    List<Category> categories, [
+    List<Budget> budgets = Budget.defaults,
+  ]) {
+    final budgetName = {for (final b in budgets) b.id: b.name};
     final excel = Excel.createExcel();
     // createExcel() tworzy domyślny "Sheet1" — zmieniamy nazwę na czytelną.
     excel.rename(excel.getDefaultSheet() ?? 'Sheet1', _sheetName);
@@ -119,8 +123,9 @@ class ExcelService {
         TextCellValue(_sanitizeCell(s.paymentMethod ?? '')),
         TextCellValue(s.isActive ? 'tak' : 'nie'),
         TextCellValue(DateFormat('yyyy-MM-dd').format(s.startDate)),
-        TextCellValue(
-            s.scope == SubscriptionScope.household ? 'Domowe' : 'Osobiste'),
+        // Kolumna „Zakres" niesie nazwę budżetu (ADR-037); import dopasowuje
+        // ją po nazwie, a stare „Osobiste/Domowe" — do dwóch pierwszych.
+        TextCellValue(_sanitizeCell(budgetName[s.budgetId] ?? '')),
       ]);
     }
 
@@ -167,7 +172,11 @@ class ExcelService {
 
   /// Otwiera file picker, parsuje arkusz poza głównym wątkiem, mapuje wiersze na
   /// gotowe subskrypcje (nowe id). NIE zapisuje — zwraca wynik do zatwierdzenia.
-  Future<ExcelImportResult> pickAndParse() async {
+  /// [fallbackBudgetId] — budżet dla wierszy bez rozpoznanego „Zakresu"
+  /// (zwykle aktywny).
+  Future<ExcelImportResult> pickAndParse({
+    String fallbackBudgetId = kBudgetPersonal,
+  }) async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.any,
       withData: true,
@@ -191,12 +200,15 @@ class ExcelService {
     // Parsowanie w osobnym wątku — duży/spreparowany plik nie zawiesi UI.
     final raw = await compute(_parseWorkbook, bytes);
 
-    return _mapRowsToSubscriptions(raw);
+    return _mapRowsToSubscriptions(raw, fallbackBudgetId);
   }
 
   /// Mapuje surowe wiersze na subskrypcje. Wykonywane na głównym wątku, bo
   /// wymaga dostępu do bazy (dopasowanie kategorii/metod płatności po nazwie).
-  ExcelImportResult _mapRowsToSubscriptions(_RawParse raw) {
+  ExcelImportResult _mapRowsToSubscriptions(
+    _RawParse raw,
+    String fallbackBudgetId,
+  ) {
     // Mapy do dopasowania po nazwie (case-insensitive). Zachowujemy oryginalną
     // pisownię z bazy (id kategorii, dokładną nazwę metody płatności).
     final catByName = <String, String>{};
@@ -212,15 +224,48 @@ class ExcelService {
         .map((s) => s.name.toLowerCase().trim())
         .toSet();
 
-    return _buildResult(raw, catByName, pmByName, existingNames);
+    return _buildResult(
+      raw,
+      catByName,
+      pmByName,
+      existingNames,
+      _storage.getBudgets(),
+      fallbackBudgetId,
+    );
+  }
+
+  /// Budżet z kolumny „Zakres": nazwa budżetu (bez wielkości liter), a dla
+  /// arkuszy sprzed ADR-037 — „Osobiste"/„Domowe"; inaczej [fallback].
+  static String _budgetFor(
+    String? raw,
+    List<Budget> budgets,
+    String fallback,
+  ) {
+    final t = raw?.toLowerCase().trim() ?? '';
+    if (t.isEmpty) return fallback;
+    for (final b in budgets) {
+      if (b.name.toLowerCase().trim() == t) return b.id;
+    }
+    bool has(String id) => budgets.any((b) => b.id == id);
+    if ((t.contains('domow') || t.contains('household')) &&
+        has(kBudgetHousehold)) {
+      return kBudgetHousehold;
+    }
+    if ((t.contains('osobist') || t.contains('personal')) &&
+        has(kBudgetPersonal)) {
+      return kBudgetPersonal;
+    }
+    return fallback;
   }
 
   static ExcelImportResult _buildResult(
     _RawParse raw,
     Map<String, String> catByName,
     Map<String, String> pmByName,
-    Set<String> existingNames,
-  ) {
+    Set<String> existingNames, [
+    List<Budget> budgets = Budget.defaults,
+    String fallbackBudgetId = kBudgetPersonal,
+  ]) {
     final now = DateTime.now();
     final subscriptions = <Subscription>[];
     final warnings = <String>[];
@@ -250,7 +295,7 @@ class ExcelService {
         startDate: row.startDate,
         isActive: row.isActive,
         paymentMethod: paymentMethod,
-        scope: row.scope,
+        budgetId: _budgetFor(row.budgetName, budgets, fallbackBudgetId),
         dataDodania: now,
       ));
     }
@@ -301,7 +346,14 @@ class ExcelService {
 
     final dir = await getTemporaryDirectory();
     final dateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final file = File('${dir.path}/plan_${budgetLabel}_$dateStr.xlsx');
+    // Nazwa budżetu jest dowolna (ADR-037) — w nazwie pliku tylko litery
+    // i cyfry, reszta (spacje, ukośniki) jako „_".
+    final safeLabel = budgetLabel
+        .replaceAll(RegExp(r'[^\p{L}\p{N}]+', unicode: true), '_')
+        .replaceAll(RegExp(r'^_+|_+$'), '');
+    final file = File(
+      '${dir.path}/plan_${safeLabel.isEmpty ? 'budzet' : safeLabel}_$dateStr.xlsx',
+    );
     await file.writeAsBytes(bytes);
 
     await Share.shareXFiles(
@@ -402,7 +454,8 @@ class _RawRow {
   final String? paymentName;
   final bool isActive;
   final DateTime startDate;
-  final SubscriptionScope scope;
+  /// Surowa wartość kolumny „Zakres" (nazwa budżetu).
+  final String? budgetName;
 
   _RawRow({
     required this.name,
@@ -415,7 +468,7 @@ class _RawRow {
     this.paymentName,
     required this.isActive,
     required this.startDate,
-    this.scope = SubscriptionScope.personal,
+    this.budgetName,
   });
 }
 
@@ -534,7 +587,7 @@ _RawParse _parseWorkbook(Uint8List bytes) {
       paymentName: _blankToNull(cell(_HeaderField.payment)),
       isActive: _parseActive(cell(_HeaderField.active)),
       startDate: _parseDate(cell(_HeaderField.date)),
-      scope: _parseSubscriptionScope(cell(_HeaderField.scope)),
+      budgetName: _blankToNull(cell(_HeaderField.scope)),
     ));
   }
 
@@ -623,15 +676,6 @@ String? _blankToNull(String? v) {
   if (v == null) return null;
   final t = v.trim();
   return t.isEmpty ? null : t;
-}
-
-SubscriptionScope _parseSubscriptionScope(String? raw) {
-  if (raw == null) return SubscriptionScope.personal;
-  final t = raw.toLowerCase().trim();
-  if (t.contains('domow') || t.contains('household') || t.contains('home')) {
-    return SubscriptionScope.household;
-  }
-  return SubscriptionScope.personal;
 }
 
 /// Parsuje kwotę tolerując polskie i angielskie formaty: "43,00", "43.00",

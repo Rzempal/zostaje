@@ -26,6 +26,7 @@
 | 15 | Przejscie na Google Play | Planowana (kierunek bez terminu — ADR-031) |
 | 16 | Przebudowa: plan roczny (ADR-035) | ✅ Na PROD od 0.27 (2026-10-08); E7 (Supabase) odlozone — TBD |
 | 17 | Pozyczki ratalne (ADR-036) | ✅ PROD (2026-10-09) — sekcja Pozyczki, raty z RRSO, zakup jako wydatek |
+| 18 | Budzety z nazwami i ikonami (ADR-037) | 🚧 DEV — do akceptacji |
 
 > **Stan na 2026-10-08:** przebudowa scalona do `main` i wydana na PROD (0.27).
 > Ostatnia wersja sprzed przebudowy to `v0.26.26100600` — punkt powrotu (zbudowac
@@ -518,7 +519,7 @@ i porownaniu planu z rzeczywistoscia usuniete — tych funkcji juz nie ma.
 3. TBD — E7: sprzatanie danych synchronizacji w Supabase (projekt wspolny z APPteczka — tylko obiekty Zostaje; polecenie SQL w tabeli Fazy 16).
 
 **Funkcje**
-4. Budzety z wlasnymi nazwami (wiecej niz Osobisty/Domowy) — plan ma juz `budgetId`; subskrypcje, odhaczenia, tryb budzetu i przelacznik zakresu wciaz znaja tylko dwa budzety (ok. 17 plikow).
+4. 🚧 Budzety z wlasnymi nazwami i ikonami — Faza 18 (ADR-037), na DEV.
 5. Powiadomienia planu — nadchodzaca duza platnosc z planu.
 6. Daty odnowien subskrypcji w kalendarzu systemowym (Faza 3).
 7. Zaznaczanie wielu pozycji takze dla subskrypcji (ADR-027).

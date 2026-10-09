@@ -7,6 +7,7 @@ import '../models/plan_position.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/money_format.dart';
+import '../widgets/budget_picker.dart' show moveOrCopyPositions;
 import '../widgets/budget_widgets.dart' show budgetNf;
 import '../widgets/filter_bars.dart' show kMonthsShort;
 import '../widgets/frost_card.dart';
@@ -372,12 +373,32 @@ class _PlanPositionScreenState extends State<PlanPositionScreen> {
                 await plan.setArchivedAll({p.id}, !p.archived);
               } else if (v == 'delete') {
                 await _delete(p);
+              } else if (v == 'move' || v == 'copy') {
+                final done = await moveOrCopyPositions(
+                  context,
+                  {p.id},
+                  copy: v == 'copy',
+                  fromBudgetId: p.budgetId,
+                  what: '„${p.name}"',
+                );
+                // Przeniesiona pozycja nie należy już do pokazanego budżetu.
+                if (done && v == 'move' && context.mounted) {
+                  Navigator.of(context).pop();
+                }
               }
             },
             itemBuilder: (_) => [
               PopupMenuItem(
                 value: 'archive',
                 child: Text(p.archived ? 'Przywróć do planu' : 'Ukryj pozycję'),
+              ),
+              const PopupMenuItem(
+                value: 'move',
+                child: Text('Przenieś do budżetu…'),
+              ),
+              const PopupMenuItem(
+                value: 'copy',
+                child: Text('Kopiuj do budżetu…'),
               ),
               const PopupMenuItem(value: 'delete', child: Text('Usuń pozycję')),
             ],

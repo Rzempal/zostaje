@@ -122,7 +122,7 @@ wszystkie budzety w jednym pudelku.
 | Pole | Typ | Wymagane | Opis |
 |------|-----|----------|------|
 | `id` | String | tak | Po konwersji = `id` starej pozycji (odhaczenia platnosci przetrwaly); pozycje z Plannera: `envelope:<id>` |
-| `budgetId` | String | tak | `personal` / `household` (dawne zakresy; docelowo budzety z wlasnymi nazwami) |
+| `budgetId` | String | tak | Identyfikator budzetu z listy budzetow (ADR-037); `personal` / `household` = dwa pierwsze (dawne zakresy) |
 | `name` | String | tak | |
 | `kind` | String | tak | `income` / `expense` / `cardLoan` / `cardRepayment`; nieznana wartosc → `expense`. `cardLoan`/`cardRepayment` = pozyczka i jej splata — z karty albo ratalna (ADR-036; w kodzie `loan`/`loanRepayment`, wartosci w zapisie bez zmian) |
 | `currency` | String | tak | Jak w subskrypcjach |
@@ -142,6 +142,17 @@ import okresow nie uzupelnia (takze swiadomie usunietych).
 Ustawienia konwersji: `planConversionVersion` (wersja regul, ktora zbudowala plan)
 i `planEnvelopeMigrated` (pozycje Plannera dolozone). Oba zerowane przy odtworzeniu
 kopii z planem.
+
+---
+
+## Lista budzetow (ADR-037)
+
+Ustawienie `budgets` (JSON, w kopii zapasowej): lista `{id, name, icon, hidden?}`
+w kolejnosci przelacznika. Brak zapisu = „Osobisty" (`personal`, ikona `user`)
+i „Domowy" (`household`, `home`), z ukryciem wzietym z dawnego `budgetMode`.
+Ostatnio wybrany budzet: `activeBudgetId` (lokalnie, poza kopia).
+Subskrypcja ma `budgetId`; stare `scope` (`personal`/`household`) zapisuje sie
+dalej dla wersji sprzed ADR-037.
 
 ---
 
@@ -386,7 +397,7 @@ class PaymentMethod {
 | Hive Box: `budget_entries` | JSON pozycji budzetu **osobistego** — archiwum sprzed ADR-035, zrodlo konwersji |
 | Hive Box: `household_budget_entries` | JSON pozycji budzetu **domowego** (archiwum, jak wyzej; `updatedAt`/`deleted` z czasow synchronizacji) |
 | Hive Box: `plan_positions` | JSON pozycji planu rocznego (ADR-035) — wszystkie budzety |
-| Hive Box: `payment_done` | Bool: odhaczone platnosci (klucz `scope\|sourceId\|YYYY-MM-DD`); lokalne, w backupie od v5 |
+| Hive Box: `payment_done` | Bool: odhaczone platnosci (klucz `budgetId\|sourceId\|YYYY-MM-DD`; dla dwoch pierwszych budzetow taki sam jak dawny `scope\|…`); w backupie od v5 |
 | Hive Box: `settings` | Key-value: waluta domyslna, limit budzetu subskrypcji, koperta „Na biezace wydatki" (`billsAllocationItems\|scope` — lista pozycji, per zakres; legacy `billsAllocation\|scope` migrowany w locie), preferencje |
 
 Wzorzec: ten sam co w APPteczka (StorageService z cache + lazy deserialization).

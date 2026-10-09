@@ -8,7 +8,7 @@ import '../widgets/settings_widgets.dart';
 import '../widgets/update_inline_section.dart';
 import 'appearance_screen.dart';
 import 'backup_screen.dart';
-import 'budget_mode_screen.dart';
+import 'budgets_screen.dart';
 import 'category_management_screen.dart';
 import 'currency_screen.dart';
 import 'data_export_screen.dart';
@@ -45,10 +45,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 screen: const CurrencyScreen()),
             _navTile(context,
                 icon: LucideIcons.wallet,
-                title: 'Wybór budżetów',
-                subtitle: BudgetModeScreen.labelFor(
-                    context.watch<BudgetController>().budgetMode),
-                screen: const BudgetModeScreen()),
+                title: 'Budżety',
+                subtitle: context
+                    .watch<BudgetController>()
+                    .visibleBudgets
+                    .map((b) => b.name)
+                    .join(', '),
+                screen: const BudgetsScreen()),
             _navTile(context,
                 icon: LucideIcons.bell,
                 title: 'Powiadomienia',

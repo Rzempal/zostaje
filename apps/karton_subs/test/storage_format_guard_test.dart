@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:karton_subs/models/spending_allocation_item.dart';
+import 'package:karton_subs/models/budget.dart';
 import 'package:karton_subs/models/budget_entry.dart';
 import 'package:karton_subs/models/plan_position.dart';
 import 'package:karton_subs/models/subscription.dart';
@@ -186,6 +187,33 @@ void main() {
           'day',
         ]),
       );
+    });
+
+    test('subskrypcja zapisuje budżet i — dla starszych wersji — „scope"', () {
+      final json = Subscription(
+        id: 's',
+        name: 's',
+        amount: 1,
+        currency: Currency.PLN,
+        billingCycle: BillingCycle.monthly,
+        startDate: DateTime(2026, 1, 1),
+        dataDodania: DateTime(2026, 1, 1),
+        budgetId: 'household',
+      ).toJson();
+      expect(json['budgetId'], 'household');
+      expect(json['scope'], 'household');
+    });
+
+    test('lista budżetów jedzie w kopii pod „budgets"', () async {
+      await storage.setBudgets(const [
+        Budget(id: 'personal', name: 'Osobisty', icon: 'user'),
+        Budget(id: 'x', name: 'Firma', icon: 'briefcase'),
+      ]);
+      final payload =
+          jsonDecode(BackupService(storage).buildJsonPayloadForTest())
+              as Map<String, dynamic>;
+      final settings = payload['settings'] as Map<String, dynamic>;
+      expect(settings['budgets'], contains('"Firma"'));
     });
 
     test('kopia niesie znacznik planu z okresami', () {

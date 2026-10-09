@@ -46,8 +46,6 @@ enum Currency {
   }
 }
 
-/// Przynależność subskrypcji: osobista vs domowa (filtr list i statystyk).
-enum SubscriptionScope { personal, household }
 
 class Subscription {
   /// Dev-only: override DateTime.now() do testowania ghost detection
@@ -82,7 +80,9 @@ class Subscription {
   final bool isTrial;
   final DateTime? trialEndDate;
   final double? postTrialAmount;
-  final SubscriptionScope scope;
+
+  /// Budżet subskrypcji (ADR-037) — identyfikator z listy budżetów.
+  final String budgetId;
 
   const Subscription({
     required this.id,
@@ -109,7 +109,7 @@ class Subscription {
     this.isTrial = false,
     this.trialEndDate,
     this.postTrialAmount,
-    this.scope = SubscriptionScope.personal,
+    this.budgetId = 'personal',
   });
 
   /// Pełna kwota znormalizowana do miesięcznej (bez podziału)
@@ -274,10 +274,11 @@ class Subscription {
           ? DateTime.parse(json['trialEndDate'] as String)
           : null,
       postTrialAmount: (json['postTrialAmount'] as num?)?.toDouble(),
-      scope: SubscriptionScope.values.firstWhere(
-        (s) => s.name == json['scope'],
-        orElse: () => SubscriptionScope.personal,
-      ),
+      // Przed ADR-037 subskrypcja znała tylko „osobista/domowa" (pole
+      // `scope`) — budżety o tych samych identyfikatorach przejmują je wprost.
+      budgetId:
+          json['budgetId'] as String? ??
+          (json['scope'] == 'household' ? 'household' : 'personal'),
     );
   }
 
@@ -307,7 +308,10 @@ class Subscription {
     'isTrial': isTrial,
     if (trialEndDate != null) 'trialEndDate': trialEndDate!.toIso8601String(),
     if (postTrialAmount != null) 'postTrialAmount': postTrialAmount,
-    'scope': scope.name,
+    'budgetId': budgetId,
+    // Dla wersji sprzed ADR-037, które czytają tylko `scope`: budżet spoza
+    // dwóch pierwszych pokaże się tam jako osobisty.
+    'scope': budgetId == 'household' ? 'household' : 'personal',
   };
 
   Subscription copyWith({
@@ -348,7 +352,7 @@ class Subscription {
     bool clearTrialEndDate = false,
     double? postTrialAmount,
     bool clearPostTrialAmount = false,
-    SubscriptionScope? scope,
+    String? budgetId,
   }) {
     return Subscription(
       id: id ?? this.id,
@@ -389,7 +393,7 @@ class Subscription {
       postTrialAmount: clearPostTrialAmount
           ? null
           : (postTrialAmount ?? this.postTrialAmount),
-      scope: scope ?? this.scope,
+      budgetId: budgetId ?? this.budgetId,
     );
   }
 }

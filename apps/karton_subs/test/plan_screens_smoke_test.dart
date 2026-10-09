@@ -7,6 +7,7 @@ import 'package:karton_subs/controllers/plan_controller.dart';
 import 'package:karton_subs/controllers/subscription_controller.dart';
 import 'package:karton_subs/models/plan_position.dart';
 import 'package:karton_subs/models/subscription.dart';
+import 'package:karton_subs/screens/budgets_screen.dart';
 import 'package:karton_subs/screens/card_loan_form_screen.dart';
 import 'package:karton_subs/screens/dashboard_screen.dart';
 import 'package:karton_subs/screens/installment_loan_form_screen.dart';
@@ -17,6 +18,7 @@ import 'package:karton_subs/services/notification_service.dart';
 import 'package:karton_subs/services/storage_service.dart';
 import 'package:karton_subs/services/update_service.dart';
 import 'package:karton_subs/theme/app_theme.dart';
+import 'package:karton_subs/widgets/workspace_top_bar.dart';
 import 'package:provider/provider.dart';
 
 import 'support/hive_test_env.dart';
@@ -337,6 +339,38 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('Dane się nie zgadzają'), findsOneWidget);
     expect(find.text('Przyjmij ratę 166,67'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Budżety: przełącznik z listą i ostrzeżenie przy usuwaniu', (
+    tester,
+  ) async {
+    await tester.runAsync(seed);
+    await pump(
+      tester,
+      const Scaffold(body: Column(children: [WorkspaceTopBar()])),
+    );
+    // Przełącznik pokazuje aktywny budżet; lista — pozostałe i zarządzanie.
+    await tester.tap(find.text('Osobisty'));
+    await tester.pumpAndSettle();
+    expect(find.text('Domowy'), findsOneWidget);
+    expect(find.text('Zarządzaj budżetami'), findsOneWidget);
+    // Bez wyboru: zmiana budżetu zapisuje się w bazie, a zapisy w czasie
+    // testu ekranu się nie kończą (logikę wyboru sprawdza budgets_test).
+    await tester.tapAt(const Offset(5, 790));
+    await tester.pumpAndSettle();
+
+    await pump(tester, const BudgetsScreen());
+    expect(find.text('Nowy budżet'), findsOneWidget);
+    await tester.tap(find.byTooltip('Więcej').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Usuń budżet'));
+    await tester.pumpAndSettle();
+    // Osobisty ma pozycje i subskrypcję — ostrzeżenie i podpowiedź przeniesienia.
+    expect(find.textContaining('Tego nie da się cofnąć'), findsOneWidget);
+    expect(find.text('Przenieś i usuń…'), findsOneWidget);
+    await tester.tap(find.text('Anuluj'));
+    await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
 

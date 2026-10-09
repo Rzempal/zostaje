@@ -51,8 +51,8 @@ void main() {
     });
   });
 
-  group('Subscription — scope', () {
-    Subscription sub(SubscriptionScope scope) => Subscription(
+  group('Subscription — budżet (ADR-037)', () {
+    Subscription sub(String budgetId) => Subscription(
           id: 's',
           name: 'Netflix',
           amount: 43,
@@ -60,21 +60,40 @@ void main() {
           billingCycle: BillingCycle.monthly,
           startDate: _d,
           dataDodania: _d,
-          scope: scope,
+          budgetId: budgetId,
         );
 
-    test('domyślnie osobista', () {
-      expect(sub(SubscriptionScope.personal).scope, SubscriptionScope.personal);
+    test('domyślnie budżet osobisty', () {
+      final s = Subscription(
+        id: 's',
+        name: 'x',
+        amount: 1,
+        currency: Currency.PLN,
+        billingCycle: BillingCycle.monthly,
+        startDate: _d,
+        dataDodania: _d,
+      );
+      expect(s.budgetId, 'personal');
     });
 
-    test('scope przechodzi przez toJson/fromJson', () {
-      final back = Subscription.fromJson(sub(SubscriptionScope.household).toJson());
-      expect(back.scope, SubscriptionScope.household);
+    test('budżet przechodzi przez toJson/fromJson', () {
+      final back = Subscription.fromJson(sub('firma-1').toJson());
+      expect(back.budgetId, 'firma-1');
     });
 
-    test('brak pola scope w JSON → osobista (migracja)', () {
-      final json = sub(SubscriptionScope.household).toJson()..remove('scope');
-      expect(Subscription.fromJson(json).scope, SubscriptionScope.personal);
+    test('zapis sprzed budżetów (samo „scope") — te same identyfikatory', () {
+      final household = sub('household').toJson()..remove('budgetId');
+      expect(Subscription.fromJson(household).budgetId, 'household');
+      final none = sub('household').toJson()
+        ..remove('budgetId')
+        ..remove('scope');
+      expect(Subscription.fromJson(none).budgetId, 'personal');
+    });
+
+    test('dla starszych wersji „scope" zostaje — budżet spoza dwóch jako '
+        'osobisty', () {
+      expect(sub('household').toJson()['scope'], 'household');
+      expect(sub('firma-1').toJson()['scope'], 'personal');
     });
   });
 
@@ -91,7 +110,8 @@ void main() {
       'Zakres',
     ];
 
-    test('kolumna Zakres=Domowe → household; brak → personal', () {
+    test('kolumna Zakres=Domowe (stary arkusz) → household; brak → personal',
+        () {
       final bytes = _xlsx([
         header,
         ['Netflix', 43.0, 'PLN', 'miesięcznie', '', '', 'tak', '2026-01-01',
@@ -100,8 +120,8 @@ void main() {
       ]);
       final r = ExcelService.parseBytesForTest(bytes);
       final byName = {for (final s in r.subscriptions) s.name: s};
-      expect(byName['Netflix']!.scope, SubscriptionScope.household);
-      expect(byName['Spotify']!.scope, SubscriptionScope.personal);
+      expect(byName['Netflix']!.budgetId, 'household');
+      expect(byName['Spotify']!.budgetId, 'personal');
     });
 
     test('eksport → import zachowuje zakres', () {
@@ -114,12 +134,12 @@ void main() {
           billingCycle: BillingCycle.monthly,
           startDate: _d,
           dataDodania: _d,
-          scope: SubscriptionScope.household,
+          budgetId: 'household',
         ),
       ];
       final bytes = ExcelService.buildWorkbookForTest(subs, const []);
       final r = ExcelService.parseBytesForTest(bytes);
-      expect(r.subscriptions.single.scope, SubscriptionScope.household);
+      expect(r.subscriptions.single.budgetId, 'household');
     });
   });
 }

@@ -61,14 +61,12 @@ extension BudgetEntryTypeWire on BudgetEntryType {
   String get wireName => _typeWireNames[this]!;
 }
 
-/// Zakres budżetu: osobisty (lokalny) vs domowy (osobny box, przyszła synchronizacja).
+/// Zakres STAREGO budżetu (archiwum sprzed ADR-035): osobny box na osobisty
+/// i domowy. Plan i subskrypcje używają budżetów z nazwami (ADR-037);
+/// dawny „tryb budżetu" zastąpiło ukrywanie budżetów — jego zapis
+/// (`budgetMode`) czyta już tylko `StorageService.getBudgets` przy pierwszym
+/// uruchomieniu.
 enum BudgetScope { personal, household }
-
-/// Tryb budżetu (preferencja UI, lokalna): które zakresy są widoczne.
-/// `both` = przełącznik Osobisty/Domowy na kartach + swipe zmienia zakres (jak dotąd).
-/// `personalOnly`/`householdOnly` = jeden zakres na sztywno, bez przełącznika;
-/// swipe zwalnia się na zakładki drugiego rzędu (np. Bilans/Plan na Dashboardzie).
-enum BudgetMode { personalOnly, householdOnly, both }
 
 /// Korekta pozycji cyklicznej ([BudgetEntryType.recurringCost]) lub przelewu do
 /// domowego dla konkretnego miesiąca.

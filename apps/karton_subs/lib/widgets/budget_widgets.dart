@@ -3,51 +3,18 @@ import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 // Ikona squareSigma (zwiniete biezace) jest tylko w nowszym pakiecie.
 import 'package:lucide_icons_flutter/lucide_icons.dart' as lucide;
-import '../models/budget_entry.dart';
 import '../models/subscription.dart';
 import '../models/cashflow.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/money_format.dart';
-import 'aurora_segmented.dart';
 import 'cashflow_calendar.dart';
 import 'category_icons.dart' show budgetEntryIcon, subscriptionIcon;
 
-/// Współdzielone widgety budżetu: przełącznik zakresu, sekcje miesiąca
-/// w kalendarzu (zakładka Budżet) i lista wierszy (Planowanie).
+/// Współdzielone widgety budżetu: sekcje miesiąca w kalendarzu (zakładka
+/// Budżet) i lista wierszy (Planowanie).
 
 final budgetNf = NumberFormat('#,##0.00', 'pl_PL');
-
-/// Przełącznik zakresu Osobisty/Domowy (wspólny dla Budżetu i Dashboardu).
-class BudgetScopeToggle extends StatelessWidget {
-  final BudgetScope scope;
-  final ValueChanged<BudgetScope> onChanged;
-  const BudgetScopeToggle({
-    super.key,
-    required this.scope,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AuroraSegmented<BudgetScope>(
-      selected: scope,
-      onChanged: onChanged,
-      segments: const [
-        AuroraSegment(
-          value: BudgetScope.personal,
-          label: 'Osobisty',
-          icon: LucideIcons.user,
-        ),
-        AuroraSegment(
-          value: BudgetScope.household,
-          label: 'Domowy',
-          icon: LucideIcons.home,
-        ),
-      ],
-    );
-  }
-}
 
 String budgetCycleSuffix(BillingCycle cycle) => switch (cycle) {
   BillingCycle.weekly => 'tyg.',

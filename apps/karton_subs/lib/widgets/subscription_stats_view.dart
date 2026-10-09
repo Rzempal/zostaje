@@ -17,17 +17,18 @@ import 'budget_progress_bar.dart';
 /// z liczbą subskrypcji jest w karcie „Saldo", trend i kategorie — we wspólnych
 /// wykresach Planu, a sama lista subskrypcji mieszka od ADR-027 w „Wydatkach".
 class SubscriptionStatsView extends StatelessWidget {
-  final SubscriptionScope scopeFilter;
+  /// Budżet, którego subskrypcje pokazujemy (ADR-037).
+  final String budgetId;
 
-  const SubscriptionStatsView({super.key, required this.scopeFilter});
+  const SubscriptionStatsView({super.key, required this.budgetId});
 
   /// Czy sekcja ma cokolwiek do pokazania. Bez limitu i bez trwających okresów
   /// próbnych „Szczegóły" byłyby samym nagłówkiem, który po rozwinięciu nic nie daje.
-  static bool hasPlanDetails(BuildContext context, SubscriptionScope scope) {
+  static bool hasPlanDetails(BuildContext context, String budgetId) {
     final storage = context.read<StorageService>();
     final subs = storage
         .getSubscriptions()
-        .where((s) => s.scope == scope)
+        .where((s) => s.budgetId == budgetId)
         .toList();
     final limit = storage.getBudgetLimit();
     final hasLimit = limit != null && limit > 0 && subs.any((s) => s.isActive);
@@ -42,7 +43,7 @@ class SubscriptionStatsView extends StatelessWidget {
     final storage = context.read<StorageService>();
     final subs = storage
         .getSubscriptions()
-        .where((s) => s.scope == scopeFilter)
+        .where((s) => s.budgetId == budgetId)
         .toList();
     final currencyLabel = storage.getCurrency();
     final currencyEnum = Currency.values.firstWhere(

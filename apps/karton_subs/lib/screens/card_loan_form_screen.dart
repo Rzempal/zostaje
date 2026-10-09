@@ -7,6 +7,7 @@ import '../models/subscription.dart';
 import '../services/plan_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/budget_picker.dart' show moveOrCopyPositions;
 import '../widgets/budget_widgets.dart' show budgetNf;
 import '../widgets/form_action_bar.dart';
 
@@ -148,6 +149,20 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  /// Cała pożyczka (pożyczka i spłata) do innego budżetu (ADR-037).
+  Future<void> _toBudget({required bool copy}) async {
+    final loan = context.read<PlanController>().loanPair(widget.linkId!).loan;
+    if (loan == null) return;
+    final done = await moveOrCopyPositions(
+      context,
+      {loan.id},
+      copy: copy,
+      fromBudgetId: loan.budgetId,
+      what: 'pożyczkę',
+    );
+    if (done && mounted) Navigator.of(context).pop();
+  }
+
   Future<void> _delete() async {
     final plan = context.read<PlanController>();
     final pair = plan.loanPair(widget.linkId!);
@@ -191,12 +206,27 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
           widget.linkId == null ? 'Pożyczka z karty' : 'Edytuj pożyczkę',
         ),
         actions: [
-          if (widget.linkId != null)
+          if (widget.linkId != null) ...[
             IconButton(
               tooltip: 'Usuń',
               icon: const Icon(LucideIcons.trash2),
               onPressed: _delete,
             ),
+            PopupMenuButton<String>(
+              tooltip: 'Więcej',
+              onSelected: (v) => _toBudget(copy: v == 'copy'),
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: 'move',
+                  child: Text('Przenieś do budżetu…'),
+                ),
+                PopupMenuItem(
+                  value: 'copy',
+                  child: Text('Kopiuj do budżetu…'),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
       body: Form(

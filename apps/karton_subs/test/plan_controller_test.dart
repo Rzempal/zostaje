@@ -47,7 +47,7 @@ void main() {
 
   test('pozycja trafia do aktywnego budżetu', () async {
     await addMonthly('Czynsz');
-    budget.setScope(BudgetScope.household);
+    budget.setBudget(kBudgetHousehold);
     await addMonthly('Prąd domowy');
 
     expect(plan.positions.single.name, 'Prąd domowy');

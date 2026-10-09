@@ -4,7 +4,10 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../models/subscription.dart';
 import '../models/quick_add_templates.dart';
+import '../controllers/budget_controller.dart';
 import '../controllers/subscription_controller.dart';
+import '../widgets/budget_picker.dart' show showBudgetTargetSheet;
+import '../widgets/category_icons.dart' show categoryIcon;
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/cycle_months_picker.dart';
@@ -16,9 +19,14 @@ class AddSubscriptionScreen extends StatefulWidget {
   /// Zakres nowej subskrypcji — lista podaje ten, na którym stoi użytkownik.
   /// Bez tego subskrypcja dodana w budżecie domowym lądowała w osobistym,
   /// czyli poza listą, z której ją dodano.
-  final SubscriptionScope? initialScope;
+  /// Budżet nowej subskrypcji — zwykle aktywny (ADR-037).
+  final String? initialBudgetId;
 
-  const AddSubscriptionScreen({super.key, this.existing, this.initialScope});
+  const AddSubscriptionScreen({
+    super.key,
+    this.existing,
+    this.initialBudgetId,
+  });
 
   @override
   State<AddSubscriptionScreen> createState() => _AddSubscriptionScreenState();
@@ -51,17 +59,50 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   String? _paymentMethod;
   bool _isTrial = false;
   DateTime? _trialEndDate;
-  late SubscriptionScope _scope;
+  late String _budgetId;
   late final TextEditingController _postTrialAmountCtrl;
   bool _isSubmitting = false;
 
   bool get _isEditing => widget.existing != null;
 
+  /// Przenosi albo kopiuje zapisaną subskrypcję do innego budżetu (ADR-037).
+  /// Działa na wersji zapisanej — niezapisane zmiany w formularzu przepadają,
+  /// więc po akcji formularz się zamyka.
+  Future<void> _moveOrCopy({required bool copy}) async {
+    final sub = widget.existing!;
+    final budgets = context.read<BudgetController>();
+    final target = await showBudgetTargetSheet(
+      context,
+      excludeBudgetId: sub.budgetId,
+      title: copy
+          ? 'Kopiuj „${sub.name}" do budżetu…'
+          : 'Przenieś „${sub.name}" do budżetu…',
+      subtitle: copy ? 'Kopia ma własne przypomnienia.' : null,
+    );
+    if (target == null || !mounted) return;
+    if (copy) {
+      await budgets.copySubscriptions([sub], target.budget.id);
+    } else {
+      await budgets.moveSubscriptions([sub], target.budget.id);
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '${copy ? 'Skopiowano' : 'Przeniesiono'} „${sub.name}" do '
+          '„${target.budget.name}"',
+        ),
+      ),
+    );
+    Navigator.of(context).pop(true);
+  }
+
   @override
   void initState() {
     super.initState();
     final s = widget.existing;
-    _scope = widget.initialScope ?? SubscriptionScope.personal;
+    _budgetId =
+        widget.initialBudgetId ?? context.read<BudgetController>().budgetId;
     _nameCtrl = TextEditingController(text: s?.name ?? '');
     _amountCtrl = TextEditingController(
       text: s != null ? s.amount.toStringAsFixed(2) : '',
@@ -83,7 +124,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       _paymentMethod = s.paymentMethod;
       _isTrial = s.isTrial;
       _trialEndDate = s.trialEndDate;
-      _scope = s.scope;
+      _budgetId = s.budgetId;
     }
   }
 
@@ -118,6 +159,23 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       ),
       appBar: AppBar(
         title: Text(_isEditing ? 'Edytuj subskrypcję' : 'Dodaj subskrypcję'),
+        actions: [
+          if (_isEditing)
+            PopupMenuButton<String>(
+              tooltip: 'Więcej',
+              onSelected: (v) => _moveOrCopy(copy: v == 'copy'),
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: 'move',
+                  child: Text('Przenieś do budżetu…'),
+                ),
+                PopupMenuItem(
+                  value: 'copy',
+                  child: Text('Kopiuj do budżetu…'),
+                ),
+              ],
+            ),
+        ],
       ),
       body: Form(
         key: _formKey,
@@ -146,24 +204,21 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
             ),
             const SizedBox(height: 24),
 
-            _SectionLabel('Przynależność'),
+            _SectionLabel('Budżet'),
             const SizedBox(height: 8),
-            SegmentedButton<SubscriptionScope>(
-              segments: const [
-                ButtonSegment(
-                  value: SubscriptionScope.personal,
-                  label: Text('Osobista'),
-                  icon: Icon(LucideIcons.user, size: 16),
-                ),
-                ButtonSegment(
-                  value: SubscriptionScope.household,
-                  label: Text('Domowa'),
-                  icon: Icon(LucideIcons.home, size: 16),
-                ),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final b in context.read<BudgetController>().budgets)
+                  if (!b.hidden || b.id == _budgetId)
+                    ChoiceChip(
+                      avatar: Icon(categoryIcon(b.icon), size: 16),
+                      label: Text(b.name),
+                      selected: _budgetId == b.id,
+                      onSelected: (_) => setState(() => _budgetId = b.id),
+                    ),
               ],
-              selected: {_scope},
-              showSelectedIcon: false,
-              onSelectionChanged: (s) => setState(() => _scope = s.first),
             ),
             const SizedBox(height: 24),
 
@@ -531,7 +586,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
             clearTrialEndDate: !_isTrial,
             postTrialAmount: _isTrial ? postTrialAmt : null,
             clearPostTrialAmount: !_isTrial,
-            scope: _scope,
+            budgetId: _budgetId,
           ),
         );
       } else {
@@ -554,7 +609,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
           isTrial: _isTrial,
           trialEndDate: _isTrial ? _trialEndDate : null,
           postTrialAmount: _isTrial ? postTrialAmt : null,
-          scope: _scope,
+          budgetId: _budgetId,
         );
       }
       if (mounted) Navigator.of(context).pop(true);

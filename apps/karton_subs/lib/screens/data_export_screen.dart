@@ -71,10 +71,9 @@ class _DataExportScreenState extends State<DataExportScreen> {
   Future<void> _exportSubscriptions() =>
       _run(() => context.read<ExcelService>().exportToFile(), import: false);
 
-  /// Budżet, w którym jest użytkownik (przełącznik Osobisty/Domowy) —
-  /// eksport i import planu dotyczą tylko jego.
-  String get _budgetLabel =>
-      context.read<BudgetController>().isHousehold ? 'Domowy' : 'Osobisty';
+  /// Budżet, w którym jest użytkownik (przełącznik budżetu) — eksport
+  /// i import planu dotyczą tylko jego.
+  String get _budgetLabel => context.read<BudgetController>().activeBudget.name;
 
   Future<void> _exportPlan() => _run(() {
     final plan = context.read<PlanController>();
@@ -113,7 +112,9 @@ class _DataExportScreenState extends State<DataExportScreen> {
   }, import: true);
 
   Future<void> _importSubscriptions() => _run(() async {
-    final result = await context.read<ExcelService>().pickAndParse();
+    final result = await context.read<ExcelService>().pickAndParse(
+      fallbackBudgetId: context.read<BudgetController>().budgetId,
+    );
     if (!mounted) return;
     final ctrl = context.read<SubscriptionController>();
     for (final sub in result.subscriptions) {
@@ -133,9 +134,8 @@ class _DataExportScreenState extends State<DataExportScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final budgetName = context.watch<BudgetController>().isHousehold
-        ? 'domowy'
-        : 'osobisty';
+    final budgetName =
+        '„${context.watch<BudgetController>().activeBudget.name}"';
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(title: const Text('Eksport/import danych')),

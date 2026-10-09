@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../controllers/budget_controller.dart';
-import '../models/budget_entry.dart';
 
-/// Warstwa gestu: poziomy „flick" przełącza aktywny zakres Osobisty/Domowy
-/// ([BudgetController.scope]) — spójnie na Dashboardzie, Bieżących, Budżecie
-/// i Subskrypcjach (jeden globalny tryb).
+/// Warstwa gestu: poziomy „flick" przełącza aktywny budżet na kolejny albo
+/// poprzedni z listy (ADR-037) — spójnie na zakładkach Budżet i Planowanie
+/// (jeden globalny wybór).
 ///
-/// Kierunek zgodny z układem przełącznika `[Osobisty | Domowy]`: palec w lewo →
-/// odsłania prawy segment → Domowy; palec w prawo → Osobisty.
+/// Kierunek jak przy przewracaniu kartek: palec w lewo → kolejny budżet
+/// z listy, palec w prawo → poprzedni. Na końcu listy gest nic nie robi.
 ///
 /// Owija samą treść ekranu (nie przełącznik ani filtry). Gest ustępuje głębszym
 /// rozpoznawcom w tym samym kierunku: [Dismissible] na wierszu wygrywa swipe
@@ -21,8 +20,8 @@ import '../models/budget_entry.dart';
 class ScopeSwipeArea extends StatefulWidget {
   final Widget child;
 
-  /// Gdy `false` (tryb jednozakresowy) warstwa jest przezroczysta dla gestów —
-  /// nie przechwytuje swipe, oddaje go dziecku (np. swipe zakładek na Dashboardzie).
+  /// Gdy `false` (jeden widoczny budżet) warstwa jest przezroczysta dla
+  /// gestów — oddaje swipe dziecku (np. swipe zakładek na Dashboardzie).
   final bool enabled;
 
   const ScopeSwipeArea({super.key, required this.child, this.enabled = true});
@@ -30,12 +29,12 @@ class ScopeSwipeArea extends StatefulWidget {
   /// Minimalna prędkość gestu (px/s), by uznać go za świadome przełączenie.
   static const double minVelocity = 240;
 
-  /// Docelowy zakres dla gestu o danej prędkości poziomej; `null` gdy gest za
-  /// słaby (poniżej [minVelocity]) lub bez ruchu. Wydzielone jako czysta funkcja
-  /// pod test-strażnik (próg + kierunek).
-  static BudgetScope? scopeForVelocity(double primaryVelocity) {
+  /// Krok po liście budżetów dla gestu o danej prędkości poziomej: +1
+  /// (kolejny) albo -1 (poprzedni); `null`, gdy gest za słaby (poniżej
+  /// [minVelocity]). Czysta funkcja pod test-strażnik (próg + kierunek).
+  static int? stepForVelocity(double primaryVelocity) {
     if (primaryVelocity.abs() < minVelocity) return null;
-    return primaryVelocity < 0 ? BudgetScope.household : BudgetScope.personal;
+    return primaryVelocity < 0 ? 1 : -1;
   }
 
   @override
@@ -47,8 +46,8 @@ class _ScopeSwipeAreaState extends State<ScopeSwipeArea>
   late final AnimationController _anim;
   late final Animation<double> _slide;
 
-  BudgetScope? _lastScope;
-  // Kierunek wjazdu nowej treści: +1 z prawej (→Osobisty), -1 z lewej (→Domowy).
+  String? _lastBudgetId;
+  // Kierunek wjazdu nowej treści: +1 z prawej (kolejny budżet), -1 z lewej.
   double _dir = 0;
 
   @override
@@ -69,12 +68,12 @@ class _ScopeSwipeAreaState extends State<ScopeSwipeArea>
   }
 
   void _onDragEnd(DragEndDetails d) {
-    final target = ScopeSwipeArea.scopeForVelocity(d.primaryVelocity ?? 0);
-    if (target == null) return;
+    final step = ScopeSwipeArea.stepForVelocity(d.primaryVelocity ?? 0);
+    if (step == null) return;
     final ctrl = context.read<BudgetController>();
-    if (ctrl.scope == target) return;
-    ctrl.setScope(target);
-    HapticFeedback.selectionClick();
+    final before = ctrl.budgetId;
+    ctrl.stepBudget(step);
+    if (ctrl.budgetId != before) HapticFeedback.selectionClick();
   }
 
   @override
@@ -83,16 +82,18 @@ class _ScopeSwipeAreaState extends State<ScopeSwipeArea>
     // (np. TabBarView Dashboardu przełącza Bilans/Plan).
     if (!widget.enabled) return widget.child;
 
-    final scope = context.watch<BudgetController>().scope;
-    if (_lastScope != null && _lastScope != scope) {
-      // Przejście do Domowego → nowa treść wjeżdża z prawej (+1); do Osobistego
-      // → z lewej (-1). Animacja odpalana po klatce (nie w trakcie build).
-      _dir = scope == BudgetScope.household ? 1 : -1;
+    final ctrl = context.watch<BudgetController>();
+    final id = ctrl.budgetId;
+    if (_lastBudgetId != null && _lastBudgetId != id) {
+      // Kolejny budżet z listy → nowa treść wjeżdża z prawej (+1),
+      // poprzedni → z lewej (-1). Animacja po klatce (nie w trakcie build).
+      final ids = [for (final b in ctrl.visibleBudgets) b.id];
+      _dir = ids.indexOf(id) > ids.indexOf(_lastBudgetId!) ? 1 : -1;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _anim.forward(from: 0);
       });
     }
-    _lastScope = scope;
+    _lastBudgetId = id;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,

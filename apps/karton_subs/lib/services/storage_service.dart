@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/subscription.dart';
+import '../models/budget.dart';
 import '../models/category.dart';
 import '../models/budget_entry.dart';
 import '../models/plan_position.dart';
@@ -350,6 +351,9 @@ class StorageService {
     'currency',
     'budgetLimit',
     'budgetMode',
+    // Lista budżetów z nazwami i ikonami (ADR-037) — bez niej odtworzona kopia
+    // miałaby pozycje budżetów, których nie ma w przełączniku.
+    'budgets',
     'notifyTrialReminders',
     'notifyRenewalReminders',
     'aiAssistantEnabled',
@@ -463,6 +467,33 @@ class StorageService {
       if (_paymentDoneBox.get(key) == true) m['$key'] = true;
     }
     return m;
+  }
+
+  /// Przenosi odhaczenia płatności [sourceIds] z budżetu [from] do [to]
+  /// (klucz zaczyna się od identyfikatora budżetu) — przeniesiona pozycja
+  /// nie traci odhaczeń. Zwraca liczbę przeniesionych wpisów.
+  Future<int> movePaymentDone(
+    String from,
+    String to,
+    Set<String> sourceIds,
+  ) async {
+    var moved = 0;
+    for (final key in _paymentDoneBox.keys.toList()) {
+      final parts = '$key'.split('|');
+      if (parts.length != 3 || parts[0] != from) continue;
+      if (!sourceIds.contains(parts[1])) continue;
+      await _paymentDoneBox.delete(key);
+      await _paymentDoneBox.put('$to|${parts[1]}|${parts[2]}', true);
+      moved++;
+    }
+    return moved;
+  }
+
+  /// Usuwa odhaczenia płatności budżetu (przy jego usunięciu).
+  Future<void> deletePaymentDoneOf(String budgetId) async {
+    for (final key in _paymentDoneBox.keys.toList()) {
+      if ('$key'.startsWith('$budgetId|')) await _paymentDoneBox.delete(key);
+    }
   }
 
   /// Przywraca odhaczone płatności z backupu (tylko wpisy `true`).
@@ -587,18 +618,44 @@ class StorageService {
     await _settingsBox.delete(StorageKeys.spendingAllocationLegacy(scope));
   }
 
-  /// Tryb budżetu (preferencja UI, lokalna — poza sync). Default: oba zakresy
-  /// (jak dotąd). Tryb jednozakresowy chowa przełącznik zakresu i zwalnia swipe.
-  BudgetMode getBudgetMode() {
-    final raw = _settingsBox.get('budgetMode') as String?;
-    return BudgetMode.values.firstWhere(
-      (m) => m.name == raw,
-      orElse: () => BudgetMode.both,
-    );
+  // ── Budżety (ADR-037) ──────────────────────────────────────────────────────
+
+  /// Budżety w kolejności z przełącznika. Brak zapisu = instalacja sprzed
+  /// budżetów z nazwami: „Osobisty" i „Domowy", z ukryciem wziętym z dawnego
+  /// trybu budżetu (osobisty / domowy / oba).
+  List<Budget> getBudgets() {
+    final raw = _settingsBox.get('budgets');
+    if (raw is String && raw.isNotEmpty) {
+      try {
+        final list = (jsonDecode(raw) as List)
+            .map((e) => Budget.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList();
+        if (list.isNotEmpty) return list;
+      } catch (e) {
+        _log.warning('Nie udalo sie odczytac listy budzetow: $e');
+      }
+    }
+    final legacyMode = _settingsBox.get('budgetMode') as String?;
+    return [
+      for (final b in Budget.defaults)
+        b.copyWith(
+          hidden:
+              (legacyMode == 'personalOnly' && b.id == kBudgetHousehold) ||
+              (legacyMode == 'householdOnly' && b.id == kBudgetPersonal),
+        ),
+    ];
   }
 
-  Future<void> setBudgetMode(BudgetMode mode) =>
-      _settingsBox.put('budgetMode', mode.name);
+  Future<void> setBudgets(List<Budget> budgets) => _settingsBox.put(
+    'budgets',
+    jsonEncode([for (final b in budgets) b.toJson()]),
+  );
+
+  /// Ostatnio wybrany budżet (lokalnie, poza kopią — to stan widoku).
+  String? getActiveBudgetId() => _settingsBox.get('activeBudgetId') as String?;
+
+  Future<void> setActiveBudgetId(String id) =>
+      _settingsBox.put('activeBudgetId', id);
 
   // ── Notification preferences ───────────────────────────────────────────────
 

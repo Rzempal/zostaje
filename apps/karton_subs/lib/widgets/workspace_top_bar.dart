@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import '../controllers/budget_controller.dart';
-import 'budget_widgets.dart' show BudgetScopeToggle;
+import '../screens/budgets_screen.dart';
+import 'budget_picker.dart';
 import 'section_info_badge.dart';
 
-/// Wspólny pasek nad ekranami roboczymi: zakres (Osobisty ↔ Domowy) i opis
-/// bieżącej sekcji.
+/// Wspólny pasek nad ekranami roboczymi: przełącznik budżetu (ADR-037)
+/// i opis bieżącej sekcji.
 ///
 /// Zastępuje paski tytułu poszczególnych ekranów. Nazwa ekranu i tak stała tam
 /// zdublowana z pigułką nawigacji na dole, a razem z osobnym przełącznikiem
@@ -26,8 +25,9 @@ class WorkspaceTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final budget = context.watch<BudgetController>();
-    final scopeVisible = showScope && budget.scopeSelectable;
+    // Przełącznik widać zawsze (także przy jednym widocznym budżecie): mówi,
+    // w którym budżecie jesteś, i prowadzi do „Zarządzaj budżetami".
+    final scopeVisible = showScope;
     if (!scopeVisible && info == null) return const SizedBox.shrink();
 
     return Padding(
@@ -35,14 +35,15 @@ class WorkspaceTopBar extends StatelessWidget {
       child: Row(
         children: [
           if (scopeVisible)
-            Expanded(
-              child: BudgetScopeToggle(
-                scope: budget.scope,
-                onChanged: budget.setScope,
+            Flexible(
+              flex: 4,
+              child: BudgetPicker(
+                onManage: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const BudgetsScreen()),
+                ),
               ),
-            )
-          else
-            const Spacer(),
+            ),
+          const Spacer(),
           if (info != null) ...[
             const SizedBox(width: 8),
             SectionInfoBadge(info!),

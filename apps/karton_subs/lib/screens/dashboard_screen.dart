@@ -206,9 +206,6 @@ class _DashboardScreenState extends State<DashboardScreen>
         ),
     ];
     final categories = context.read<StorageService>().getCategories();
-    final scope = budget.isHousehold
-        ? SubscriptionScope.household
-        : SubscriptionScope.personal;
 
     return [
       _YearNav(
@@ -245,12 +242,12 @@ class _DashboardScreenState extends State<DashboardScreen>
         currencySymbol: currency,
         subtitle: 'średnio/mies.',
       ),
-      if (SubscriptionStatsView.hasPlanDetails(context, scope)) ...[
+      if (SubscriptionStatsView.hasPlanDetails(context, budget.budgetId)) ...[
         const SizedBox(height: 24),
         _DetailsSection(
           compact: _planDetailsCompact,
           onToggleCompact: _togglePlanDetails,
-          children: [SubscriptionStatsView(scopeFilter: scope)],
+          children: [SubscriptionStatsView(budgetId: budget.budgetId)],
         ),
       ],
     ];
@@ -282,12 +279,12 @@ class _DashboardScreenState extends State<DashboardScreen>
           ),
           Expanded(
             child: ScopeSwipeArea(
-              enabled: budget.scopeSelectable,
+              enabled: budget.canSwitch,
               child: TabBarView(
                 // Tryb „oba": swipe poziomy zmienia zakres (ScopeSwipeArea),
                 // zakładki tapem. Tryb jednozakresowy: swipe przełącza zakładki
                 // (ScopeSwipeArea oddaje gest TabBarView).
-                physics: budget.scopeSelectable
+                physics: budget.canSwitch
                     ? const NeverScrollableScrollPhysics()
                     : null,
                 controller: _tab,

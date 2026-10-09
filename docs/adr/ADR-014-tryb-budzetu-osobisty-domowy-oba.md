@@ -1,7 +1,7 @@
 # ADR-014: Tryb budżetu (Osobisty / Domowy / oba) sterujący przełącznikiem zakresu i swipe
 
 Data: 2026-07-24
-Status: zaakceptowany
+Status: zastąpiony przez [ADR-037](ADR-037-budzety-z-nazwami.md) (2026-10-09) — tryb budżetu zastąpiło ukrywanie budżetów z nazwami
 
 ## Kontekst
 

@@ -36,7 +36,7 @@ class PlanController extends ChangeNotifier {
   // ── Dane aktywnego budżetu ─────────────────────────────────────────────────
 
   /// Identyfikator aktywnego budżetu — na razie dawny zakres (ADR-035 §2).
-  String get budgetId => _budget.scope.name;
+  String get budgetId => _budget.budgetId;
 
   DateTime get today => Subscription.devDateOverride ?? DateTime.now();
 

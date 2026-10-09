@@ -1,9 +1,13 @@
 {
-  "version": "0.27.26100902",
-  "versionCode": 2026100902,
-  "releaseDate": "2026-10-09T16:39:55Z",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026100902",
+  "releaseDate": "2026-10-09T19:23:30Z",
+  "version": "0.27.26100903",
+  "versionCode": 2026100903,
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026100903",
   "changelog": [
+    {
+      "version": "0.27.26100903",
+      "notes": "- Budzety z wlasnymi nazwami i ikonami (Ustawienia - Budzety)\n- Przelacznik budzetu: lista rozwijana u gory, gest przesuniecia\n- Ukrywanie budzetu zamiast trybu budzetu\n- Przenies / kopiuj do innego budzetu: calosc, zaznaczone pozycje, pozycja, pozyczka, subskrypcja\n- Usuwanie budzetu z ostrzezeniem i opcja przeniesienia"
+    },
     {
       "version": "0.27.26100902",
       "notes": "- Sekcja Pozyczki: pozyczka z karty i pozyczki ratalne\n- Pozyczka ratalna: wyplata jako wplyw, raty, RRSO; z trzech wartosci liczy czwarta i sprawdza zgodnosc\n- Opcjonalny zakup tego dnia jako wydatek (raty nie licza sie drugi raz)\n- Pozyczki netto zamiast karty netto\n- Formularz pozycji: bez gotowego ustawienia Raty"
@@ -39,11 +43,7 @@
     {
       "version": "0.26.26100602",
       "notes": "- Przebudowa, etapy 2-3: nowa zakladka Planowanie - wplywy, wydatki, karta i subskrypcje na jednym ekranie\n- Pozycja ma miesiace z wlasnymi kwotami; kilka miesiecy mozna zmienic naraz\n- Pozyczka z karty: wplyw w miesiacu uzycia i splata po okresie bezodsetkowym\n- Budzet: Statystyki roku (srednie, miesiace, kategorie) i Kalendarz platnosci\n- Zakladki Wplywy i Cykliczne zastapione Planowaniem"
-    },
-    {
-      "version": "0.26.26100601",
-      "notes": "- Przebudowa, etap 1: nowy plan roczny liczony w tle ze starych pozycji (stare dane bez zmian)\n- Developer Tools: raport konwersji planu (stary model vs nowy plan)"
     }
   ],
-  "releaseNotes": "- Sekcja Pozyczki: pozyczka z karty i pozyczki ratalne\n- Pozyczka ratalna: wyplata jako wplyw, raty, RRSO; z trzech wartosci liczy czwarta i sprawdza zgodnosc\n- Opcjonalny zakup tego dnia jako wydatek (raty nie licza sie drugi raz)\n- Pozyczki netto zamiast karty netto\n- Formularz pozycji: bez gotowego ustawienia Raty"
+  "releaseNotes": "- Budzety z wlasnymi nazwami i ikonami (Ustawienia - Budzety)\n- Przelacznik budzetu: lista rozwijana u gory, gest przesuniecia\n- Ukrywanie budzetu zamiast trybu budzetu\n- Przenies / kopiuj do innego budzetu: calosc, zaznaczone pozycje, pozycja, pozyczka, subskrypcja\n- Usuwanie budzetu z ostrzezeniem i opcja przeniesienia"
 }

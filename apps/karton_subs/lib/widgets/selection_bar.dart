@@ -68,25 +68,34 @@ class SelectionBar extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             // Etykieta, nie sama ikona: to jedyna akcja paska, której skutek nie
-            // jest oczywisty z kształtu.
-            TextButton.icon(
-              onPressed: onToggleAll,
-              icon: Icon(
-                allSelected ? LucideIcons.circleSlash : LucideIcons.checkCheck,
-                size: 16,
-                color: c.primary,
-              ),
-              label: Text(
-                allSelected ? 'Odznacz' : 'Zaznacz wszystkie',
-                style: TextStyle(color: c.primary),
-              ),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            // jest oczywisty z kształtu. Przy wąskim ekranie albo dużej
+            // czcionce skraca się wielokropkiem — ikony akcji zostają całe.
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: onToggleAll,
+                  icon: Icon(
+                    allSelected
+                        ? LucideIcons.circleSlash
+                        : LucideIcons.checkCheck,
+                    size: 16,
+                    color: c.primary,
+                  ),
+                  label: Text(
+                    allSelected ? 'Odznacz' : 'Zaznacz wszystkie',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: c.primary),
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
               ),
             ),
-            const Spacer(),
             for (final a in actions)
               IconButton(
                 visualDensity: VisualDensity.compact,

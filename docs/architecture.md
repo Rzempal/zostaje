@@ -70,7 +70,7 @@ lib/
 │   └── app_config.dart          # Build-time config (channels, URLs)
 ├── controllers/
 │   ├── subscription_controller.dart # Stan subskrypcji (CRUD + analytics)
-│   ├── budget_controller.dart   # Aktywny budzet i tryb, odhaczenia platnosci, kaskady slownikow (plan)
+│   ├── budget_controller.dart   # Budzety z nazwami (ADR-037): lista, aktywny, ukrywanie, usuwanie, przenies/kopiuj; odhaczenia platnosci, kaskady slownikow
 │   ├── plan_controller.dart     # Plan roczny aktywnego budzetu (ADR-035): pozycje, miesiace, karta, plan na kolejny rok
 ├── models/
 │   ├── subscription.dart        # Glowna encja + PaymentMethod
@@ -79,6 +79,7 @@ lib/
 │   ├── budget_entry.dart        # Stara pozycja budzetu — archiwum i zrodlo konwersji (ADR-035); BudgetScope, BudgetMode
 │   ├── cashflow.dart            # Przeplywy dnia kalendarza (CalendarItem, DayCashflow)
 │   ├── plan_position.dart       # Plan roczny: pozycja z miesiacami „RRRR-MM → kwota" (ADR-035)
+│   ├── budget.dart              # Budzet z nazwa i ikona (ADR-037); domyslne „Osobisty", „Domowy"
 ├── utils/
 │   ├── cycle_math.dart          # Wspolna normalizacja cyklu -> kwota/mies + projekcja wystapien (ADR-020)
 ├── services/
@@ -109,6 +110,7 @@ lib/
 │   ├── add_subscription_screen.dart # Formularz subskrypcji (zakres bierze z listy, na ktorej stoi uzytkownik)
 │   ├── data_export_screen.dart  # Eksport/import XLSX (subskrypcje, plan biezacego budzetu) + raport PDF — Ustawienia -> Dane
 │   ├── settings_screen.dart     # Ustawienia, backup, OTA
+│   ├── budgets_screen.dart      # Ustawienia → Budzety: kolejnosc, ukrywanie, nazwa i ikona, przenies/kopiuj wszystko, usun z ostrzezeniem (ADR-037)
 │   ├── dev_tools_screen.dart    # Developer Tools (tylko DEV): override daty, testy powiadomien, podglad surowego odczytu OCR
 │   └── plan_conversion_report_screen.dart # Developer Tools: raport konwersji na plan roczny (stary model vs nowy plan)
 ├── widgets/
@@ -130,7 +132,8 @@ lib/
 │   ├── filter_bars.dart         # Wspolne paski filtrow list: kategorie i czas (ze skrotem „Dzisiaj")
 │   ├── selection_bar.dart       # Tryb zaznaczania wielu pozycji: pasek akcji zbiorczych + wiersz z kolkiem
 │   ├── month_picker_dialog.dart # Wybor miesiaca (rok + siatka 12 miesiecy, „Dzisiaj")
-│   ├── workspace_top_bar.dart   # Wspolny pasek: zakres Osobisty/Domowy + opis sekcji
+│   ├── workspace_top_bar.dart   # Wspolny pasek: przelacznik budzetu + opis sekcji
+│   ├── budget_picker.dart       # Przelacznik budzetu (lista rozwijana), wybor budzetu docelowego, przenies/kopiuj pozycje (ADR-037)
 │   ├── flow_view_controls.dart  # Sortowanie i grupowanie w naglowkach sekcji miesiaca
 │   └── import_summary_dialog.dart # Wspolny dialog podsumowania importu Excel
 └── main.dart                    # Entry point, provider setup (3 zakladki, GlassNavBar; AuroraBackground raz w MaterialApp.builder)
@@ -211,11 +214,7 @@ za krawedz na waskim ekranie.
 | **Planowanie** | Plan roczny aktywnego budzetu (ADR-035): sekcje **Wplywy**, grupa **Wydatki** i **Pozyczki** (karta i pozyczki ratalne, ADR-036); karta „Zostaje" dla okresu (z „Pozyczkami netto"). Grupa Wydatki (`PlanExpenseGroup`) sumuje pozycje planu i subskrypcje (ta sama liczba co „Wydatki" w „Zostaje"), pod naglowkiem pasek proporcji; kazda czesc („Pozycje", „Subskrypcje") zaczyna sie przelacznikiem z jej suma, przy prawej krawedzi nad jej lista — przelacznik jest zarazem naglowkiem czesci (bez podtytulu z ta sama nazwa) i rozwija swoja liste; chevron w naglowku (jak w innych sekcjach) rozwija obie, a gdy obie sa rozwiniete — zwija obie. Pozyczki poza wydatkami: karta w skali roku sie znosi, raty to splata pozyczki (zakup z niej — jesli dodany — jest w Wydatkach, z ikona lacza). **Pozyczka ratalna** (ADR-036): wplyw w dniu wyplaty, raty z warunkow (kwota, liczba rat, rata, RRSO — z trzech liczy sie czwarta, przy czterech sprawdzanie zgodnosci), opcjonalny zakup tego dnia; wiersz z pasekiem splaty i „rata k z n". Wydatki ze znakiem minus. Filtr czasu bez „Wszystkie lata": rok = srednie miesieczne, miesiac = kwoty tego miesiaca (pozycja widoczna, gdy w nim obowiazuje); „Dzisiaj", kategorie z podgrupami, sortowanie, „pokaz ukryte". Wiersz pozycji ma pasek 12 kratek (miesiace roku). Tap → szczegoly pozycji: siatka 3×4 (rzad = kwartal) z kwota i dniem kazdego miesiaca; tapniecie edytuje jeden miesiac, przytrzymanie zaczyna zaznaczanie, kolejne przytrzymanie zaznacza zakres; pod siatka panel „Szybkie wypelnianie" (kwota + dzien → „Puste" = miesiace roku bez kwoty / „Zaznaczone" / usun z planu). **Okres pozycji** (od–do, opcjonalny): rata ma oba konce, pozycja ze startem — samo „od"; miesiace poza okresem sa wyszarzone (klodka + „przed startem"/„po zakonczeniu"), nie da sie ich zaznaczyc ani wypelnic, a dotkniecie wyjasnia dlaczego. Kontroler pilnuje okresu przy kazdym zapisie. Formularz: pola Od/Do (miesiac); zawezenie okresu z kwotami poza nim pyta o ich usuniecie; zamiast „Raty…" odeslanie do pozyczki ratalnej. „Zaplanuj kolejny rok" przenosi miesiace i kwoty tylko w okresie (pozycja z okresem konczacym sie przed kolejnym rokiem nie jest kandydatem; bez okresu — konczace sie ciagi domyslnie odznaczone). **Pozyczka z karty** — para pozycji (pozyczka w miesiacu uzycia, splata po okresie bezodsetkowym) spieta `linkId`, liczona osobno jako „pozyczki netto". Subskrypcje zostaja osobnym modulem — w planie kwota miesiaca z ich cyklu (okres probny i po anulowaniu = 0). Zaznaczanie wielu pozycji: kategoria, metoda, ukryj/przywroc, usun |
 | **Ustawienia** | Trzy sekcje. **Personalizacja**: wyglad, waluta i limit, **wybor budzetow** (tryb: Osobisty / Domowy / oba — ADR-014), powiadomienia, **kategorie i metody platnosci** (slowniki, ktorymi uzytkownik opisuje SWOJ budzet — stad przy personalizacji, nie przy danych). **Dane**: **Backup** (kopia zapasowa i odtwarzanie) oraz **Eksport/import danych** (XLSX subskrypcji i planu roku w OBIE strony — arkusz planu to sposob udostepnienia budzetu (ADR-035), raport PDF — wczesniej ikony w paskach ekranow; arkusz to nie kopia zapasowa: import DOKLADA pozycje, nie odtwarza zdjec, odhaczen ani ustawien). **Aplikacja**: **aktualizacje OTA inline**, polityka prywatnosci, Developer Tools (tylko DEV). Karty frost |
 
-**Tryb budzetu (ADR-014):** globalny zakres w `BudgetController` ma tryb (`budgetMode`,
-lokalny). `both` = przelacznik zakresu na kartach + swipe zmienia zakres (`ScopeSwipeArea`).
-Tryb jednozakresowy (`personalOnly`/`householdOnly`) chowa przelacznik (`scopeSelectable`),
-a `ScopeSwipeArea(enabled: false)` oddaje swipe dziecku — w Budzecie `TabBarView`
-przelacza Statystyki/Kalendarz. Dane obu zakresow zostaja; tryb je tylko chowa/odslania.
+**Budzety z nazwami (ADR-037):** lista budzetow (nazwa, ikona, ukrycie) w ustawieniach; przelacznik w gornym pasku to lista rozwijana z „Zarzadzaj budzetami", gest przesuniecia = kolejny/poprzedni budzet (`ScopeSwipeArea`, wylaczony przy jednym widocznym budzecie). Ukrywanie zastapilo tryb budzetu (ADR-014). Przenies/kopiuj: caly budzet, zaznaczone pozycje, pojedyncza pozycja, pozyczka, subskrypcja.
 
 ---
 

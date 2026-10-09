@@ -57,4 +57,9 @@ Future<void> resetStorage(StorageService storage) async {
   for (final scope in BudgetScope.values) {
     await storage.setSpendingAllocationItems(scope, const []);
   }
+  // Budżety z nazwami (ADR-037): każdy test startuje z „Osobisty" i „Domowy".
+  final settings = Hive.box('settings');
+  for (final key in ['budgets', 'activeBudgetId', 'budgetMode']) {
+    await settings.delete(key);
+  }
 }

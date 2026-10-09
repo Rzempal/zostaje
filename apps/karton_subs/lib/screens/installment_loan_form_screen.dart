@@ -9,6 +9,7 @@ import '../models/subscription.dart';
 import '../services/loan_math.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/budget_picker.dart' show moveOrCopyPositions;
 import '../widgets/budget_widgets.dart' show budgetNf;
 import '../widgets/category_icons.dart'
     show paymentMethodIcon, paymentMethodIconColor;
@@ -343,6 +344,23 @@ class _InstallmentLoanFormScreenState extends State<InstallmentLoanFormScreen> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  /// Cała pożyczka (wypłata, raty i zakup) do innego budżetu (ADR-037) —
+  /// w zapisanej wersji; niezapisane zmiany przepadają, więc formularz się
+  /// zamyka.
+  Future<void> _toBudget({required bool copy}) async {
+    final parts = context.read<PlanController>().loanParts(widget.linkId!);
+    final any = parts.repayment ?? parts.loan;
+    if (any == null) return;
+    final done = await moveOrCopyPositions(
+      context,
+      {any.id},
+      copy: copy,
+      fromBudgetId: any.budgetId,
+      what: 'pożyczkę',
+    );
+    if (done && mounted) Navigator.of(context).pop();
+  }
+
   Future<void> _delete() async {
     final plan = context.read<PlanController>();
     final link = widget.linkId!;
@@ -420,12 +438,27 @@ class _InstallmentLoanFormScreenState extends State<InstallmentLoanFormScreen> {
       appBar: AppBar(
         title: Text(_editing ? 'Edytuj pożyczkę ratalną' : 'Pożyczka ratalna'),
         actions: [
-          if (_editing)
+          if (_editing) ...[
             IconButton(
               tooltip: 'Usuń',
               icon: const Icon(LucideIcons.trash2),
               onPressed: _delete,
             ),
+            PopupMenuButton<String>(
+              tooltip: 'Więcej',
+              onSelected: (v) => _toBudget(copy: v == 'copy'),
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: 'move',
+                  child: Text('Przenieś do budżetu…'),
+                ),
+                PopupMenuItem(
+                  value: 'copy',
+                  child: Text('Kopiuj do budżetu…'),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
       body: Form(
