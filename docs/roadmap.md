@@ -513,12 +513,12 @@ Po przebudowie (Faza 16). Zadania o synchronizacji, skanie paragonow, korektach
 i porownaniu planu z rzeczywistoscia usuniete — tych funkcji juz nie ma.
 
 **Domkniecie Fazy 16**
-1. Sprawdzenie PROD 0.27 na prawdziwych danych (pozycje i kwoty miesiecy, odhaczenia, subskrypcje, karta).
-2. Chevron w naglowku grupy Wydatki — na PROD po akceptacji na DEV (0.27.26100801).
+1. ✅ Sprawdzenie PROD 0.27 na prawdziwych danych (potwierdzone 2026-10-09).
+2. ✅ Chevron w naglowku grupy Wydatki — na PROD od 0.27.26100900.
 3. TBD — E7: sprzatanie danych synchronizacji w Supabase (projekt wspolny z APPteczka — tylko obiekty Zostaje; polecenie SQL w tabeli Fazy 16).
 
 **Funkcje**
-4. Budzety z wlasnymi nazwami (wiecej niz Osobisty/Domowy) — model gotowy (`budgetId`), brakuje ekranu i przelacznika.
+4. Budzety z wlasnymi nazwami (wiecej niz Osobisty/Domowy) — plan ma juz `budgetId`; subskrypcje, odhaczenia, tryb budzetu i przelacznik zakresu wciaz znaja tylko dwa budzety (ok. 17 plikow).
 5. Powiadomienia planu — nadchodzaca duza platnosc z planu.
 6. Daty odnowien subskrypcji w kalendarzu systemowym (Faza 3).
 7. Zaznaczanie wielu pozycji takze dla subskrypcji (ADR-027).
