@@ -1,8 +1,9 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026100902",
-  "releaseNotes": "- Sekcja Pozyczki: pozyczka z karty i pozyczki ratalne\n- Pozyczka ratalna: wyplata jako wplyw, raty, RRSO; z trzech wartosci liczy czwarta i sprawdza zgodnosc\n- Opcjonalny zakup tego dnia jako wydatek (raty nie licza sie drugi raz)\n- Pozyczki netto zamiast karty netto\n- Formularz pozycji: bez gotowego ustawienia Raty",
-  "versionCode": 2026100902,
   "changelog": [
+    {
+      "version": "0.27.26100903",
+      "notes": "- Budzety z nazwami i ikonami: dowolnie wiele, przelacznik z lista u gory\n- Ukrywanie budzetu zamiast trybu budzetu\n- Przenies i kopiuj do innego budzetu: caly budzet, zaznaczone pozycje, pozycja, pozyczka, subskrypcja\n- Usuwanie budzetu z ostrzezeniem i opcja przeniesienia\n- Budzet: zakladki Statystyki i Kalendarz w jednej linii z budzetem\n- Wydatki i Pozyczki: chevron grupy zwija calosc, pilsy tylko swoje listy\n- Pozyczki: osobno Karta kredytowa i Kredyty ratalne\n- Subskrypcja: zmiana budzetu tylko w menu (Przenies / Kopiuj)"
+    },
     {
       "version": "0.27.26100902",
       "notes": "- Sekcja Pozyczki: pozyczka z karty i pozyczki ratalne\n- Pozyczka ratalna: wyplata jako wplyw, raty, RRSO; z trzech wartosci liczy czwarta i sprawdza zgodnosc\n- Opcjonalny zakup tego dnia jako wydatek (raty nie licza sie drugi raz)\n- Pozyczki netto zamiast karty netto\n- Formularz pozycji: bez gotowego ustawienia Raty"
@@ -38,12 +39,11 @@
     {
       "version": "0.25.26081001",
       "notes": "- Naprawione skanowanie paragonow: w poprzednim wydaniu przestalo dzialac i pokazywalo blednie, ze wymaga Androida\n- Stawka VAT nie jest juz brana za kwote (paragon na 39,00 zapisywal sie jako 23,00)\n- Nazwa wydatku nie moze byc numerem ani etykieta dokumentu"
-    },
-    {
-      "version": "0.25.26081000",
-      "notes": "- Metoda platnosci moze byc karta kredytowa z liczba dni bezodsetkowych\n- Wplyw jednorazowy da sie oznaczyc jako pozyczony z karty\n- Zakup karta tworzy lustrzany wplyw, wiec miesiac zakupu wychodzi na zero, a koszt lauduje w miesiacu splaty\n- Po zapisie pojawia sie komunikat, co automat dolozyl i na kiedy\n- Toggle automatyczna przy karcie opisuje SPLATE karty\n- Ikona metody platnosci jest teraz taka sama na wszystkich listach"
     }
   ],
-  "releaseDate": "2026-10-09T17:22:00Z",
-  "version": "0.27.26100902"
+  "releaseNotes": "- Budzety z nazwami i ikonami: dowolnie wiele, przelacznik z lista u gory\n- Ukrywanie budzetu zamiast trybu budzetu\n- Przenies i kopiuj do innego budzetu: caly budzet, zaznaczone pozycje, pozycja, pozyczka, subskrypcja\n- Usuwanie budzetu z ostrzezeniem i opcja przeniesienia\n- Budzet: zakladki Statystyki i Kalendarz w jednej linii z budzetem\n- Wydatki i Pozyczki: chevron grupy zwija calosc, pilsy tylko swoje listy\n- Pozyczki: osobno Karta kredytowa i Kredyty ratalne\n- Subskrypcja: zmiana budzetu tylko w menu (Przenies / Kopiuj)",
+  "versionCode": 2026100903,
+  "version": "0.27.26100903",
+  "releaseDate": "2026-10-09T21:15:36Z",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026100903"
 }
