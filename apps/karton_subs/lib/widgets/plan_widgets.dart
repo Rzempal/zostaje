@@ -104,7 +104,9 @@ class PlanSection extends StatelessWidget {
 }
 
 /// Grupa „Wydatki" (ADR-035): suma pozycji planu i subskrypcji, pasek
-/// proporcji i dwa przełączniki, z których każdy rozwija swoją listę.
+/// proporcji i dwie części. Każdą otwiera przełącznik z jej sumą, stojący
+/// nad jej listą przy prawej krawędzi — przełącznik jest zarazem nagłówkiem
+/// części, więc nazwa nie powtarza się w osobnym podtytule.
 /// Subskrypcje to szczególna składowa wydatków — liczą się do sumy grupy
 /// (tak jak w karcie „Zostaje"), ale mają osobny moduł i osobną listę.
 class PlanExpenseGroup extends StatelessWidget {
@@ -194,12 +196,11 @@ class PlanExpenseGroup extends StatelessWidget {
       ),
     );
 
-    Widget label(String text) => Padding(
-      padding: const EdgeInsets.only(top: 8, bottom: 4),
-      child: Text(
-        text,
-        style: theme.textTheme.labelMedium?.copyWith(color: c.textSecondary),
-      ),
+    // Przełącznik stoi tam, gdzie zaczyna się jego lista, wyrównany do
+    // prawej — sam jest nagłówkiem części, więc nie dublujemy nazwy.
+    Widget toggle(Widget chip) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Align(alignment: Alignment.centerRight, child: chip),
     );
 
     return Column(
@@ -253,25 +254,19 @@ class PlanExpenseGroup extends StatelessWidget {
               ),
             ),
           ),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            if (hasPositions)
-              chip('Pozycje', positionsTotal, posColor, positionsOpen,
-                  onTogglePositions),
-            if (hasSubscriptions)
-              chip('Subskrypcje', subscriptionsTotal, subColor,
-                  subscriptionsOpen, onToggleSubscriptions),
-          ],
-        ),
-        if (hasPositions && positionsOpen) ...[
-          label('Pozycje'),
-          ...positions,
+        if (hasPositions) ...[
+          toggle(
+            chip('Pozycje', positionsTotal, posColor, positionsOpen,
+                onTogglePositions),
+          ),
+          if (positionsOpen) ...positions,
         ],
-        if (hasSubscriptions && subscriptionsOpen) ...[
-          label('Subskrypcje'),
-          ...subscriptions,
+        if (hasSubscriptions) ...[
+          toggle(
+            chip('Subskrypcje', subscriptionsTotal, subColor,
+                subscriptionsOpen, onToggleSubscriptions),
+          ),
+          if (subscriptionsOpen) ...subscriptions,
         ],
         const SizedBox(height: 16),
       ],

@@ -137,7 +137,11 @@ void main() {
     await pump(tester, const PlanningScreen(), height: 1600);
     expect(find.text('Wpływy'), findsWidgets);
     expect(find.text('Karta kredytowa'), findsOneWidget);
-    expect(find.text('Subskrypcje'), findsOneWidget);
+    // Części grupy Wydatki: przełącznik z sumą jest zarazem ich nagłówkiem
+    // (bez osobnego podtytułu z tą samą nazwą).
+    expect(find.textContaining('Subskrypcje -'), findsOneWidget);
+    expect(find.textContaining('Pozycje -'), findsOneWidget);
+    expect(find.text('Subskrypcje'), findsNothing);
 
     // „Dzisiaj" = październik 2026 (data testowa); chip „paź" leży poza
     // widocznym fragmentem poziomego paska miesięcy.
