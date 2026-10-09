@@ -48,6 +48,9 @@ budżetów z własnymi nazwami.
    Przeniesienie zabiera odhaczone płatności; kopia ma nowe identyfikatory
    i nie kopiuje odhaczeń. Pożyczka idzie zawsze w całości (wypłata, raty,
    zakup).
+   Formularze nie mają wyboru budżetu — także formularz subskrypcji: nowa
+   subskrypcja trafia do aktywnego budżetu, jak pozycja i pożyczka, a zmiana
+   budżetu to tylko „Przenieś do / Kopiuj do" w menu ⋮.
 7. **Usuwanie** budżetu: ostrzeżenie z liczbą pozycji i subskrypcji, że
    zniknie razem z nimi, z podpowiedzią przeniesienia — przyciski „Anuluj",
    „Przenieś i usuń…", „Usuń". Ostatniego budżetu usunąć się nie da.
@@ -71,3 +74,6 @@ budżetów z własnymi nazwami.
   (budżety są osobne).
 - **Kopiowanie całości bez subskrypcji** — odrzucone: właściciel chce móc
   skopiować wszystko; wybór zostaje w okienku kopiowania.
+- **Wybór budżetu w formularzu subskrypcji** (chipy, pierwsza wersja DEV)
+  — usunięty po teście: dublował „Przenieś do" z menu ⋮ i działał inaczej
+  (zmiana dopiero z zapisem formularza, „Przenieś" — od razu).

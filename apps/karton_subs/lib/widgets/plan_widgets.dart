@@ -106,90 +106,98 @@ class PlanSection extends StatelessWidget {
   }
 }
 
-/// Grupa „Wydatki" (ADR-035): suma pozycji planu i subskrypcji, pasek
-/// proporcji i dwie części. Każdą otwiera przełącznik z jej sumą, stojący
-/// nad jej listą przy prawej krawędzi — przełącznik jest zarazem nagłówkiem
-/// części, więc nazwa nie powtarza się w osobnym podtytule.
-/// Subskrypcje to szczególna składowa wydatków — liczą się do sumy grupy
-/// (tak jak w karcie „Zostaje"), ale mają osobny moduł i osobną listę.
-class PlanExpenseGroup extends StatelessWidget {
-  /// Kwoty dodatnie; znak minus dokłada widok.
-  final double positionsTotal;
-  final double subscriptionsTotal;
-  final bool hasPositions;
-  final bool hasSubscriptions;
-  final bool positionsOpen;
-  final bool subscriptionsOpen;
-  final VoidCallback onTogglePositions;
-  final VoidCallback onToggleSubscriptions;
+/// Część grupy planu: przełącznik z nazwą i sumą, a pod nim — gdy otwarta —
+/// jej lista.
+class PlanGroupPart {
+  final String label;
 
-  /// Nagłówek grupy (chevron, jak w pozostałych sekcjach): rozwija obie
-  /// listy, a gdy obie są już rozwinięte — zwija obie. `true` = rozwiń.
-  final ValueChanged<bool> onToggleAll;
-  final List<Widget> positions;
-  final List<Widget> subscriptions;
+  /// Suma części ze znakiem kierunku (wydatek ujemny, wpływ dodatni).
+  final double amount;
+  final Color color;
+  final bool open;
+  final VoidCallback onToggle;
+  final List<Widget> children;
 
-  const PlanExpenseGroup({
+  const PlanGroupPart({
+    required this.label,
+    required this.amount,
+    required this.color,
+    required this.open,
+    required this.onToggle,
+    required this.children,
+  });
+}
+
+/// Grupa planu z częściami (ADR-035–037): „Wydatki" (pozycje i subskrypcje)
+/// i „Pożyczki" (karta kredytowa i kredyty ratalne).
+///
+/// Chevron w nagłówku zwija CAŁĄ grupę; przełącznik każdej części — tylko
+/// jej listę. Przełącznik stoi tam, gdzie zaczyna się lista części, przy
+/// prawej krawędzi, i jest zarazem jej nagłówkiem (nazwa nie powtarza się
+/// w osobnym podtytule). Pasek proporcji — dla części o tym samym kierunku
+/// pieniędzy (wydatki); przy pożyczkach netto bywa plus i minus naraz.
+class PlanGroup extends StatelessWidget {
+  final String title;
+
+  /// Suma grupy ze znakiem kierunku.
+  final double total;
+  final bool collapsed;
+  final VoidCallback onToggle;
+
+  /// Części z czymkolwiek do pokazania (puste pomija wywołujący).
+  final List<PlanGroupPart> parts;
+  final bool showProportion;
+
+  const PlanGroup({
     super.key,
-    required this.positionsTotal,
-    required this.subscriptionsTotal,
-    required this.hasPositions,
-    required this.hasSubscriptions,
-    required this.positionsOpen,
-    required this.subscriptionsOpen,
-    required this.onTogglePositions,
-    required this.onToggleSubscriptions,
-    required this.onToggleAll,
-    required this.positions,
-    required this.subscriptions,
+    required this.title,
+    required this.total,
+    required this.collapsed,
+    required this.onToggle,
+    required this.parts,
+    this.showProportion = false,
   });
 
-  static String _minus(double v) => budgetNf.format(v == 0 ? 0 : -v);
+  static String _signed(double v) => budgetNf.format(v.abs() < 0.005 ? 0 : v);
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final c = context.semanticColors;
-    final total = positionsTotal + subscriptionsTotal;
-    final share = total > 0 ? positionsTotal / total : 1.0;
-    final allOpen = (!hasPositions || positionsOpen) &&
-        (!hasSubscriptions || subscriptionsOpen);
-    final posColor = c.negative;
-    final subColor = c.trial;
+    final weights = [for (final p in parts) p.amount.abs()];
+    final weightSum = weights.fold(0.0, (a, b) => a + b);
 
-    Widget chip(
-      String label,
-      double amount,
-      Color color,
-      bool open,
-      VoidCallback onTap,
-    ) => Material(
-      color: color.withValues(alpha: open ? 0.22 : 0.10),
+    Widget chip(PlanGroupPart p) => Material(
+      color: p.color.withValues(alpha: p.open ? 0.22 : 0.10),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadii.control),
         side: BorderSide(
-          color: open ? color : Colors.transparent,
+          color: p.open ? p.color : Colors.transparent,
           width: 1,
         ),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(AppRadii.control),
-        onTap: onTap,
+        onTap: p.onToggle,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                '$label ${_minus(amount)}',
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: c.textPrimary,
-                  fontFeatures: const [FontFeature.tabularFigures()],
+              Flexible(
+                child: Text(
+                  '${p.label} ${_signed(p.amount)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: c.textPrimary,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
                 ),
               ),
               const SizedBox(width: 4),
               Icon(
-                open ? LucideIcons.chevronUp : LucideIcons.chevronDown,
+                p.open ? LucideIcons.chevronUp : LucideIcons.chevronDown,
                 size: 14,
                 color: c.textMuted,
               ),
@@ -199,27 +207,20 @@ class PlanExpenseGroup extends StatelessWidget {
       ),
     );
 
-    // Przełącznik stoi tam, gdzie zaczyna się jego lista, wyrównany do
-    // prawej — sam jest nagłówkiem części, więc nie dublujemy nazwy.
-    Widget toggle(Widget chip) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Align(alignment: Alignment.centerRight, child: chip),
-    );
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         InkWell(
-          onTap: () => onToggleAll(!allOpen),
+          onTap: onToggle,
           child: Padding(
             padding: const EdgeInsets.only(top: 4, bottom: 8),
             child: Row(
               children: [
                 Expanded(
-                  child: Text('Wydatki', style: theme.textTheme.titleMedium),
+                  child: Text(title, style: theme.textTheme.titleMedium),
                 ),
                 Text(
-                  _minus(total),
+                  _signed(total),
                   style: theme.textTheme.titleSmall?.copyWith(
                     color: c.textSecondary,
                     fontFeatures: const [FontFeature.tabularFigures()],
@@ -227,7 +228,7 @@ class PlanExpenseGroup extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
                 Icon(
-                  allOpen ? LucideIcons.chevronUp : LucideIcons.chevronDown,
+                  collapsed ? LucideIcons.chevronDown : LucideIcons.chevronUp,
                   size: 18,
                   color: c.textMuted,
                 ),
@@ -235,41 +236,37 @@ class PlanExpenseGroup extends StatelessWidget {
             ),
           ),
         ),
-        if (hasPositions && hasSubscriptions && total > 0)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(3),
-              child: SizedBox(
-                height: 6,
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: (share * 1000).round(),
-                      child: ColoredBox(color: posColor),
-                    ),
-                    Expanded(
-                      flex: ((1 - share) * 1000).round(),
-                      child: ColoredBox(color: subColor),
-                    ),
-                  ],
+        if (!collapsed) ...[
+          if (showProportion && parts.length > 1 && weightSum > 0)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: SizedBox(
+                  height: 6,
+                  child: Row(
+                    children: [
+                      for (final (i, p) in parts.indexed)
+                        if (weights[i] > 0)
+                          Expanded(
+                            flex: (weights[i] / weightSum * 1000).round().clamp(
+                              1,
+                              1000,
+                            ),
+                            child: ColoredBox(color: p.color),
+                          ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        if (hasPositions) ...[
-          toggle(
-            chip('Pozycje', positionsTotal, posColor, positionsOpen,
-                onTogglePositions),
-          ),
-          if (positionsOpen) ...positions,
-        ],
-        if (hasSubscriptions) ...[
-          toggle(
-            chip('Subskrypcje', subscriptionsTotal, subColor,
-                subscriptionsOpen, onToggleSubscriptions),
-          ),
-          if (subscriptionsOpen) ...subscriptions,
+          for (final p in parts) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Align(alignment: Alignment.centerRight, child: chip(p)),
+            ),
+            if (p.open) ...p.children,
+          ],
         ],
         const SizedBox(height: 16),
       ],

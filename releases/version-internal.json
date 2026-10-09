@@ -1,9 +1,12 @@
 {
-  "releaseDate": "2026-10-09T19:23:30Z",
-  "version": "0.27.26100903",
-  "versionCode": 2026100903,
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026100903",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026100904",
+  "versionCode": 2026100904,
+  "releaseDate": "2026-10-09T20:53:53Z",
   "changelog": [
+    {
+      "version": "0.27.26100904",
+      "notes": "- Budzet: zakladki Statystyki i Kalendarz w jednej linii z budzetem\n- Wydatki i Pozyczki: chevron grupy zwija calosc, pilsy tylko swoje listy\n- Pozyczki: osobno Karta kredytowa i Kredyty ratalne\n- Subskrypcja: zmiana budzetu tylko w menu (Przenies / Kopiuj)"
+    },
     {
       "version": "0.27.26100903",
       "notes": "- Budzety z wlasnymi nazwami i ikonami (Ustawienia - Budzety)\n- Przelacznik budzetu: lista rozwijana u gory, gest przesuniecia\n- Ukrywanie budzetu zamiast trybu budzetu\n- Przenies / kopiuj do innego budzetu: calosc, zaznaczone pozycje, pozycja, pozyczka, subskrypcja\n- Usuwanie budzetu z ostrzezeniem i opcja przeniesienia"
@@ -39,11 +42,8 @@
     {
       "version": "0.26.26100700",
       "notes": "- Przebudowa E3b: zakladka Biezace i skan paragonow usuniete\n- Planner Na biezace wydatki zamieniony na zwykle pozycje planu (co miesiac)\n- Nawigacja: Budzet, Planowanie, Ustawienia\n- Aplikacja mniejsza o ok. 13 MB"
-    },
-    {
-      "version": "0.26.26100602",
-      "notes": "- Przebudowa, etapy 2-3: nowa zakladka Planowanie - wplywy, wydatki, karta i subskrypcje na jednym ekranie\n- Pozycja ma miesiace z wlasnymi kwotami; kilka miesiecy mozna zmienic naraz\n- Pozyczka z karty: wplyw w miesiacu uzycia i splata po okresie bezodsetkowym\n- Budzet: Statystyki roku (srednie, miesiace, kategorie) i Kalendarz platnosci\n- Zakladki Wplywy i Cykliczne zastapione Planowaniem"
     }
   ],
-  "releaseNotes": "- Budzety z wlasnymi nazwami i ikonami (Ustawienia - Budzety)\n- Przelacznik budzetu: lista rozwijana u gory, gest przesuniecia\n- Ukrywanie budzetu zamiast trybu budzetu\n- Przenies / kopiuj do innego budzetu: calosc, zaznaczone pozycje, pozycja, pozyczka, subskrypcja\n- Usuwanie budzetu z ostrzezeniem i opcja przeniesienia"
+  "releaseNotes": "- Budzet: zakladki Statystyki i Kalendarz w jednej linii z budzetem\n- Wydatki i Pozyczki: chevron grupy zwija calosc, pilsy tylko swoje listy\n- Pozyczki: osobno Karta kredytowa i Kredyty ratalne\n- Subskrypcja: zmiana budzetu tylko w menu (Przenies / Kopiuj)",
+  "version": "0.27.26100904"
 }

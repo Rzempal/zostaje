@@ -19,6 +19,8 @@ import '../widgets/frost_card.dart';
 import '../widgets/month_picker_dialog.dart';
 import '../widgets/scope_swipe_area.dart';
 import '../widgets/spending_chart.dart';
+import '../widgets/section_info_badge.dart' show SectionInfo;
+import '../widgets/workspace_top_bar.dart';
 import '../widgets/subscription_stats_view.dart' show SubscriptionStatsView;
 
 /// Sortowanie, grupowanie i zwijanie JEDNEJ sekcji miesiąca. Trzy ustawienia
@@ -266,16 +268,25 @@ class _DashboardScreenState extends State<DashboardScreen>
       backgroundColor: Colors.transparent,
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: const _UpdateBanner(),
+          // Zakładki w jednej linii z przełącznikiem budżetu i „i" — rząd
+          // ekranu mniej na sam pasek zakładek.
+          WorkspaceTopBar(
+            info: SectionInfo.budget,
+            leading: TabBar(
+              controller: _tab,
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              dividerColor: Colors.transparent,
+              labelPadding: const EdgeInsets.symmetric(horizontal: 12),
+              tabs: const [
+                Tab(text: 'Statystyki'),
+                Tab(text: 'Kalendarz'),
+              ],
+            ),
           ),
-          TabBar(
-            controller: _tab,
-            tabs: const [
-              Tab(text: 'Statystyki'),
-              Tab(text: 'Kalendarz'),
-            ],
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
+            child: _UpdateBanner(),
           ),
           Expanded(
             child: ScopeSwipeArea(

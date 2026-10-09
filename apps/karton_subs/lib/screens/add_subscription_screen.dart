@@ -7,7 +7,6 @@ import '../models/quick_add_templates.dart';
 import '../controllers/budget_controller.dart';
 import '../controllers/subscription_controller.dart';
 import '../widgets/budget_picker.dart' show showBudgetTargetSheet;
-import '../widgets/category_icons.dart' show categoryIcon;
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/cycle_months_picker.dart';
@@ -16,10 +15,9 @@ import '../widgets/form_action_bar.dart';
 class AddSubscriptionScreen extends StatefulWidget {
   final Subscription? existing;
 
-  /// Zakres nowej subskrypcji — lista podaje ten, na którym stoi użytkownik.
-  /// Bez tego subskrypcja dodana w budżecie domowym lądowała w osobistym,
-  /// czyli poza listą, z której ją dodano.
-  /// Budżet nowej subskrypcji — zwykle aktywny (ADR-037).
+  /// Budżet nowej subskrypcji — ten, na którym stoi użytkownik (ADR-037);
+  /// domyślnie aktywny. Formularz nie ma wyboru budżetu, jak pozycja planu
+  /// i pożyczka: zmiana budżetu to menu ⋮ „Przenieś do / Kopiuj do".
   final String? initialBudgetId;
 
   const AddSubscriptionScreen({
@@ -59,7 +57,8 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   String? _paymentMethod;
   bool _isTrial = false;
   DateTime? _trialEndDate;
-  late String _budgetId;
+  /// Budżet NOWEJ subskrypcji; edycja budżetu nie zmienia (menu ⋮).
+  late final String _budgetId;
   late final TextEditingController _postTrialAmountCtrl;
   bool _isSubmitting = false;
 
@@ -124,7 +123,6 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       _paymentMethod = s.paymentMethod;
       _isTrial = s.isTrial;
       _trialEndDate = s.trialEndDate;
-      _budgetId = s.budgetId;
     }
   }
 
@@ -201,24 +199,6 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
               decoration: const InputDecoration(
                 labelText: 'Opis (opcjonalnie)',
               ),
-            ),
-            const SizedBox(height: 24),
-
-            _SectionLabel('Budżet'),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final b in context.read<BudgetController>().budgets)
-                  if (!b.hidden || b.id == _budgetId)
-                    ChoiceChip(
-                      avatar: Icon(categoryIcon(b.icon), size: 16),
-                      label: Text(b.name),
-                      selected: _budgetId == b.id,
-                      onSelected: (_) => setState(() => _budgetId = b.id),
-                    ),
-              ],
             ),
             const SizedBox(height: 24),
 
@@ -586,7 +566,6 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
             clearTrialEndDate: !_isTrial,
             postTrialAmount: _isTrial ? postTrialAmt : null,
             clearPostTrialAmount: !_isTrial,
-            budgetId: _budgetId,
           ),
         );
       } else {

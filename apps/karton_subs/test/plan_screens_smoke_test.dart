@@ -7,6 +7,7 @@ import 'package:karton_subs/controllers/plan_controller.dart';
 import 'package:karton_subs/controllers/subscription_controller.dart';
 import 'package:karton_subs/models/plan_position.dart';
 import 'package:karton_subs/models/subscription.dart';
+import 'package:karton_subs/screens/add_subscription_screen.dart';
 import 'package:karton_subs/screens/budgets_screen.dart';
 import 'package:karton_subs/screens/card_loan_form_screen.dart';
 import 'package:karton_subs/screens/dashboard_screen.dart';
@@ -254,6 +255,33 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Formularz subskrypcji: budżet zmienia tylko menu ⋮', (
+    tester,
+  ) async {
+    await tester.runAsync(seed);
+    // Szerzej niż telefon: pasek szablonów i listy rozwijane w czcionce
+    // testowej (litery jak kwadraty) nie mieszczą się w 360 px.
+    // Jak pozycja i pożyczka: nowa subskrypcja trafia do aktywnego budżetu,
+    // formularz nie ma wyboru budżetu (ADR-037)…
+    await pump(tester, const AddSubscriptionScreen(), width: 600, height: 1600);
+    expect(find.text('BUDŻET'), findsNothing);
+
+    // …a w edycji przeniesienie i kopia są w menu ⋮ — jedno miejsce.
+    final netflix = storage.getSubscription('netflix')!;
+    await pump(
+      tester,
+      AddSubscriptionScreen(existing: netflix),
+      width: 600,
+      height: 1600,
+    );
+    expect(find.text('BUDŻET'), findsNothing);
+    await tester.tap(find.byTooltip('Więcej'));
+    await tester.pumpAndSettle();
+    expect(find.text('Przenieś do budżetu…'), findsOneWidget);
+    expect(find.text('Kopiuj do budżetu…'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Pożyczki: karta i pożyczka ratalna w jednej sekcji', (
     tester,
   ) async {
@@ -307,6 +335,9 @@ void main() {
 
     expect(find.text('Pożyczki'), findsOneWidget);
     expect(find.text('Karta kredytowa'), findsNothing);
+    // Części grupy „Pożyczki" — przełączniki z sumą, jak w „Wydatkach".
+    expect(find.textContaining('Karta kredytowa '), findsOneWidget);
+    expect(find.textContaining('Kredyty ratalne '), findsOneWidget);
     expect(find.textContaining('rata 1 z 12'), findsOneWidget);
     expect(find.textContaining('Pożyczki netto'), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -378,6 +409,9 @@ void main() {
     await tester.runAsync(seed);
     await pump(tester, const DashboardScreen(), width: 600);
     expect(find.text('Średnio miesięcznie'), findsOneWidget);
+    // Zakładki w jednej linii z przełącznikiem budżetu (pasek ekranu).
+    expect(find.text('Statystyki'), findsOneWidget);
+    expect(find.text('Osobisty'), findsOneWidget);
 
     await tester.tap(find.text('Kalendarz'));
     await tester.pumpAndSettle();

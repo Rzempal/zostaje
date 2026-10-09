@@ -4,51 +4,71 @@ import '../screens/budgets_screen.dart';
 import 'budget_picker.dart';
 import 'section_info_badge.dart';
 
-/// Wspólny pasek nad ekranami roboczymi: przełącznik budżetu (ADR-037)
-/// i opis bieżącej sekcji.
+/// Pasek nad ekranami roboczymi: po lewej to, co ekran potrzebuje
+/// ([leading] — np. zakładki „Statystyki | Kalendarz"), po prawej przełącznik
+/// budżetu (ADR-037) i opis sekcji.
 ///
 /// Zastępuje paski tytułu poszczególnych ekranów. Nazwa ekranu i tak stała tam
-/// zdublowana z pigułką nawigacji na dole, a razem z osobnym przełącznikiem
-/// zakresu na każdym ekranie zjadała ~112 px, zanim zaczynała się treść.
-///
-/// Zakres jest GLOBALNY (jeden `BudgetController` dla całej aplikacji), więc
-/// jego miejsce jest tutaj, a nie w pięciu ekranach z osobna.
+/// zdublowana z pigułką nawigacji na dole. Budżet jest GLOBALNY (jeden
+/// `BudgetController` dla całej aplikacji) — przełącznik stoi w tym samym
+/// miejscu na każdym ekranie, który go pokazuje.
 class WorkspaceTopBar extends StatelessWidget {
   /// Opis sekcji dla ikony „i"; `null` = ekran bez opisu.
   final SectionInfo? info;
 
-  /// Czy pokazywać przełącznik zakresu. Ustawienia go nie potrzebują — nie ma
-  /// tam czego przełączać, a stały pasek nad listą tylko zabierałby miejsce.
+  /// Czy pokazywać przełącznik budżetu. Widać go także przy jednym widocznym
+  /// budżecie: mówi, w którym budżecie jesteś, i prowadzi do „Zarządzaj".
   final bool showScope;
 
-  const WorkspaceTopBar({super.key, this.info, this.showScope = true});
+  /// Treść po lewej stronie paska (zakładki ekranu); `null` = pusto.
+  final Widget? leading;
+
+  const WorkspaceTopBar({
+    super.key,
+    this.info,
+    this.showScope = true,
+    this.leading,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // Przełącznik widać zawsze (także przy jednym widocznym budżecie): mówi,
-    // w którym budżecie jesteś, i prowadzi do „Zarządzaj budżetami".
-    final scopeVisible = showScope;
-    if (!scopeVisible && info == null) return const SizedBox.shrink();
+    if (!showScope && info == null && leading == null) {
+      return const SizedBox.shrink();
+    }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-      child: Row(
-        children: [
-          if (scopeVisible)
-            Flexible(
-              flex: 4,
-              child: BudgetPicker(
-                onManage: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const BudgetsScreen()),
-                ),
+      padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+      child: LayoutBuilder(
+        builder: (context, constraints) => Row(
+          children: [
+            // Lewa strona bierze resztę miejsca — przełącznik i „i" zawsze
+            // stoją przy prawej krawędzi.
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: leading ?? const SizedBox.shrink(),
               ),
             ),
-          const Spacer(),
-          if (info != null) ...[
-            const SizedBox(width: 8),
-            SectionInfoBadge(info!),
+            if (showScope)
+              ConstrainedBox(
+                // Długa nazwa budżetu skraca się, zamiast zabrać zakładkom
+                // całą szerokość.
+                constraints: BoxConstraints(
+                  maxWidth:
+                      constraints.maxWidth * (leading == null ? 0.75 : 0.45),
+                ),
+                child: BudgetPicker(
+                  onManage: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const BudgetsScreen()),
+                  ),
+                ),
+              ),
+            if (info != null) ...[
+              const SizedBox(width: 2),
+              SectionInfoBadge(info!),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

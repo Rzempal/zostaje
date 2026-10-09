@@ -26,8 +26,6 @@ import 'config/app_config.dart';
 import 'theme/app_theme.dart';
 import 'widgets/aurora_background.dart';
 import 'widgets/glass_nav_bar.dart';
-import 'widgets/section_info_badge.dart';
-import 'widgets/workspace_top_bar.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -276,15 +274,6 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
     GlassNavItem(icon: LucideIcons.settings, label: 'Ustawienia'),
   ];
 
-  /// Opis sekcji dla wspolnego paska — kolejnosc jak w [_screens].
-  /// Ustawienia (ostatnia zakladka) opisu nie maja: to nie jest sekcja budzetu,
-  /// a i zakres nie ma tam czego przelaczac.
-  static SectionInfo? _sectionInfoFor(int index) => switch (index) {
-    0 => SectionInfo.budget,
-    1 => SectionInfo.planning,
-    _ => null,
-  };
-
   @override
   Widget build(BuildContext context) {
     // Zaleznosc od motywu: zmiana palety przebudowuje shell (nawigacja),
@@ -303,13 +292,8 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
         bottom: false,
         child: Column(
           children: [
-            // Zakres i opis sekcji: jeden pasek dla calej aplikacji zamiast
-            // paska tytulu + przelacznika na kazdym ekranie z osobna.
-            WorkspaceTopBar(
-              info: _sectionInfoFor(_currentIndex),
-              // Ustawienia to ostatnia zakladka — zakresu tam nie ma czego tyczyc.
-              showScope: _currentIndex != _screens.length - 1,
-            ),
+            // Pasek z przełącznikiem budżetu i opisem sekcji mają same ekrany
+            // (WorkspaceTopBar) — Budżet wstawia w niego swoje zakładki.
             Expanded(
               child: KeyedSubtree(
                 key: ValueKey(themeId),

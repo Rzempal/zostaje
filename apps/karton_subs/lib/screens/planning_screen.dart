@@ -16,6 +16,8 @@ import '../widgets/category_icons.dart' show subscriptionIcon;
 import '../widgets/filter_bars.dart';
 import '../widgets/budget_picker.dart' show moveOrCopyPositions;
 import '../widgets/plan_widgets.dart';
+import '../widgets/section_info_badge.dart' show SectionInfo;
+import '../widgets/workspace_top_bar.dart';
 import '../widgets/scope_swipe_area.dart';
 import '../widgets/selection_bar.dart';
 import '../widgets/subscription_row.dart';
@@ -31,6 +33,13 @@ enum _PlanSort { alpha, amountDesc }
 /// Klucze sekcji (stan zwinięcia) — osobne od dawnych „Cyklicznych".
 const _kIncomes = 'plan_incomes';
 const _kExpenses = 'plan_expenses';
+
+/// Cała grupa „Wydatki" (chevron w nagłówku) — niezależnie od jej części.
+const _kExpensesGroup = 'plan_expenses_group';
+
+/// Części grupy „Pożyczki": karta kredytowa i kredyty ratalne (ADR-036).
+const _kCardLoans = 'plan_loans_card';
+const _kInstallmentLoans = 'plan_loans_installment';
 /// Sekcja „Pożyczki" (dawniej „Karta kredytowa") — klucz zwinięcia zostaje,
 /// żeby zapamiętany stan sekcji nie przepadł.
 const _kLoans = 'plan_card';
@@ -67,18 +76,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
     super.initState();
     _year = context.read<PlanController>().today.year;
     _collapsed = context.read<StorageService>().getCollapsedBudgetSections();
-  }
-
-  /// Rozwija albo zwija kilka sekcji naraz (nagłówek grupy Wydatki).
-  void _setSections(List<String> keys, {required bool open}) {
-    setState(() {
-      if (open) {
-        _collapsed.removeAll(keys);
-      } else {
-        _collapsed.addAll(keys);
-      }
-    });
-    context.read<StorageService>().setCollapsedBudgetSections(_collapsed);
   }
 
   void _toggleSection(String key) {
@@ -312,6 +309,7 @@ class _PlanningScreenState extends State<PlanningScreen> {
     final plan = context.watch<PlanController>();
     final budget = context.watch<BudgetController>();
     final storage = context.read<StorageService>();
+    final c = context.semanticColors;
     final today = plan.today;
 
     final years = plan.years;
@@ -363,6 +361,15 @@ class _PlanningScreenState extends State<PlanningScreen> {
         b.loan.months.keys.firstOrNull ?? '',
       ),
     );
+    // Pożyczki ratalne mają warunki przy ratach (ADR-036), karta — nie.
+    final installmentRows = [
+      for (final r in loanRows)
+        if (r.repayment?.loanTerms != null) r,
+    ];
+    final cardLoanRows = [
+      for (final r in loanRows)
+        if (r.repayment?.loanTerms == null) r,
+    ];
 
     double subAmount(Subscription s) => plan.subscriptionAmountOf(s, period);
     final subs =
@@ -381,6 +388,10 @@ class _PlanningScreenState extends State<PlanningScreen> {
                 ? a.name.toLowerCase().compareTo(b.name.toLowerCase())
                 : subAmount(b).compareTo(subAmount(a));
           });
+    // Do sumy wchodzą tylko aktywne — anulowana bywa widoczna, ale nie kosztuje.
+    final subsTotal = subs
+        .where((s) => s.isActive)
+        .fold(0.0, (sum, s) => sum + subAmount(s));
 
     final empty = all.isEmpty && subsAll.isEmpty;
 
@@ -451,6 +462,7 @@ class _PlanningScreenState extends State<PlanningScreen> {
       ),
       body: Column(
         children: [
+          const WorkspaceTopBar(info: SectionInfo.planning),
           if (_selecting)
             SelectionBar(
               count: selection.length,
@@ -609,76 +621,115 @@ class _PlanningScreenState extends State<PlanningScreen> {
                         children: _rows(incomes, period, amount, false),
                       ),
                     if (expenses.isNotEmpty || subs.isNotEmpty)
-                      PlanExpenseGroup(
-                        positionsTotal: _sum(expenses, amount),
-                        subscriptionsTotal: subs
-                            .where((s) => s.isActive)
-                            .fold(0.0, (sum, s) => sum + subAmount(s)),
-                        hasPositions: expenses.isNotEmpty,
-                        hasSubscriptions: subs.isNotEmpty,
-                        positionsOpen: !_collapsed.contains(_kExpenses),
-                        subscriptionsOpen:
-                            !_collapsed.contains(_kSubscriptions),
-                        onTogglePositions: () => _toggleSection(_kExpenses),
-                        onToggleSubscriptions: () =>
-                            _toggleSection(_kSubscriptions),
-                        onToggleAll: (open) => _setSections(
-                          const [_kExpenses, _kSubscriptions],
-                          open: open,
-                        ),
-                        positions: _rows(expenses, period, amount, true),
-                        subscriptions: _grouped(
-                          subs,
-                          (s) => s.categoryId,
-                          (items) => [
-                            for (final s in items)
-                              SubscriptionRow(
-                                subscription: s,
-                                amountText:
-                                    '−${budgetNf.format(subAmount(s))}',
-                                onTap: () =>
-                                    _push(AddSubscriptionScreen(existing: s)),
-                                onLongPress: () =>
-                                    _showSubscriptionActions(s),
+                      PlanGroup(
+                        title: 'Wydatki',
+                        total: -(_sum(expenses, amount) + subsTotal),
+                        collapsed: _collapsed.contains(_kExpensesGroup),
+                        onToggle: () => _toggleSection(_kExpensesGroup),
+                        showProportion: true,
+                        parts: [
+                          if (expenses.isNotEmpty)
+                            PlanGroupPart(
+                              label: 'Pozycje',
+                              amount: -_sum(expenses, amount),
+                              color: c.negative,
+                              open: !_collapsed.contains(_kExpenses),
+                              onToggle: () => _toggleSection(_kExpenses),
+                              children: _rows(expenses, period, amount, true),
+                            ),
+                          if (subs.isNotEmpty)
+                            PlanGroupPart(
+                              label: 'Subskrypcje',
+                              amount: -subsTotal,
+                              color: c.trial,
+                              open: !_collapsed.contains(_kSubscriptions),
+                              onToggle: () => _toggleSection(_kSubscriptions),
+                              children: _grouped(
+                                subs,
+                                (s) => s.categoryId,
+                                (items) => [
+                                  for (final s in items)
+                                    SubscriptionRow(
+                                      subscription: s,
+                                      amountText:
+                                          '−${budgetNf.format(subAmount(s))}',
+                                      onTap: () => _push(
+                                        AddSubscriptionScreen(existing: s),
+                                      ),
+                                      onLongPress: () =>
+                                          _showSubscriptionActions(s),
+                                    ),
+                                ],
                               ),
-                          ],
-                        ),
+                            ),
+                        ],
                       ),
                     if (loanRows.isNotEmpty)
-                      PlanSection(
+                      PlanGroup(
                         title: 'Pożyczki',
                         total: loanRows.fold(0.0, (s, r) => s + r.net),
                         collapsed: _collapsed.contains(_kLoans),
                         onToggle: () => _toggleSection(_kLoans),
-                        children: [
-                          BudgetEntryList(
-                            rows: [
-                              for (final r in loanRows)
-                                if (r.repayment case final rep?
-                                    when rep.loanTerms != null)
-                                  InstallmentLoanRow(
-                                    loan: r.loan,
-                                    repayment: rep,
-                                    net: r.net,
-                                    period: period,
-                                    today: plan.today,
-                                    onTap: () => _push(
-                                      InstallmentLoanFormScreen(
-                                        linkId: r.loan.linkId,
+                        parts: [
+                          if (cardLoanRows.isNotEmpty)
+                            PlanGroupPart(
+                              label: 'Karta kredytowa',
+                              amount: cardLoanRows.fold(
+                                0.0,
+                                (s, r) => s + r.net,
+                              ),
+                              color: c.warning,
+                              open: !_collapsed.contains(_kCardLoans),
+                              onToggle: () => _toggleSection(_kCardLoans),
+                              children: [
+                                BudgetEntryList(
+                                  rows: [
+                                    for (final r in cardLoanRows)
+                                      CardLoanRow(
+                                        loan: r.loan,
+                                        repayment: r.repayment,
+                                        net: r.net,
+                                        onTap: () => _push(
+                                          CardLoanFormScreen(
+                                            linkId: r.loan.linkId,
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  )
-                                else
-                                  CardLoanRow(
-                                    loan: r.loan,
-                                    repayment: r.repayment,
-                                    net: r.net,
-                                    onTap: () => _push(
-                                      CardLoanFormScreen(linkId: r.loan.linkId),
-                                    ),
-                                  ),
-                            ],
-                          ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          if (installmentRows.isNotEmpty)
+                            PlanGroupPart(
+                              label: 'Kredyty ratalne',
+                              amount: installmentRows.fold(
+                                0.0,
+                                (s, r) => s + r.net,
+                              ),
+                              color: c.trial,
+                              open: !_collapsed.contains(_kInstallmentLoans),
+                              onToggle: () =>
+                                  _toggleSection(_kInstallmentLoans),
+                              children: [
+                                BudgetEntryList(
+                                  rows: [
+                                    for (final r in installmentRows)
+                                      InstallmentLoanRow(
+                                        loan: r.loan,
+                                        repayment: r.repayment!,
+                                        net: r.net,
+                                        period: period,
+                                        today: plan.today,
+                                        onTap: () => _push(
+                                          InstallmentLoanFormScreen(
+                                            linkId: r.loan.linkId,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ],
+                            ),
                         ],
                       ),
                   ],
