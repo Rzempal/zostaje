@@ -25,7 +25,7 @@
 | 14 | Proces wydawania wersji | ✅ Ukonczona (2026-08-02) |
 | 15 | Przejscie na Google Play | Planowana (kierunek bez terminu — ADR-031) |
 | 16 | Przebudowa: plan roczny (ADR-035) | ✅ Na PROD od 0.27 (2026-10-08); E7 (Supabase) odlozone — TBD |
-| 17 | Pozyczki ratalne (ADR-036) | 🚧 DEV — do akceptacji |
+| 17 | Pozyczki ratalne (ADR-036) | ✅ PROD (2026-10-09) — sekcja Pozyczki, raty z RRSO, zakup jako wydatek |
 
 > **Stan na 2026-10-08:** przebudowa scalona do `main` i wydana na PROD (0.27).
 > Ostatnia wersja sprzed przebudowy to `v0.26.26100600` — punkt powrotu (zbudowac
