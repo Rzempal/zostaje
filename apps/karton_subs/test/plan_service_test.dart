@@ -139,12 +139,12 @@ void main() {
       ),
       _pos(
         'pozyczka',
-        kind: PlanKind.cardLoan,
+        kind: PlanKind.loan,
         months: {'2026-01': const PlanMonth(amount: 3000)},
       ),
       _pos(
         'splata',
-        kind: PlanKind.cardRepayment,
+        kind: PlanKind.loanRepayment,
         months: {'2026-02': const PlanMonth(amount: 3000)},
       ),
       _pos('ukryta', archived: true, months: _everyMonth(2026, 999)),
@@ -164,8 +164,8 @@ void main() {
       expect(jan.income, 10000);
       expect(jan.expense, 2000);
       expect(jan.subscriptions, 40);
-      expect(jan.cardLoans, 3000);
-      expect(jan.cardRepayments, 0);
+      expect(jan.loanInflows, 3000);
+      expect(jan.loanRepayments, 0);
       expect(jan.left, closeTo(10000 - 2040 + 3000, 1e-9));
       expect(month(3).expense, 3200);
     });
@@ -180,7 +180,7 @@ void main() {
       final avg = stats.average;
       expect(avg.income, closeTo(10000, 1e-9));
       expect(avg.expense, closeTo((2000 * 12 + 1200) / 12, 1e-9));
-      expect(stats.total.cardNet, 0);
+      expect(stats.total.loansNet, 0);
       expect(avg.left, closeTo(10000 - 2100 - 40, 1e-9));
     });
 
@@ -293,12 +293,12 @@ void main() {
         positions: [
           _pos(
             'pozyczka',
-            kind: PlanKind.cardLoan,
+            kind: PlanKind.loan,
             months: {'2026-10': const PlanMonth(amount: 3000, day: 7)},
           ),
           _pos(
             'splata',
-            kind: PlanKind.cardRepayment,
+            kind: PlanKind.loanRepayment,
             months: {'2026-10': const PlanMonth(amount: 3000, day: 25)},
           ),
         ],
@@ -384,7 +384,7 @@ void main() {
         _svc.defaultCopySelected(
           _pos(
             'k',
-            kind: PlanKind.cardLoan,
+            kind: PlanKind.loan,
             months: {'2026-01': const PlanMonth(amount: 1)},
           ),
           2026,

@@ -13,6 +13,7 @@ import '../widgets/frost_card.dart';
 import '../widgets/plan_widgets.dart'
     show planMonthLabel, planPositionPeriodText;
 import '../widgets/selection_bar.dart';
+import 'installment_loan_form_screen.dart';
 import 'plan_position_form_screen.dart';
 
 /// Szczegóły pozycji planu: dwanaście miesięcy wybranego roku w siatce
@@ -436,6 +437,34 @@ class _PlanPositionScreenState extends State<PlanPositionScreen> {
                     ],
                   ),
                 ],
+                // Zakup z pożyczki ratalnej (ADR-036): raty są w Pożyczkach,
+                // tu — sam zakup; warunki zmienia się w pożyczce.
+                if (p.kind == PlanKind.expense &&
+                    p.linkId != null &&
+                    plan.loanParts(p.linkId!).repayment != null)
+                  Row(
+                    children: [
+                      Icon(LucideIcons.link, size: 14, color: c.primary),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Zakup z pożyczki ratalnej',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: c.primary,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                InstallmentLoanFormScreen(linkId: p.linkId),
+                          ),
+                        ),
+                        child: const Text('Otwórz pożyczkę'),
+                      ),
+                    ],
+                  ),
                 if (p.note != null) ...[
                   const SizedBox(height: 4),
                   Text(p.note!, style: theme.textTheme.bodySmall),

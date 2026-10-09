@@ -11,21 +11,27 @@ enum PlanKind {
   /// Wydatek: koszt stały, rata, przelew do innego budżetu.
   expense,
 
-  /// Pożyczka z karty kredytowej — pieniądze przychodzą w miesiącu użycia
-  /// karty. Zawsze w parze ze spłatą ([PlanPosition.linkId]).
-  cardLoan,
+  /// Pożyczka — pieniądze przychodzą: z karty kredytowej w dniu jej użycia
+  /// albo pożyczka ratalna w dniu wypłaty (ADR-036). Zawsze ze spłatą
+  /// ([PlanPosition.linkId]).
+  loan,
 
-  /// Spłata karty — wychodzi w miesiącu wynikającym z okresu bezodsetkowego.
-  cardRepayment,
+  /// Spłata pożyczki — karty po okresie bezodsetkowym (jeden miesiąc) albo
+  /// raty pożyczki ratalnej (wiele miesięcy, z warunkami w
+  /// [PlanPosition.loanTerms]).
+  loanRepayment,
 }
 
 /// Wartości pola `kind` W ZAPISIE — odcięte od nazw w kodzie (jak typy
 /// [BudgetEntry]): nazwę w Darcie wolno zmienić, wartość tutaj nie.
+/// Pożyczki zapisują się jak dawne pozycje karty („cardLoan",
+/// „cardRepayment") — pożyczka ratalna to ta sama para z warunkami, więc
+/// wersja sprzed ADR-036 widzi ją jak pożyczkę z karty z wieloma spłatami.
 const Map<PlanKind, String> _kindWireNames = {
   PlanKind.income: 'income',
   PlanKind.expense: 'expense',
-  PlanKind.cardLoan: 'cardLoan',
-  PlanKind.cardRepayment: 'cardRepayment',
+  PlanKind.loan: 'cardLoan',
+  PlanKind.loanRepayment: 'cardRepayment',
 };
 
 extension PlanKindWire on PlanKind {
@@ -77,6 +83,77 @@ class PlanMonth {
       );
 }
 
+/// Warunki pożyczki ratalnej (ADR-036) — zapisane przy jej ratach.
+///
+/// Raty w planie (miesiące pozycji „spłata") powstają z tych warunków;
+/// warunki zostają, żeby formularz pożyczki pokazał, z czego raty wynikają,
+/// i przeliczył je po zmianie.
+class PlanLoanTerms {
+  /// Kwota wypłacona — tyle przychodzi w dniu wypłaty (wpływ w Pożyczkach).
+  final double principal;
+
+  /// Liczba rat.
+  final int count;
+
+  /// Rata (stała; przy 0% ostatnia wyrównuje grosze zaokrągleń).
+  final double installment;
+
+  /// RRSO w procentach (np. 7,57) — z umowy albo wyliczone z wypłaty i rat.
+  final double rrso;
+
+  /// Dzień wypłaty pożyczki.
+  final DateTime drawdown;
+
+  /// Miesiąc pierwszej raty, "RRRR-MM".
+  final String firstMonth;
+
+  /// Dzień raty w miesiącu (1–31; w krótszym miesiącu — ostatni dzień).
+  final int day;
+
+  const PlanLoanTerms({
+    required this.principal,
+    required this.count,
+    required this.installment,
+    required this.rrso,
+    required this.drawdown,
+    required this.firstMonth,
+    required this.day,
+  });
+
+  /// Miesiąc ostatniej raty, "RRRR-MM".
+  String get lastMonth {
+    final d = DateTime(
+      int.parse(firstMonth.substring(0, 4)),
+      int.parse(firstMonth.substring(5)) + count - 1,
+    );
+    return planMonthKey(d.year, d.month);
+  }
+
+  factory PlanLoanTerms.fromJson(Map<String, dynamic> json) => PlanLoanTerms(
+    principal: (json['principal'] as num).toDouble(),
+    count: (json['count'] as num).toInt(),
+    installment: (json['installment'] as num).toDouble(),
+    rrso: (json['rrso'] as num).toDouble(),
+    drawdown: DateTime.parse(json['drawdown'] as String),
+    firstMonth: json['firstMonth'] as String,
+    day: (json['day'] as num).toInt(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'principal': principal,
+    'count': count,
+    'installment': installment,
+    'rrso': rrso,
+    // Sama data — godzina nie ma znaczenia, a strefa czasowa by ją psuła.
+    'drawdown':
+        '${drawdown.year.toString().padLeft(4, '0')}-'
+        '${drawdown.month.toString().padLeft(2, '0')}-'
+        '${drawdown.day.toString().padLeft(2, '0')}',
+    'firstMonth': firstMonth,
+    'day': day,
+  };
+}
+
 /// Pozycja planu rocznego — wiersz arkusza „pozycje × miesiące" (ADR-035).
 ///
 /// Kwota żyje WYŁĄCZNIE w miesiącach ([months]); pozycja niesie to, co dla
@@ -122,6 +199,10 @@ class PlanPosition {
   /// to zabezpieczenie przed „wypełnij puste" wpisującym ratę po spłacie.
   final String? periodStart;
   final String? periodEnd;
+
+  /// Warunki pożyczki ratalnej — tylko na pozycji z ratami
+  /// ([PlanKind.loanRepayment]); pożyczka z karty ich nie ma.
+  final PlanLoanTerms? loanTerms;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -140,6 +221,7 @@ class PlanPosition {
     this.linkId,
     this.periodStart,
     this.periodEnd,
+    this.loanTerms,
     required this.createdAt,
     this.updatedAt,
   });
@@ -149,11 +231,11 @@ class PlanPosition {
   /// Pozycja karty kredytowej (pożyczka albo spłata) — liczona osobno od
   /// wpływów i wydatków: w skali roku para się znosi, więc wliczona do nich
   /// zawyżałaby obie średnie.
-  bool get isCard =>
-      kind == PlanKind.cardLoan || kind == PlanKind.cardRepayment;
+  bool get isLoan =>
+      kind == PlanKind.loan || kind == PlanKind.loanRepayment;
 
   /// Czy pieniądze przychodzą (wpływ, pożyczka z karty) — kierunek przepływu.
-  bool get isInflow => kind == PlanKind.income || kind == PlanKind.cardLoan;
+  bool get isInflow => kind == PlanKind.income || kind == PlanKind.loan;
 
   bool get hasPeriod => periodStart != null || periodEnd != null;
 
@@ -222,6 +304,9 @@ class PlanPosition {
     linkId: json['linkId'] as String?,
     periodStart: json['periodStart'] as String?,
     periodEnd: json['periodEnd'] as String?,
+    loanTerms: json['loan'] is Map<String, dynamic>
+        ? PlanLoanTerms.fromJson(json['loan'] as Map<String, dynamic>)
+        : null,
     createdAt: DateTime.parse(json['createdAt'] as String),
     updatedAt: json['updatedAt'] != null
         ? DateTime.parse(json['updatedAt'] as String)
@@ -247,6 +332,7 @@ class PlanPosition {
     'linkId': ?linkId,
     'periodStart': ?periodStart,
     'periodEnd': ?periodEnd,
+    'loan': ?loanTerms?.toJson(),
     'createdAt': createdAt.toIso8601String(),
     if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
   };
@@ -270,6 +356,10 @@ class PlanPosition {
     bool clearPeriodStart = false,
     String? periodEnd,
     bool clearPeriodEnd = false,
+    String? linkId,
+    bool clearLinkId = false,
+    PlanLoanTerms? loanTerms,
+    bool clearLoanTerms = false,
     DateTime? updatedAt,
   }) => PlanPosition(
     id: id,
@@ -285,9 +375,10 @@ class PlanPosition {
     note: clearNote ? null : (note ?? this.note),
     archived: archived ?? this.archived,
     months: months ?? this.months,
-    linkId: linkId,
+    linkId: clearLinkId ? null : (linkId ?? this.linkId),
     periodStart: clearPeriodStart ? null : (periodStart ?? this.periodStart),
     periodEnd: clearPeriodEnd ? null : (periodEnd ?? this.periodEnd),
+    loanTerms: clearLoanTerms ? null : (loanTerms ?? this.loanTerms),
     createdAt: createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );

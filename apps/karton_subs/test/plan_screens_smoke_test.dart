@@ -9,6 +9,7 @@ import 'package:karton_subs/models/plan_position.dart';
 import 'package:karton_subs/models/subscription.dart';
 import 'package:karton_subs/screens/card_loan_form_screen.dart';
 import 'package:karton_subs/screens/dashboard_screen.dart';
+import 'package:karton_subs/screens/installment_loan_form_screen.dart';
 import 'package:karton_subs/screens/plan_position_form_screen.dart';
 import 'package:karton_subs/screens/plan_position_screen.dart';
 import 'package:karton_subs/screens/planning_screen.dart';
@@ -73,12 +74,12 @@ void main() {
       pos('czynsz', PlanKind.expense, everyMonth(2500), day: 5),
     );
     await storage.savePlanPosition(
-      pos('poz', PlanKind.cardLoan, {
+      pos('poz', PlanKind.loan, {
         '2026-10': const PlanMonth(amount: 3000, day: 7),
       }, link: 'L1'),
     );
     await storage.savePlanPosition(
-      pos('spl', PlanKind.cardRepayment, {
+      pos('spl', PlanKind.loanRepayment, {
         '2026-11': const PlanMonth(amount: 3090, day: 25),
       }, link: 'L1'),
     );
@@ -136,7 +137,7 @@ void main() {
     await tester.runAsync(seed);
     await pump(tester, const PlanningScreen(), height: 1600);
     expect(find.text('Wpływy'), findsWidgets);
-    expect(find.text('Karta kredytowa'), findsOneWidget);
+    expect(find.text('Pożyczki'), findsOneWidget);
     // Części grupy Wydatki: przełącznik z sumą jest zarazem ich nagłówkiem
     // (bez osobnego podtytułu z tą samą nazwą).
     expect(find.textContaining('Subskrypcje -'), findsOneWidget);
@@ -248,6 +249,94 @@ void main() {
 
     await pump(tester, const CardLoanFormScreen());
     expect(find.text('Brak karty kredytowej'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Pożyczki: karta i pożyczka ratalna w jednej sekcji', (
+    tester,
+  ) async {
+    await tester.runAsync(seed);
+    final terms = PlanLoanTerms(
+      principal: 2000,
+      count: 12,
+      installment: 166.67,
+      rrso: 0,
+      drawdown: DateTime(2026, 9, 13),
+      firstMonth: '2026-10',
+      day: 13,
+    );
+    PlanPosition part(String id, PlanKind kind, Map<String, PlanMonth> m) =>
+        PlanPosition(
+          id: id,
+          budgetId: kBudgetPersonal,
+          name: 'Odkurzacz',
+          kind: kind,
+          currency: Currency.PLN,
+          months: m,
+          linkId: 'L2',
+          day: kind == PlanKind.loanRepayment ? 13 : null,
+          periodStart: kind == PlanKind.loanRepayment ? '2026-10' : null,
+          periodEnd: kind == PlanKind.loanRepayment ? '2027-09' : null,
+          loanTerms: kind == PlanKind.loanRepayment ? terms : null,
+          createdAt: DateTime(2026, 9, 13),
+        );
+    await tester.runAsync(() async {
+      await storage.savePlanPosition(
+        part('w', PlanKind.loan, {
+          '2026-09': const PlanMonth(amount: 2000, day: 13),
+        }),
+      );
+      await storage.savePlanPosition(
+        part('r', PlanKind.loanRepayment, {
+          for (var i = 0; i < 12; i++)
+            planMonthKey(2026 + (9 + i) ~/ 12, (9 + i) % 12 + 1):
+                const PlanMonth(amount: 166.67),
+        }),
+      );
+      await storage.savePlanPosition(
+        part('z', PlanKind.expense, {
+          '2026-09': const PlanMonth(amount: 2000, day: 13),
+        }),
+      );
+    });
+    await pump(tester, const PlanningScreen(), height: 2000);
+    await tester.tap(find.text('Dzisiaj'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pożyczki'), findsOneWidget);
+    expect(find.text('Karta kredytowa'), findsNothing);
+    expect(find.textContaining('rata 1 z 12'), findsOneWidget);
+    expect(find.textContaining('Pożyczki netto'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Pożyczka ratalna: trzy wartości liczą czwartą, cztery — '
+      'sprawdzane', (tester) async {
+    await pump(tester, const InstallmentLoanFormScreen(), height: 1800);
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Kwota wypłacona'),
+      '2000',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Liczba rat'),
+      '12',
+    );
+    await tester.enterText(find.widgetWithText(TextFormField, 'RRSO %'), '0');
+    await tester.pumpAndSettle();
+
+    // Rata policzona i oznaczona jako wyliczona.
+    expect(find.text('166,67'), findsOneWidget);
+    expect(find.text('wyliczone'), findsOneWidget);
+    expect(find.textContaining('rata wyliczona'), findsOneWidget);
+
+    // Wpisana inna rata — cztery wartości się nie zgadzają.
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Rata'),
+      '170',
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Dane się nie zgadzają'), findsOneWidget);
+    expect(find.text('Przyjmij ratę 166,67'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

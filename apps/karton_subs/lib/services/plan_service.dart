@@ -39,40 +39,41 @@ class PlanMonthTotals {
   /// Pozycje „wydatek" — bez subskrypcji, które mają własne pole.
   final double expense;
   final double subscriptions;
-  final double cardLoans;
-  final double cardRepayments;
+  final double loanInflows;
+  final double loanRepayments;
 
   const PlanMonthTotals({
     this.income = 0,
     this.expense = 0,
     this.subscriptions = 0,
-    this.cardLoans = 0,
-    this.cardRepayments = 0,
+    this.loanInflows = 0,
+    this.loanRepayments = 0,
   });
 
-  /// Karta netto: pożyczki − spłaty. W skali roku zwykle ~0, w miesiącu nie.
-  double get cardNet => cardLoans - cardRepayments;
+  /// Pożyczki netto: wypłaty pożyczek − spłaty (karta i raty, ADR-036).
+  /// Karta w skali roku zwykle ~0; pożyczka ratalna — minus jej koszt.
+  double get loansNet => loanInflows - loanRepayments;
 
   /// Wszystko, co plan wydaje poza kartą.
   double get outgoing => expense + subscriptions;
 
   /// „Zostaje": wpływy − wydatki (z subskrypcjami) ± karta.
-  double get left => income - outgoing + cardNet;
+  double get left => income - outgoing + loansNet;
 
   PlanMonthTotals operator +(PlanMonthTotals o) => PlanMonthTotals(
     income: income + o.income,
     expense: expense + o.expense,
     subscriptions: subscriptions + o.subscriptions,
-    cardLoans: cardLoans + o.cardLoans,
-    cardRepayments: cardRepayments + o.cardRepayments,
+    loanInflows: loanInflows + o.loanInflows,
+    loanRepayments: loanRepayments + o.loanRepayments,
   );
 
   PlanMonthTotals scaled(double f) => PlanMonthTotals(
     income: income * f,
     expense: expense * f,
     subscriptions: subscriptions * f,
-    cardLoans: cardLoans * f,
-    cardRepayments: cardRepayments * f,
+    loanInflows: loanInflows * f,
+    loanRepayments: loanRepayments * f,
   );
 }
 
@@ -207,9 +208,9 @@ class PlanService {
           income += a;
         case PlanKind.expense:
           expense += a;
-        case PlanKind.cardLoan:
+        case PlanKind.loan:
           loans += a;
-        case PlanKind.cardRepayment:
+        case PlanKind.loanRepayment:
           repayments += a;
       }
     }
@@ -225,8 +226,8 @@ class PlanService {
       income: income,
       expense: expense,
       subscriptions: subs,
-      cardLoans: loans,
-      cardRepayments: repayments,
+      loanInflows: loans,
+      loanRepayments: repayments,
     );
   }
 
@@ -370,7 +371,7 @@ class PlanService {
   /// Pozycja roczna czy kwartalna nie biegnie od stycznia bez przerwy, więc
   /// się nie łapie.
   bool defaultCopySelected(PlanPosition p, int fromYear) {
-    if (p.archived || p.isCard) return false;
+    if (p.archived || p.isLoan || p.linkId != null) return false;
     if (p.hasYear(fromYear + 1)) return false;
     if (endsBefore(p, fromYear + 1)) return false;
     // Okres sięga kolejnego roku — rozstrzyga on, nie zgadywanie z kształtu.

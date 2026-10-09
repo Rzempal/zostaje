@@ -4,6 +4,7 @@ import '../models/budget_entry.dart';
 import '../models/plan_position.dart';
 import '../models/subscription.dart';
 import '../services/app_logger.dart';
+import '../services/loan_math.dart';
 import '../models/cashflow.dart' show DayCashflow;
 import '../services/plan_service.dart';
 import '../services/storage_service.dart';
@@ -177,15 +178,20 @@ class PlanController extends ChangeNotifier {
     return applied;
   }
 
-  /// Identyfikatory razem z partnerami z pary karty — operacja na połowie
-  /// pary zostawiłaby pożyczkę bez spłaty albo odwrotnie.
+  /// Identyfikatory razem z partnerami z pary pożyczki — operacja na
+  /// połowie pary zostawiłaby pożyczkę bez spłaty albo odwrotnie. Zakup
+  /// z pożyczki ratalnej (zwykły wydatek ze wspólnym `linkId`) pożyczki NIE
+  /// ciągnie: usunięcie zakupu nie może skasować rat.
   Set<String> _withPartners(Set<String> ids) {
-    final links = {for (final id in ids) ?position(id)?.linkId};
+    final links = {
+      for (final id in ids)
+        if (position(id) case final p? when p.isLoan) ?p.linkId,
+    };
     if (links.isEmpty) return ids;
     return {
       ...ids,
       for (final p in _storage.getPlanPositions())
-        if (p.linkId != null && links.contains(p.linkId)) p.id,
+        if (p.isLoan && p.linkId != null && links.contains(p.linkId)) p.id,
     };
   }
 
@@ -230,12 +236,13 @@ class PlanController extends ChangeNotifier {
 
   // ── Plan na kolejny rok ────────────────────────────────────────────────────
 
-  /// Pozycje, które da się przenieść z [fromYear] — wszystkie poza kartą,
+  /// Pozycje, które da się przenieść z [fromYear] — wszystkie poza
+  /// pożyczkami i zakupami z pożyczek (jednorazowe, powiązane `linkId`),
   /// które mają w tym roku choć jeden miesiąc, a ich okres sięga kolejnego
   /// roku (zakończonej raty nie ma czego przenosić).
   List<PlanPosition> copyCandidates(int fromYear) => [
     for (final p in positions)
-      if (!p.isCard &&
+      if (p.linkId == null &&
           p.hasYear(fromYear) &&
           !PlanService.endsBefore(p, fromYear + 1))
         p,
@@ -264,14 +271,173 @@ class PlanController extends ChangeNotifier {
   // ── Pożyczka z karty (ADR-035 §4) ─────────────────────────────────────────
 
   /// Para pożyczka–spłata o danym `linkId`.
-  ({PlanPosition? loan, PlanPosition? repayment}) cardPair(String linkId) {
+  ({PlanPosition? loan, PlanPosition? repayment}) loanPair(String linkId) {
     PlanPosition? loan, repayment;
     for (final p in _storage.getPlanPositions()) {
       if (p.linkId != linkId) continue;
-      if (p.kind == PlanKind.cardLoan) loan = p;
-      if (p.kind == PlanKind.cardRepayment) repayment = p;
+      if (p.kind == PlanKind.loan) loan = p;
+      if (p.kind == PlanKind.loanRepayment) repayment = p;
     }
     return (loan: loan, repayment: repayment);
+  }
+
+  // ── Pożyczka ratalna (ADR-036) ─────────────────────────────────────────────
+
+  /// Części pożyczki ratalnej o danym `linkId`: wypłata (wpływ), raty
+  /// (z warunkami) i opcjonalny zakup (zwykły wydatek).
+  ({PlanPosition? loan, PlanPosition? repayment, PlanPosition? purchase})
+  loanParts(String linkId) {
+    PlanPosition? loan, repayment, purchase;
+    for (final p in _storage.getPlanPositions()) {
+      if (p.linkId != linkId) continue;
+      switch (p.kind) {
+        case PlanKind.loan:
+          loan = p;
+        case PlanKind.loanRepayment:
+          repayment = p;
+        case PlanKind.expense:
+          purchase = p;
+        case PlanKind.income:
+          break;
+      }
+    }
+    return (loan: loan, repayment: repayment, purchase: purchase);
+  }
+
+  /// Czy raty pożyczki różnią się od tych, które wynikają z jej warunków —
+  /// ktoś poprawił je ręcznie, a zapis warunków by te poprawki nadpisał.
+  bool loanInstallmentsEdited(String linkId) {
+    final rep = loanParts(linkId).repayment;
+    final terms = rep?.loanTerms;
+    if (rep == null || terms == null) return false;
+    final expected = LoanMath.installmentMonths(terms);
+    if (expected.length != rep.months.length) return true;
+    for (final MapEntry(key: k, value: m) in expected.entries) {
+      final actual = rep.months[k];
+      if (actual == null ||
+          (actual.amount - m.amount).abs() > 0.005 ||
+          actual.day != m.day) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Zapisuje pożyczkę ratalną (nową albo istniejącą, gdy podano [linkId]):
+  /// wpływ w dniu wypłaty, raty z warunków (z okresem od pierwszej do
+  /// ostatniej raty) i — gdy podano [purchase] — zakup tego dnia jako zwykły
+  /// wydatek. Raty są w Pożyczkach, zakup w Wydatkach, więc ten sam koszt
+  /// nie liczy się dwa razy. Odznaczony zakup istniejącej pożyczki znika.
+  Future<String> saveInstallmentLoan({
+    String? linkId,
+    required String name,
+    required Currency currency,
+    required PlanLoanTerms terms,
+    String? paymentMethod,
+    String? note,
+    ({double amount, String? categoryId})? purchase,
+  }) async {
+    final link = linkId ?? _uuid.v4();
+    final existing = loanParts(link);
+    final now = DateTime.now();
+    final drawKey = BudgetEntry.monthKeyOf(terms.drawdown);
+    final drawMonth = {
+      drawKey: PlanMonth(amount: terms.principal, day: terms.drawdown.day),
+    };
+
+    PlanPosition side(
+      PlanPosition? old,
+      PlanKind kind,
+      Map<String, PlanMonth> months, {
+      int? day,
+      String? period,
+      String? periodEnd,
+      PlanLoanTerms? loanTerms,
+      String? categoryId,
+    }) {
+      final base =
+          old ??
+          PlanPosition(
+            id: _uuid.v4(),
+            budgetId: budgetId,
+            name: name,
+            kind: kind,
+            currency: currency,
+            linkId: link,
+            createdAt: now,
+          );
+      return base.copyWith(
+        name: name,
+        currency: currency,
+        paymentMethod: paymentMethod,
+        clearPaymentMethod: paymentMethod == null,
+        categoryId: categoryId,
+        clearCategoryId: categoryId == null,
+        note: note,
+        clearNote: note == null,
+        day: day,
+        clearDay: day == null,
+        months: months,
+        periodStart: period,
+        clearPeriodStart: period == null,
+        periodEnd: periodEnd,
+        clearPeriodEnd: periodEnd == null,
+        loanTerms: loanTerms,
+        clearLoanTerms: loanTerms == null,
+      );
+    }
+
+    await _save(side(existing.loan, PlanKind.loan, drawMonth));
+    await _save(
+      side(
+        existing.repayment,
+        PlanKind.loanRepayment,
+        LoanMath.installmentMonths(terms),
+        day: terms.day,
+        period: terms.firstMonth,
+        periodEnd: terms.lastMonth,
+        loanTerms: terms,
+      ),
+    );
+    if (purchase != null) {
+      await _save(
+        side(
+          existing.purchase,
+          PlanKind.expense,
+          {
+            drawKey: PlanMonth(
+              amount: purchase.amount,
+              day: terms.drawdown.day,
+            ),
+          },
+          categoryId: purchase.categoryId,
+        ),
+      );
+    } else if (existing.purchase != null) {
+      await _storage.deletePlanPosition(existing.purchase!.id);
+    }
+    _log.info('Saved installment loan: $name (${terms.count} rat)');
+    notifyListeners();
+    return link;
+  }
+
+  /// Usuwa pożyczkę (wypłatę i spłatę). Zakup — gdy [withPurchase]; inaczej
+  /// zostaje jako zwykły wydatek, już bez powiązania z pożyczką.
+  Future<void> deleteLoan(String linkId, {required bool withPurchase}) async {
+    final parts = loanParts(linkId);
+    for (final p in [parts.loan, parts.repayment].nonNulls) {
+      await _storage.deletePlanPosition(p.id);
+    }
+    final purchase = parts.purchase;
+    if (purchase != null) {
+      if (withPurchase) {
+        await _storage.deletePlanPosition(purchase.id);
+      } else {
+        await _save(purchase.copyWith(clearLinkId: true));
+      }
+    }
+    _log.info('Deleted loan $linkId (zakup: $withPurchase)');
+    notifyListeners();
   }
 
   /// Zapisuje parę pożyczka–spłata (nową albo istniejącą, gdy podano
@@ -288,7 +454,7 @@ class PlanController extends ChangeNotifier {
     String? note,
   }) async {
     final link = linkId ?? _uuid.v4();
-    final existing = cardPair(link);
+    final existing = loanPair(link);
     final now = DateTime.now();
     PlanPosition side(
       PlanPosition? old,
@@ -324,11 +490,11 @@ class PlanController extends ChangeNotifier {
       );
     }
 
-    await _save(side(existing.loan, PlanKind.cardLoan, name, useDate, amount));
+    await _save(side(existing.loan, PlanKind.loan, name, useDate, amount));
     await _save(
       side(
         existing.repayment,
-        PlanKind.cardRepayment,
+        PlanKind.loanRepayment,
         'Spłata: $name',
         repaymentDate,
         repaymentAmount,

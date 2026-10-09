@@ -139,6 +139,55 @@ void main() {
       expect(json['periodEnd'], '2027-07');
     });
 
+    test('pożyczki zapisują się jak dawne pozycje karty', () {
+      // Nazwy w kodzie zmieniły się na „loan"/„loanRepayment" (ADR-036),
+      // wartości w zapisie — nie: istniejące pożyczki z karty i wersja 0.27
+      // muszą je dalej rozpoznawać.
+      PlanPosition of(PlanKind kind) => PlanPosition(
+        id: 'x',
+        budgetId: 'personal',
+        name: 'x',
+        kind: kind,
+        currency: Currency.PLN,
+        createdAt: DateTime(2026, 1, 1),
+      );
+      expect(of(PlanKind.loan).toJson()['kind'], 'cardLoan');
+      expect(of(PlanKind.loanRepayment).toJson()['kind'], 'cardRepayment');
+    });
+
+    test('warunki pożyczki ratalnej leżą pod „loan"', () {
+      final json = PlanPosition(
+        id: 'r',
+        budgetId: 'personal',
+        name: 'Raty',
+        kind: PlanKind.loanRepayment,
+        currency: Currency.PLN,
+        loanTerms: PlanLoanTerms(
+          principal: 2000,
+          count: 12,
+          installment: 166.67,
+          rrso: 0,
+          drawdown: DateTime(2026, 9, 13),
+          firstMonth: '2026-10',
+          day: 13,
+        ),
+        createdAt: DateTime(2026, 9, 1),
+      ).toJson();
+      final loan = json['loan'] as Map<String, dynamic>;
+      expect(
+        loan.keys,
+        containsAll([
+          'principal',
+          'count',
+          'installment',
+          'rrso',
+          'drawdown',
+          'firstMonth',
+          'day',
+        ]),
+      );
+    });
+
     test('kopia niesie znacznik planu z okresami', () {
       final payload =
           jsonDecode(BackupService(storage).buildJsonPayloadForTest())

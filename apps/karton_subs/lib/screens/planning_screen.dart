@@ -20,6 +20,7 @@ import '../widgets/selection_bar.dart';
 import '../widgets/subscription_row.dart';
 import 'add_subscription_screen.dart';
 import 'card_loan_form_screen.dart';
+import 'installment_loan_form_screen.dart';
 import 'plan_copy_year_screen.dart';
 import 'plan_position_form_screen.dart';
 import 'plan_position_screen.dart';
@@ -29,7 +30,9 @@ enum _PlanSort { alpha, amountDesc }
 /// Klucze sekcji (stan zwinięcia) — osobne od dawnych „Cyklicznych".
 const _kIncomes = 'plan_incomes';
 const _kExpenses = 'plan_expenses';
-const _kCard = 'plan_card';
+/// Sekcja „Pożyczki" (dawniej „Karta kredytowa") — klucz zwinięcia zostaje,
+/// żeby zapamiętany stan sekcji nie przepadł.
+const _kLoans = 'plan_card';
 const _kSubscriptions = 'plan_subscriptions';
 
 /// Zakładka „Planowanie" — plan roczny aktywnego budżetu (ADR-035).
@@ -307,11 +310,12 @@ class _PlanningScreenState extends State<PlanningScreen> {
         all.where((p) => p.kind == PlanKind.expense && keep(p)).toList()
           ..sort(cmp);
 
-    // Karta: para jest widoczna, gdy którakolwiek strona wypada w okresie.
-    final cardRows =
+    // Pożyczki (karta i ratalne): para jest widoczna, gdy którakolwiek strona
+    // wypada w okresie.
+    final loanRows =
         <({PlanPosition loan, PlanPosition? repayment, double net})>[];
-    for (final loan in all.where((p) => p.kind == PlanKind.cardLoan)) {
-      final pair = plan.cardPair(loan.linkId ?? '');
+    for (final loan in all.where((p) => p.kind == PlanKind.loan)) {
+      final pair = plan.loanPair(loan.linkId ?? '');
       final rep = pair.repayment;
       final visible =
           (_showHidden || !loan.archived) &&
@@ -319,9 +323,9 @@ class _PlanningScreenState extends State<PlanningScreen> {
           (inPeriod(loan) || (rep != null && inPeriod(rep)));
       if (!visible) continue;
       final net = amount(loan) - (rep == null ? 0 : amount(rep));
-      cardRows.add((loan: loan, repayment: rep, net: net));
+      loanRows.add((loan: loan, repayment: rep, net: net));
     }
-    cardRows.sort(
+    loanRows.sort(
       (a, b) => (a.loan.months.keys.firstOrNull ?? '').compareTo(
         b.loan.months.keys.firstOrNull ?? '',
       ),
@@ -395,6 +399,11 @@ class _PlanningScreenState extends State<PlanningScreen> {
             icon: LucideIcons.creditCard,
             label: 'Pożyczka z karty',
             onTap: () => _push(const CardLoanFormScreen()),
+          ),
+          AuroraAddAction(
+            icon: LucideIcons.landmark,
+            label: 'Pożyczka ratalna',
+            onTap: () => _push(const InstallmentLoanFormScreen()),
           ),
           AuroraAddAction(
             icon: LucideIcons.copy,
@@ -593,24 +602,39 @@ class _PlanningScreenState extends State<PlanningScreen> {
                           ],
                         ),
                       ),
-                    if (cardRows.isNotEmpty)
+                    if (loanRows.isNotEmpty)
                       PlanSection(
-                        title: 'Karta kredytowa',
-                        total: cardRows.fold(0.0, (s, r) => s + r.net),
-                        collapsed: _collapsed.contains(_kCard),
-                        onToggle: () => _toggleSection(_kCard),
+                        title: 'Pożyczki',
+                        total: loanRows.fold(0.0, (s, r) => s + r.net),
+                        collapsed: _collapsed.contains(_kLoans),
+                        onToggle: () => _toggleSection(_kLoans),
                         children: [
                           BudgetEntryList(
                             rows: [
-                              for (final r in cardRows)
-                                CardLoanRow(
-                                  loan: r.loan,
-                                  repayment: r.repayment,
-                                  net: r.net,
-                                  onTap: () => _push(
-                                    CardLoanFormScreen(linkId: r.loan.linkId),
+                              for (final r in loanRows)
+                                if (r.repayment case final rep?
+                                    when rep.loanTerms != null)
+                                  InstallmentLoanRow(
+                                    loan: r.loan,
+                                    repayment: rep,
+                                    net: r.net,
+                                    period: period,
+                                    today: plan.today,
+                                    onTap: () => _push(
+                                      InstallmentLoanFormScreen(
+                                        linkId: r.loan.linkId,
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  CardLoanRow(
+                                    loan: r.loan,
+                                    repayment: r.repayment,
+                                    net: r.net,
+                                    onTap: () => _push(
+                                      CardLoanFormScreen(linkId: r.loan.linkId),
+                                    ),
                                   ),
-                                ),
                             ],
                           ),
                         ],

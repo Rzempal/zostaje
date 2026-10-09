@@ -142,56 +142,6 @@ class _PlanPositionFormScreenState extends State<PlanPositionFormScreen> {
     }
   }
 
-  /// Raty: N kolejnych miesięcy od pierwszego zaznaczonego (także przez
-  /// granicę roku) — rata 09.2026–08.2027 to jedna pozycja. Ustawia też
-  /// okres pozycji na te miesiące, więc rata nie wydłuży się przez pomyłkę.
-  Future<void> _installments() async {
-    final ctrl = TextEditingController();
-    final n = await showDialog<int>(
-      context: context,
-      builder: (dctx) => AlertDialog(
-        title: const Text('Liczba rat'),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'Ile miesięcy',
-            helperText: 'Od pierwszego zaznaczonego miesiąca',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dctx),
-            child: const Text('Anuluj'),
-          ),
-          FilledButton(
-            onPressed: () {
-              final v = int.tryParse(ctrl.text.trim());
-              if (v != null && v > 0 && v <= 600) Navigator.pop(dctx, v);
-            },
-            child: const Text('Zaznacz'),
-          ),
-        ],
-      ),
-    );
-    if (n == null) return;
-    final start =
-        (_months.toList()..sort()).firstOrNull ?? planMonthKey(_gridYear, 1);
-    final y = int.parse(start.substring(0, 4));
-    final m = int.parse(start.substring(5));
-    setState(() {
-      _months.clear();
-      for (var i = 0; i < n; i++) {
-        final d = DateTime(y, m + i);
-        _months.add(planMonthKey(d.year, d.month));
-      }
-      final last = DateTime(y, m + n - 1);
-      _periodStart = start;
-      _periodEnd = planMonthKey(last.year, last.month);
-    });
-  }
-
   void _snack(String text) => ScaffoldMessenger.of(
     context,
   ).showSnackBar(SnackBar(content: Text(text)));
@@ -414,8 +364,8 @@ class _PlanPositionFormScreenState extends State<PlanPositionFormScreen> {
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Text(
-                'Rata: od pierwszej do ostatniej raty; umowa: od startu. '
-                'Miesięcy poza okresem nie da się wypełnić.',
+                'Np. umowa od startu do końca. Miesięcy poza okresem nie da się '
+                'wypełnić.',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: c.textMuted,
                 ),
@@ -474,14 +424,22 @@ class _PlanPositionFormScreenState extends State<PlanPositionFormScreen> {
                     onPressed: () => setState(_quarterly),
                   ),
                   ActionChip(
-                    label: const Text('Raty…'),
-                    onPressed: _installments,
-                  ),
-                  ActionChip(
                     label: const Text('Wyczyść'),
                     onPressed: () => setState(_months.clear),
                   ),
                 ],
+              ),
+              // Rata to pożyczka (ADR-036): z kwotą wypłaty, RRSO i zakupem —
+              // jako zwykła pozycja liczyłaby się w Wydatkach drugi raz.
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  'Kupujesz na raty? Dodaj → „Pożyczka ratalna" — z kwotą, '
+                  'liczbą rat i RRSO.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: c.textMuted,
+                  ),
+                ),
               ),
             ],
             const SizedBox(height: 24),

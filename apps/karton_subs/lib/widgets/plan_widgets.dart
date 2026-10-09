@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
+import '../models/budget_entry.dart' show BudgetEntry;
 import '../models/plan_position.dart';
+import '../services/loan_math.dart';
 import '../services/plan_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
@@ -376,11 +379,31 @@ class PlanPositionRow extends StatelessWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: Text(
-                            p.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodyMedium,
+                          child: Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  p.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodyMedium,
+                                ),
+                              ),
+                              // Zakup z pożyczki ratalnej (ADR-036): raty są
+                              // w Pożyczkach, tu — sam zakup.
+                              if (p.linkId != null &&
+                                  p.kind == PlanKind.expense) ...[
+                                const SizedBox(width: 4),
+                                Tooltip(
+                                  message: 'Zakup z pożyczki ratalnej',
+                                  child: Icon(
+                                    LucideIcons.link,
+                                    size: 13,
+                                    color: c.primary,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -511,15 +534,206 @@ class PlanSummaryCard extends StatelessWidget {
                   totals.outgoing == 0 ? 0 : -totals.outgoing,
                   c.negative,
                 ),
-                if (totals.cardLoans != 0 || totals.cardRepayments != 0)
+                if (totals.loanInflows != 0 || totals.loanRepayments != 0)
                   part(
-                    'Karta netto',
-                    totals.cardNet,
-                    totals.cardNet >= 0 ? c.positive : c.negative,
+                    'Pożyczki netto',
+                    totals.loansNet,
+                    totals.loansNet >= 0 ? c.positive : c.negative,
                   ),
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// „rata" / „raty" / „rat" po liczebniku.
+String _installmentsWord(int n) {
+  if (n == 1) return 'rata';
+  final tens = n % 100, units = n % 10;
+  return units >= 2 && units <= 4 && (tens < 12 || tens > 14) ? 'raty' : 'rat';
+}
+
+/// Wiersz pożyczki ratalnej (ADR-036): rata i RRSO, pasek spłaty, co dzieje
+/// się w pokazanym okresie (rata k z n, wypłata) i kwota netto okresu.
+class InstallmentLoanRow extends StatelessWidget {
+  final PlanPosition loan;
+  final PlanPosition repayment;
+
+  /// Netto okresu w walucie docelowej (wypłata − raty w tym okresie).
+  final double net;
+  final PlanPeriod period;
+  final DateTime today;
+  final VoidCallback? onTap;
+
+  const InstallmentLoanRow({
+    super.key,
+    required this.loan,
+    required this.repayment,
+    required this.net,
+    required this.period,
+    required this.today,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = context.semanticColors;
+    final t = repayment.loanTerms!;
+    final s = LoanSchedule.ofTerms(t);
+    final keys = [for (var i = 0; i < t.count; i++) s.monthKeyOf(i)];
+    final day = DateTime(today.year, today.month, today.day);
+    final paid = [
+      for (var i = 0; i < t.count; i++)
+        if (!s.dateOf(i).isAfter(day)) i,
+    ].length;
+    final remaining = [
+      for (var i = paid; i < t.count; i++) repayment.amountIn(keys[i]),
+    ].fold(0.0, (sum, a) => sum + a);
+    final total = LoanMath.totalRepayment(
+      principal: t.principal,
+      count: t.count,
+      installment: t.installment,
+      rrso: t.rrso,
+    );
+    final drawKey = BudgetEntry.monthKeyOf(t.drawdown);
+
+    final String now;
+    if (period.isYear) {
+      final prefix = '${period.year}-';
+      final inYear = keys.where((k) => k.startsWith(prefix)).length;
+      now =
+          'w ${period.year}: $inYear ${_installmentsWord(inYear)}'
+          '${drawKey.startsWith(prefix) ? ' + wypłata' : ''}';
+    } else {
+      final k = planMonthKey(period.year, period.month!);
+      final i = keys.indexOf(k);
+      now = i >= 0
+          ? 'rata ${i + 1} z ${t.count}'
+          : k == drawKey
+          ? 'wypłata pożyczki'
+          : 'bez raty';
+    }
+
+    final color = net >= 0 ? c.positive : c.negative;
+    final small = theme.textTheme.labelSmall?.copyWith(color: c.textMuted);
+    final rrso = NumberFormat('0.##', 'pl_PL').format(t.rrso);
+    final drawMonth = kMonthsShort[t.drawdown.month - 1];
+
+    return InkWell(
+      onTap: onTap,
+      child: Opacity(
+        opacity: loan.archived ? 0.5 : 1.0,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Icon(LucideIcons.landmark, size: 18, color: c.trial),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            loan.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          planSignedAmount(net.abs(), inflow: net >= 0),
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: color,
+                            fontWeight: FontWeight.w600,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${repayment.paymentMethod ?? 'Pożyczka ratalna'} · '
+                      '${t.count} × ${budgetNf.format(t.installment)} · '
+                      'RRSO $rrso%',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: c.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(3),
+                            child: LinearProgressIndicator(
+                              value: t.count == 0 ? 0 : paid / t.count,
+                              minHeight: 4,
+                              color: c.trial,
+                              backgroundColor: c.border,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // Etykieta ma limit szerokości: pasek spłaty zostaje
+                        // widoczny także przy dużej czcionce systemowej.
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 170),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: c.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(
+                                AppRadii.control,
+                              ),
+                            ),
+                            child: Text(
+                              now,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: c.primary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'spłacono $paid z ${t.count} · zostało '
+                      '${budgetNf.format(remaining)} · koszt '
+                      '${budgetNf.format(total - t.principal)}',
+                      style: small,
+                    ),
+                    Text(
+                      'wypłata ${t.drawdown.day} $drawMonth '
+                      '${planSignedAmount(t.principal, inflow: true)} → raty '
+                      '${planMonthLabel(t.firstMonth)} – '
+                      '${planMonthLabel(t.lastMonth)}',
+                      style: small,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -124,6 +124,41 @@ void main() {
     });
   });
 
+  group('PlanPosition — pożyczka (ADR-036)', () {
+    test('warunki raty w JSON tam i z powrotem; bez warunków bez klucza', () {
+      final rep = _position(months: const {}).copyWith(
+        kind: PlanKind.loanRepayment,
+        loanTerms: PlanLoanTerms(
+          principal: 2000,
+          count: 12,
+          installment: 166.67,
+          rrso: 0,
+          drawdown: DateTime(2026, 9, 13),
+          firstMonth: '2026-10',
+          day: 13,
+        ),
+      );
+      final back = PlanPosition.fromJson(rep.toJson());
+      expect(back.loanTerms!.installment, 166.67);
+      expect(back.loanTerms!.lastMonth, '2027-09');
+      expect(_position().toJson().containsKey('loan'), isFalse);
+    });
+
+    test('pożyczka i spłata — po stronie pożyczek, kierunek przepływu', () {
+      final loan = _position().copyWith(kind: PlanKind.loan);
+      final rep = _position().copyWith(kind: PlanKind.loanRepayment);
+      expect(loan.isLoan && rep.isLoan, isTrue);
+      expect(loan.isInflow, isTrue);
+      expect(rep.isInflow, isFalse);
+    });
+
+    test('linkId da się zdjąć (zakup zostaje po usunięciu pożyczki)', () {
+      final p = _position().copyWith(linkId: 'L1');
+      expect(p.linkId, 'L1');
+      expect(p.copyWith(clearLinkId: true).linkId, isNull);
+    });
+  });
+
   // Okres (od–do) chroni ratę przed wpisaniem po spłacie i pozycję przed
   // wpisaniem przed startem.
   group('PlanPosition — okres', () {

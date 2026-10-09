@@ -48,8 +48,8 @@ class PlanExcel {
   static String kindLabel(PlanKind kind) => switch (kind) {
         PlanKind.income => 'Wpływ',
         PlanKind.expense => 'Wydatek',
-        PlanKind.cardLoan => 'Pożyczka z karty',
-        PlanKind.cardRepayment => 'Spłata karty',
+        PlanKind.loan => 'Pożyczka',
+        PlanKind.loanRepayment => 'Spłata pożyczki',
       };
 
   // ── Eksport ────────────────────────────────────────────────────────────────
@@ -200,7 +200,7 @@ class PlanExcel {
 
         final kind = _parseKind(cell(_Col.kind));
         if (kind == null) {
-          skipped.add('$where ($name): pozycje karty dodaje się w aplikacji');
+          skipped.add('$where ($name): pożyczki dodaje się w aplikacji');
           continue;
         }
 
@@ -372,10 +372,18 @@ class PlanExcel {
   }
 
   /// Rodzaj z kolumny „Rodzaj". Brak = wydatek (najczęstszy przypadek przy
-  /// ręcznie dopisanym wierszu). `null` = pozycja karty (nie importujemy).
+  /// ręcznie dopisanym wierszu). `null` = pożyczka albo jej spłata (karta,
+  /// raty — nie importujemy: para powstaje w aplikacji). Starsze arkusze
+  /// mają tu „Pożyczka z karty" / „Spłata karty".
   static PlanKind? _parseKind(String? raw) {
     final t = raw?.toLowerCase() ?? '';
-    if (t.contains('kart')) return null;
+    if (t.contains('kart') ||
+        t.contains('pożycz') ||
+        t.contains('pozycz') ||
+        t.contains('spłat') ||
+        t.contains('splat')) {
+      return null;
+    }
     if (t.contains('wpływ') || t.contains('wplyw') || t.contains('przych')) {
       return PlanKind.income;
     }

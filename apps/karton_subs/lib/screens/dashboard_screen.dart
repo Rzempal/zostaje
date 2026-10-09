@@ -457,11 +457,11 @@ class _YearAveragesCard extends StatelessWidget {
           row('Wydatki', -avg.expense, color: c.negative),
           if (avg.subscriptions != 0)
             row('Subskrypcje', -avg.subscriptions, color: c.negative),
-          if (total.cardLoans != 0 || total.cardRepayments != 0)
+          if (total.loanInflows != 0 || total.loanRepayments != 0)
             row(
-              'Karta netto',
-              avg.cardNet,
-              color: avg.cardNet >= 0 ? c.positive : c.negative,
+              'Pożyczki netto',
+              avg.loansNet,
+              color: avg.loansNet >= 0 ? c.positive : c.negative,
             ),
           const Divider(height: 20),
           row(

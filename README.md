@@ -19,8 +19,10 @@ Aplikacja mobilna do zarzadzania domowymi finansami: subskrypcje cyfrowe + budze
   kwoty tego miesiaca
 - **Subskrypcje:** osobny modul z okresami probnymi, przypomnieniami i limitem;
   w planie sa sekcja liczona z ich cyklu (miesiac odnowienia = pelna kwota)
-- **Karta kredytowa:** "pozyczka z karty" jako para w planie — wplyw w miesiacu
-  uzycia, splata po okresie bezodsetkowym; liczona osobno jako "karta netto"
+- **Pozyczki:** z karty kredytowej (wplyw w dniu uzycia, splata po okresie
+  bezodsetkowym) i ratalne (wplyw w dniu wyplaty, raty; kwota, liczba rat, rata
+  i RRSO — z trzech liczy sie czwarta; opcjonalny zakup tego dnia jako wydatek);
+  liczone osobno jako "pozyczki netto" (ADR-036)
 - **Budzet:** zakladka ze statystykami roku (srednio miesiecznie, wykres 12 miesiecy,
   kategorie, limity subskrypcji) i kalendarzem platnosci do odhaczania
 - **Budzet osobisty i domowy:** dwa niezalezne plany, przelaczane jednym gestem;

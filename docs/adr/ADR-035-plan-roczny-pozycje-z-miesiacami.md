@@ -84,6 +84,9 @@ Nawigacja: **Budżet | Planowanie | Ustawienia**.
 
 ### 4. Karta kredytowa w planie
 
+> Rozszerzone w [ADR-036](ADR-036-pozyczki-ratalne.md): sekcja „Pożyczki"
+> (karta i pożyczki ratalne), „Pożyczki netto" zamiast „karty netto".
+
 „Pożyczka z karty" jako para w planie: wpływ w miesiącu użycia i spłata
 w miesiącu wynikającym z okresu bezodsetkowego karty (kwotę spłaty można
 zmienić osobno, np. o prowizję). Automat w Bieżących (lustro zakupu + spłata,

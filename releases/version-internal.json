@@ -1,8 +1,13 @@
 {
-  "releaseDate": "2026-10-09T15:40:16Z",
-  "releaseNotes": "- Wydatki: przelacznik czesci stoi nad jej lista, przy prawej krawedzi (bez powtorzonego podtytulu)",
-  "version": "0.27.26100901",
+  "version": "0.27.26100902",
+  "versionCode": 2026100902,
+  "releaseDate": "2026-10-09T16:39:55Z",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026100902",
   "changelog": [
+    {
+      "version": "0.27.26100902",
+      "notes": "- Sekcja Pozyczki: pozyczka z karty i pozyczki ratalne\n- Pozyczka ratalna: wyplata jako wplyw, raty, RRSO; z trzech wartosci liczy czwarta i sprawdza zgodnosc\n- Opcjonalny zakup tego dnia jako wydatek (raty nie licza sie drugi raz)\n- Pozyczki netto zamiast karty netto\n- Formularz pozycji: bez gotowego ustawienia Raty"
+    },
     {
       "version": "0.27.26100901",
       "notes": "- Wydatki: przelacznik czesci stoi nad jej lista, przy prawej krawedzi (bez powtorzonego podtytulu)"
@@ -38,12 +43,7 @@
     {
       "version": "0.26.26100601",
       "notes": "- Przebudowa, etap 1: nowy plan roczny liczony w tle ze starych pozycji (stare dane bez zmian)\n- Developer Tools: raport konwersji planu (stary model vs nowy plan)"
-    },
-    {
-      "version": "0.26.26100600",
-      "notes": "- Cykliczne i Wplywy: przy wybranym miesiacu suma grupy uwzglednia korekty kwot, tak jak pozycje pod nia"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026100901",
-  "versionCode": 2026100901
+  "releaseNotes": "- Sekcja Pozyczki: pozyczka z karty i pozyczki ratalne\n- Pozyczka ratalna: wyplata jako wplyw, raty, RRSO; z trzech wartosci liczy czwarta i sprawdza zgodnosc\n- Opcjonalny zakup tego dnia jako wydatek (raty nie licza sie drugi raz)\n- Pozyczki netto zamiast karty netto\n- Formularz pozycji: bez gotowego ustawienia Raty"
 }

@@ -59,7 +59,7 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
 
     final link = widget.linkId;
     if (link != null) {
-      final pair = plan.cardPair(link);
+      final pair = plan.loanPair(link);
       final loan = pair.loan;
       final rep = pair.repayment;
       if (loan != null) {
@@ -150,7 +150,7 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
 
   Future<void> _delete() async {
     final plan = context.read<PlanController>();
-    final pair = plan.cardPair(widget.linkId!);
+    final pair = plan.loanPair(widget.linkId!);
     final ok = await showDialog<bool>(
       context: context,
       builder: (dctx) => AlertDialog(

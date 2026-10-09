@@ -124,12 +124,13 @@ wszystkie budzety w jednym pudelku.
 | `id` | String | tak | Po konwersji = `id` starej pozycji (odhaczenia platnosci przetrwaly); pozycje z Plannera: `envelope:<id>` |
 | `budgetId` | String | tak | `personal` / `household` (dawne zakresy; docelowo budzety z wlasnymi nazwami) |
 | `name` | String | tak | |
-| `kind` | String | tak | `income` / `expense` / `cardLoan` / `cardRepayment`; nieznana wartosc → `expense` |
+| `kind` | String | tak | `income` / `expense` / `cardLoan` / `cardRepayment`; nieznana wartosc → `expense`. `cardLoan`/`cardRepayment` = pozyczka i jej splata — z karty albo ratalna (ADR-036; w kodzie `loan`/`loanRepayment`, wartosci w zapisie bez zmian) |
 | `currency` | String | tak | Jak w subskrypcjach |
 | `categoryId`, `paymentMethod`, `day`, `note` | — | nie | Metoda platnosci po NAZWIE; `day` = domyslny dzien platnosci |
 | `archived` | bool | nie | Ukryta, poza sumami |
 | `months` | Map | tak | „RRRR-MM" → `{amount, day?}`. Brak miesiaca = pozycja wtedy nie obowiazuje |
-| `linkId` | String | nie | Para karty: `cardLoan` + `cardRepayment` |
+| `linkId` | String | nie | Pozyczka: wplyw + splata, a przy pozyczce ratalnej takze zakup (zwykly `expense`). Usuniecie zakupu nie usuwa pozyczki |
+| `loan` | obiekt | nie | Warunki pozyczki ratalnej — tylko na splacie: `principal`, `count`, `installment`, `rrso` (%), `drawdown` („RRRR-MM-DD"), `firstMonth` („RRRR-MM"), `day`. Raty (miesiace) powstaja z warunkow; wersja 0.27 klucz pomija |
 | `periodStart`, `periodEnd` | String „RRRR-MM" | nie | Okres obowiazywania (oba konce wlacznie): rata — oba, pozycja ze startem — samo `periodStart`. Poza okresem pozycja nie ma miesiecy (kontroler pilnuje przy kazdym zapisie). Wersja 0.27 tych kluczy nie zna i je pomija |
 | `createdAt`, `updatedAt` | ISO8601 | — | |
 

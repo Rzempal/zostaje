@@ -121,10 +121,11 @@ void main() {
       expect(fold.months, hasLength(3));
     });
 
-    test('pozycje karty idą do arkusza, ale z niego nie wracają', () {
+    test('pożyczki idą do arkusza, ale z niego nie wracają', () {
       final bytes = PlanExcel.build(
         positions: [
-          _pos('l', 'Karta', {'2026-01': 3000}, kind: PlanKind.cardLoan),
+          _pos('l', 'Karta', {'2026-01': 3000}, kind: PlanKind.loan),
+          _pos('r', 'Raty', {'2026-02': 100}, kind: PlanKind.loanRepayment),
         ],
         categories: const [],
         years: [2026],
@@ -133,7 +134,8 @@ void main() {
       final result = PlanExcel.parse(bytes, budgetId: kBudgetPersonal);
 
       expect(result.positions, isEmpty);
-      expect(result.skipped.single, contains('karty'));
+      expect(result.skipped, hasLength(2));
+      expect(result.skipped.first, contains('pożyczki'));
     });
 
     test('nazwa zaczynająca się od „=" nie staje się formułą', () {

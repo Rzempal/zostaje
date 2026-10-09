@@ -645,7 +645,7 @@ class PlanConversionRunner {
     };
     var changed = 0;
     for (final p in _storage.getPlanPositions()) {
-      if (p.hasPeriod || p.isCard) continue;
+      if (p.hasPeriod || p.isLoan) continue;
       final e = old[p.id];
       if (e == null) continue;
       final period = PlanConversion.periodCovering(
