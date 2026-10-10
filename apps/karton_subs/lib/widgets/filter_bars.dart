@@ -99,7 +99,7 @@ const kMonthsShort = [
 
 /// Filtr czasu: pasek lat, a po wybraniu roku — pasek jego miesięcy.
 ///
-/// „Dzisiaj" i przełącznik widoku „Miesiąc / Rok" stoją w pasku ekranu, nie
+/// „Dzisiaj" i przełącznik widoku „Rok / Miesiąc" stoją w pasku ekranu, nie
 /// tutaj. Pasek miesięcy jest tylko w widoku miesięcznym ([showMonths]).
 class TimeFilterBar extends StatelessWidget {
   final List<int> years;

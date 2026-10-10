@@ -11,7 +11,7 @@ class AuroraSegment<T> {
 
 /// Segmentowy przełącznik w stylu Aurora: kontener „frost", aktywny segment w
 /// `--accent-gradient` z ciemnym tekstem ([AppColors.onAccent]) — np. widok
-/// „Miesiąc / Rok" w Planowaniu.
+/// „Rok / Miesiąc" w Planowaniu.
 class AuroraSegmented<T> extends StatelessWidget {
   final List<AuroraSegment<T>> segments;
   final T selected;

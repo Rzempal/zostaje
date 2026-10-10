@@ -535,7 +535,7 @@ class _PlanningScreenState extends State<PlanningScreen> {
         children: [
           WorkspaceTopBar(
             info: SectionInfo.planning,
-            // „Dzisiaj" i przełącznik widoku „Miesiąc / Rok" w pustym rogu
+            // „Dzisiaj" i przełącznik widoku „Rok / Miesiąc" w pustym rogu
             // paska; wcięcie wyrównuje je z chipami filtrów pod spodem. Na
             // wąskim ekranie przewijają się w bok zamiast ucinać.
             leading: SingleChildScrollView(
@@ -557,8 +557,8 @@ class _PlanningScreenState extends State<PlanningScreen> {
                   AuroraSegmented<bool>(
                     compact: true,
                     segments: const [
-                      AuroraSegment(value: false, label: 'Miesiąc'),
                       AuroraSegment(value: true, label: 'Rok'),
+                      AuroraSegment(value: false, label: 'Miesiąc'),
                     ],
                     selected: _yearView,
                     onChanged: (year) => setState(() => _yearView = year),

@@ -160,13 +160,27 @@ void main() {
     expect(find.textContaining('Pozycje -'), findsOneWidget);
     expect(find.text('Subskrypcje'), findsNothing);
 
-    // „Dzisiaj" i przełącznik „Miesiąc / Rok" stoją obok siebie w rogu paska
+    // „Dzisiaj" i przełącznik „Rok / Miesiąc" stoją obok siebie w rogu paska
     // (w czcionce testowej nie mieszczą się naraz — stąd przewijanie).
     Future<void> tap(String text) async {
       await tester.ensureVisible(find.text(text));
+      // Przewinięcie widać dopiero po klatce — inaczej dotyk trafia w miejsce
+      // sprzed przewinięcia.
+      await tester.pumpAndSettle();
       await tester.tap(find.text(text));
       await tester.pumpAndSettle();
     }
+
+    // Filtr kategorii stoi w grupie Wydatki i dotyczy tylko jej list:
+    // subskrypcja bez kategorii znika (a z nią pigułki części), Wpływy
+    // i „Zostaje" zostają.
+    expect(find.text('Wszystkie kategorie'), findsOneWidget);
+    await tap('Streaming');
+    expect(find.text('Razem'), findsNothing);
+    expect(find.text('Wpływy'), findsWidgets);
+    expect(find.textContaining('Zostaje · paź 2026'), findsOneWidget);
+    await tap('Wszystkie kategorie');
+    expect(find.text('Razem'), findsOneWidget);
 
     // Widok roczny: sumy roku, bez paska miesięcy.
     await tap('Rok');
