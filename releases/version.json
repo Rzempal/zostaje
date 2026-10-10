@@ -1,6 +1,13 @@
 {
-  "releaseDate": "2026-10-10T13:55:23Z",
+  "version": "0.27.26101004",
+  "releaseDate": "2026-10-10T14:57:16Z",
+  "releaseNotes": "- Ekran pozycji: budzet pozycji na poczatku linii pod tytulem\n- Kategorie zawsze alfabetycznie (po polsku), bez przeciagania\n- Planowanie: Dzisiaj i przelacznik Rok / Miesiac; widok roczny pokazuje sumy roku\n- Filtry kategorii w grupie Wydatki - dotycza tylko wydatkow\n- Pozyczka ratalna: zakup przyciskiem Dodaj, istniejacy - Pokaz; z zakupu Otworz / Wroc do pozyczki\n- Zapis pozyczki nie nadpisuje zakupu, tylko przesuwa go za data wyplaty",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026101004",
   "changelog": [
+    {
+      "version": "0.27.26101004",
+      "notes": "- Ekran pozycji: budzet pozycji na poczatku linii pod tytulem\n- Kategorie zawsze alfabetycznie (po polsku), bez przeciagania\n- Planowanie: Dzisiaj i przelacznik Rok / Miesiac; widok roczny pokazuje sumy roku\n- Filtry kategorii w grupie Wydatki - dotycza tylko wydatkow\n- Pozyczka ratalna: zakup przyciskiem Dodaj, istniejacy - Pokaz; z zakupu Otworz / Wroc do pozyczki\n- Zapis pozyczki nie nadpisuje zakupu, tylko przesuwa go za data wyplaty"
+    },
     {
       "version": "0.27.26101003",
       "notes": "- Planowanie: Caly rok obok Dzisiaj w lewym gornym rogu\n- Pasek miesiecy: same miesiace (dotkniecie wybranego wraca do calego roku)"
@@ -36,14 +43,7 @@
     {
       "version": "0.27.26100800",
       "notes": "- Planowanie: plan roczny, kazdy miesiac z wlasna kwota\n- Budzet: statystyki roku i kalendarz platnosci\n- Pozyczka z karty kredytowej w planie\n- Excel: plan jako tabela roku\n- Kopia zapasowa w wersji 8 (z planem)\n- Usuniete: Biezace, skan paragonow, Planner, synchronizacja"
-    },
-    {
-      "version": "0.26.26100600",
-      "notes": "- Cykliczne i Wplywy: przy wybranym miesiacu suma grupy uwzglednia korekty kwot, tak jak pozycje pod nia"
     }
   ],
-  "version": "0.27.26101003",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026101003",
-  "releaseNotes": "- Planowanie: Caly rok obok Dzisiaj w lewym gornym rogu\n- Pasek miesiecy: same miesiace (dotkniecie wybranego wraca do calego roku)",
-  "versionCode": 2026101003
+  "versionCode": 2026101004
 }
