@@ -1,9 +1,9 @@
 {
-  "version": "0.27.26101004",
-  "releaseDate": "2026-10-10T14:57:16Z",
-  "releaseNotes": "- Ekran pozycji: budzet pozycji na poczatku linii pod tytulem\n- Kategorie zawsze alfabetycznie (po polsku), bez przeciagania\n- Planowanie: Dzisiaj i przelacznik Rok / Miesiac; widok roczny pokazuje sumy roku\n- Filtry kategorii w grupie Wydatki - dotycza tylko wydatkow\n- Pozyczka ratalna: zakup przyciskiem Dodaj, istniejacy - Pokaz; z zakupu Otworz / Wroc do pozyczki\n- Zapis pozyczki nie nadpisuje zakupu, tylko przesuwa go za data wyplaty",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026101004",
   "changelog": [
+    {
+      "version": "0.27.26101005",
+      "notes": "- Budzet: przelacznik Statystyki / Kalendarz w tym samym stylu co Rok / Miesiac w Planowaniu"
+    },
     {
       "version": "0.27.26101004",
       "notes": "- Ekran pozycji: budzet pozycji na poczatku linii pod tytulem\n- Kategorie zawsze alfabetycznie (po polsku), bez przeciagania\n- Planowanie: Dzisiaj i przelacznik Rok / Miesiac; widok roczny pokazuje sumy roku\n- Filtry kategorii w grupie Wydatki - dotycza tylko wydatkow\n- Pozyczka ratalna: zakup przyciskiem Dodaj, istniejacy - Pokaz; z zakupu Otworz / Wroc do pozyczki\n- Zapis pozyczki nie nadpisuje zakupu, tylko przesuwa go za data wyplaty"
@@ -39,11 +39,11 @@
     {
       "version": "0.27.26100900",
       "notes": "- Ekran pozycji: siatka roku zamiast dlugiej listy\n- Szybkie wypelnianie: kwota w puste albo zaznaczone miesiace\n- Okres pozycji: miesiace przed startem i po splacie raty wyszarzone\n- Wydatki: chevron w naglowku rozwija obie listy\n- Excel: kolumny Od i Do"
-    },
-    {
-      "version": "0.27.26100800",
-      "notes": "- Planowanie: plan roczny, kazdy miesiac z wlasna kwota\n- Budzet: statystyki roku i kalendarz platnosci\n- Pozyczka z karty kredytowej w planie\n- Excel: plan jako tabela roku\n- Kopia zapasowa w wersji 8 (z planem)\n- Usuniete: Biezace, skan paragonow, Planner, synchronizacja"
     }
   ],
-  "versionCode": 2026101004
+  "releaseDate": "2026-10-10T16:03:55Z",
+  "releaseNotes": "- Budzet: przelacznik Statystyki / Kalendarz w tym samym stylu co Rok / Miesiac w Planowaniu",
+  "version": "0.27.26101005",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026101005",
+  "versionCode": 2026101005
 }
