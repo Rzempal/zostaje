@@ -10,39 +10,46 @@ class AuroraSegment<T> {
 }
 
 /// Segmentowy przełącznik w stylu Aurora: kontener „frost", aktywny segment w
-/// `--accent-gradient` z ciemnym tekstem ([AppColors.onAccent]). Wspólny dla
-/// zakresu Osobisty/Domowy (Dashboard, Budżet) i filtra zakresu Subskrypcji.
+/// `--accent-gradient` z ciemnym tekstem ([AppColors.onAccent]) — np. widok
+/// „Miesiąc / Rok" w Planowaniu.
 class AuroraSegmented<T> extends StatelessWidget {
   final List<AuroraSegment<T>> segments;
   final T selected;
   final ValueChanged<T> onChanged;
+
+  /// Wersja do paska z chipami: segmenty tak szerokie jak napis i wysokość
+  /// jak [AuroraChip], zamiast rozciągnięcia na całą szerokość.
+  final bool compact;
 
   const AuroraSegmented({
     super.key,
     required this.segments,
     required this.selected,
     required this.onChanged,
+    this.compact = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    Widget segment(AuroraSegment<T> seg) => _Segment<T>(
+      segment: seg,
+      selected: seg.value == selected,
+      compact: compact,
+      onTap: () => onChanged(seg.value),
+    );
+
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: EdgeInsets.all(compact ? 2 : 4),
       decoration: BoxDecoration(
         color: AppColors.frost1,
         border: Border.all(color: AppColors.frostBorder),
         borderRadius: BorderRadius.circular(AppRadii.tile),
       ),
       child: Row(
+        mainAxisSize: compact ? MainAxisSize.min : MainAxisSize.max,
         children: [
           for (final seg in segments)
-            Expanded(
-              child: _Segment<T>(
-                segment: seg,
-                selected: seg.value == selected,
-                onTap: () => onChanged(seg.value),
-              ),
-            ),
+            compact ? segment(seg) : Expanded(child: segment(seg)),
         ],
       ),
     );
@@ -52,11 +59,13 @@ class AuroraSegmented<T> extends StatelessWidget {
 class _Segment<T> extends StatelessWidget {
   final AuroraSegment<T> segment;
   final bool selected;
+  final bool compact;
   final VoidCallback onTap;
 
   const _Segment({
     required this.segment,
     required this.selected,
+    required this.compact,
     required this.onTap,
   });
 
@@ -68,12 +77,15 @@ class _Segment<T> extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(vertical: 9),
+        padding: compact
+            ? const EdgeInsets.symmetric(horizontal: 12, vertical: 4)
+            : const EdgeInsets.symmetric(vertical: 9),
         decoration: BoxDecoration(
           gradient: selected ? AppColors.accentGradient : null,
           borderRadius: BorderRadius.circular(AppRadii.control),
         ),
         child: Row(
+          mainAxisSize: compact ? MainAxisSize.min : MainAxisSize.max,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (segment.icon != null) ...[
@@ -86,7 +98,7 @@ class _Segment<T> extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: compact ? 12 : 13,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                   color: fg,
                 ),

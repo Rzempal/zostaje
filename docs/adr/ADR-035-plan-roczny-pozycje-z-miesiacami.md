@@ -43,6 +43,9 @@ wymagana — z jednym warunkiem: nie stracić pozycji.
   pozycja. Nowy rok powstaje przez skopiowanie miesięcy poprzedniego.
 - Filtr na cały rok = **średnia miesięczna** (suma ÷ 12), filtr na miesiąc =
   kwoty tego miesiąca.
+  > Zmienione 2026-10-10: w Planowaniu przełącznik widoku „Miesiąc / Rok" —
+  > widok roczny pokazuje **sumy roku**; średnie miesięczne zostają
+  > w Statystykach. „Dzisiaj" przenosi do bieżącego miesiąca albo roku.
 - Znikają: cykle pozycji budżetu, korekty miesięcy, typ „rata", przelew do
   domowego, osobna figura „zostaje/mies." (staje się średnią z planu).
 

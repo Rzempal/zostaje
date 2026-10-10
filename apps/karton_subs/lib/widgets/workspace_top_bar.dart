@@ -5,8 +5,8 @@ import 'budget_picker.dart';
 import 'section_info_badge.dart';
 
 /// Pasek nad ekranami roboczymi: po lewej to, co ekran potrzebuje
-/// ([leading] — zakładki „Statystyki | Kalendarz" albo „Dzisiaj" i „Cały
-/// rok"), po prawej przełącznik budżetu (ADR-037) i opis sekcji.
+/// ([leading] — zakładki „Statystyki | Kalendarz" albo „Dzisiaj" i widok
+/// „Miesiąc / Rok"), po prawej przełącznik budżetu (ADR-037) i opis sekcji.
 ///
 /// Zastępuje paski tytułu poszczególnych ekranów. Nazwa ekranu i tak stała tam
 /// zdublowana z pigułką nawigacji na dole. Budżet jest GLOBALNY (jeden
@@ -20,7 +20,7 @@ class WorkspaceTopBar extends StatelessWidget {
   /// budżecie: mówi, w którym budżecie jesteś, i prowadzi do „Zarządzaj".
   final bool showScope;
 
-  /// Treść po lewej stronie paska (zakładki, „Dzisiaj" i „Cały rok");
+  /// Treść po lewej stronie paska (zakładki, „Dzisiaj" i „Miesiąc / Rok");
   /// `null` = pusto.
   final Widget? leading;
 

@@ -24,9 +24,9 @@ String planSignedAmount(
 }) =>
     '${inflow ? '+' : '−'}${budgetNf.format(amount)}${curLabelSuffix(currency)}';
 
-/// Etykieta okresu: „średnio/mies." dla roku albo nazwa miesiąca.
+/// Etykieta okresu: „rok 2026" (sumy roku) albo nazwa miesiąca.
 String planPeriodLabel(PlanPeriod period) => period.isYear
-    ? 'średnio/mies. ${period.year}'
+    ? 'rok ${period.year}'
     : '${kMonthsShort[period.month! - 1]} ${period.year}';
 
 /// Miesiąc planu "RRRR-MM" po ludzku: „wrz 2026".

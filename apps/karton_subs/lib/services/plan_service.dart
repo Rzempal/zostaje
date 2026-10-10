@@ -11,7 +11,7 @@ import '../utils/cycle_math.dart';
 import '../models/cashflow.dart' show CalendarItem, CalendarItemKind, DayCashflow;
 import 'currency_service.dart';
 
-/// Okres widoku planu: cały rok (średnia miesięczna) albo jeden miesiąc.
+/// Okres widoku planu: cały rok (sumy roku) albo jeden miesiąc.
 class PlanPeriod {
   final int year;
 
@@ -163,10 +163,10 @@ class PlanService {
   // ── Kwoty okresu ─────────────────────────────────────────────────────────
 
   /// Kwota pozycji w okresie (waluta docelowa): miesiąc = kwota miesiąca,
-  /// rok = średnia miesięczna.
+  /// rok = suma roku (widok „Rok" w Planowaniu; średnie są w Statystykach).
   double positionAmount(PlanPosition p, PlanPeriod period, Currency target) {
     final raw = period.isYear
-        ? p.yearAverage(period.year)
+        ? p.yearTotal(period.year)
         : p.amountIn(period.monthKey!);
     return _currency.convert(raw, p.currency, target);
   }
@@ -183,7 +183,7 @@ class PlanService {
       for (var m = 1; m <= 12; m++) {
         sum += subscriptionAmountInMonth(s, period.year, m);
       }
-      raw = sum / 12;
+      raw = sum;
     } else {
       raw = subscriptionAmountInMonth(s, period.year, period.month!);
     }
@@ -231,7 +231,7 @@ class PlanService {
     );
   }
 
-  /// Sumy okresu: miesiąc wprost, rok jako średnia miesięczna.
+  /// Sumy okresu: miesiąc wprost, rok jako suma dwunastu miesięcy.
   PlanMonthTotals periodTotals({
     required List<PlanPosition> positions,
     required List<Subscription> subscriptions,
@@ -243,7 +243,7 @@ class PlanService {
           subscriptions: subscriptions,
           year: period.year,
           target: target,
-        ).average
+        ).total
       : monthTotals(
           positions: positions,
           subscriptions: subscriptions,

@@ -13,6 +13,7 @@ import '../theme/app_theme.dart';
 import '../utils/text_sort.dart';
 import '../widgets/aurora_add_menu.dart';
 import '../widgets/aurora_chip.dart';
+import '../widgets/aurora_segmented.dart';
 import '../widgets/budget_widgets.dart' show BudgetEntryList, budgetNf;
 import '../widgets/category_icons.dart' show subscriptionIcon;
 import '../widgets/filter_bars.dart';
@@ -51,10 +52,11 @@ const _kInstallmentLoans = 'plan_loans_installment';
 
 /// Zakładka „Planowanie" — plan roczny aktywnego budżetu (ADR-035).
 ///
-/// Wpływy, wydatki, karta i subskrypcje na jednym ekranie. Filtr na cały rok
-/// pokazuje średnie miesięczne, filtr na miesiąc — kwoty tego miesiąca.
-/// Pozycja widoczna w miesiącu to pozycja, która w nim obowiązuje. Ekran
-/// startuje na bieżącym miesiącu; „Dzisiaj" w rogu paska do niego wraca.
+/// Wpływy, wydatki, karta i subskrypcje na jednym ekranie. Widok „Rok"
+/// pokazuje sumy roku, widok „Miesiąc" — kwoty wybranego miesiąca. Pozycja
+/// widoczna w miesiącu to pozycja, która w nim obowiązuje. Ekran startuje na
+/// bieżącym miesiącu; „Dzisiaj" w rogu paska wraca do niego (w widoku
+/// rocznym — do bieżącego roku).
 class PlanningScreen extends StatefulWidget {
   const PlanningScreen({super.key});
 
@@ -65,7 +67,13 @@ class PlanningScreen extends StatefulWidget {
 class _PlanningScreenState extends State<PlanningScreen> {
   String? _filterCategoryId;
   late int _year;
-  int? _month;
+  /// Miesiąc widoku miesięcznego (1–12) — zostaje zapamiętany przy
+  /// przełączaniu na rok i z powrotem.
+  late int _month;
+
+  /// Widok roczny: kwoty to sumy roku (bez paska miesięcy); inaczej — kwoty
+  /// wybranego miesiąca.
+  bool _yearView = false;
   bool _showHidden = false;
   bool _byCategory = false;
   _PlanSort _sort = _PlanSort.alpha;
@@ -358,8 +366,9 @@ class _PlanningScreenState extends State<PlanningScreen> {
     final years = plan.years;
     if (!years.contains(_year)) years.add(_year);
     years.sort();
-    final period = PlanPeriod(_year, _month);
-    final isToday = _year == today.year && _month == today.month;
+    final period = PlanPeriod(_year, _yearView ? null : _month);
+    final isToday =
+        _year == today.year && (_yearView || _month == today.month);
 
     final all = plan.positions;
     final subsAll = plan.subscriptions;
@@ -482,7 +491,10 @@ class _PlanningScreenState extends State<PlanningScreen> {
             label: 'Dodaj pozycję planu',
             primary: true,
             onTap: () => _push(
-              PlanPositionFormScreen(initialYear: _year, initialMonth: _month),
+              PlanPositionFormScreen(
+                initialYear: _year,
+                initialMonth: _yearView ? null : _month,
+              ),
             ),
           ),
           AuroraAddAction(
@@ -515,9 +527,9 @@ class _PlanningScreenState extends State<PlanningScreen> {
         children: [
           WorkspaceTopBar(
             info: SectionInfo.planning,
-            // „Dzisiaj" i „Cały rok" w pustym rogu paska; wcięcie wyrównuje je
-            // z chipami filtrów pod spodem. Na wąskim ekranie przewijają się
-            // w bok zamiast ucinać.
+            // „Dzisiaj" i przełącznik widoku „Miesiąc / Rok" w pustym rogu
+            // paska; wcięcie wyrównuje je z chipami filtrów pod spodem. Na
+            // wąskim ekranie przewijają się w bok zamiast ucinać.
             leading: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.only(left: 8),
@@ -527,16 +539,21 @@ class _PlanningScreenState extends State<PlanningScreen> {
                   AuroraChip(
                     label: 'Dzisiaj',
                     selected: isToday,
+                    // Do bieżącego miesiąca — a w widoku rocznym do roku.
                     onTap: () => setState(() {
                       _year = today.year;
-                      _month = today.month;
+                      if (!_yearView) _month = today.month;
                     }),
                   ),
                   const SizedBox(width: 8),
-                  AuroraChip(
-                    label: 'Cały rok',
-                    selected: _month == null,
-                    onTap: () => setState(() => _month = null),
+                  AuroraSegmented<bool>(
+                    compact: true,
+                    segments: const [
+                      AuroraSegment(value: false, label: 'Miesiąc'),
+                      AuroraSegment(value: true, label: 'Rok'),
+                    ],
+                    selected: _yearView,
+                    onChanged: (year) => setState(() => _yearView = year),
                   ),
                 ],
               ),
@@ -617,14 +634,16 @@ class _PlanningScreenState extends State<PlanningScreen> {
             years: years,
             activeYear: _year,
             monthsOfYear: const [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-            activeMonth: _month,
+            activeMonth: _yearView ? null : _month,
+            showMonths: !_yearView,
             allowAllYears: false,
+            // Inny rok — w widoku miesięcznym ten sam miesiąc.
             onSelectYear: (y) => setState(() {
-              if (y == null) return;
-              _year = y;
-              _month = null;
+              if (y != null) _year = y;
             }),
-            onSelectMonth: (m) => setState(() => _month = m),
+            onSelectMonth: (m) {
+              if (m != null) setState(() => _month = m);
+            },
             action: Row(
               mainAxisSize: MainAxisSize.min,
               children: [

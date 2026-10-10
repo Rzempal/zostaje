@@ -75,7 +75,7 @@ void main() {
       expect(pays.single.amount, 40);
     });
 
-    test('roczna — cała kwota w miesiącu odnowienia, średnia = /12', () {
+    test('roczna — cała kwota w miesiącu odnowienia, rok = suma roku', () {
       final s = _sub(
         'y',
         amount: 120,
@@ -87,7 +87,7 @@ void main() {
       expect(_svc.subscriptionAmountInMonth(s, 2026, 4), 0);
       expect(
         _svc.subscriptionAmount(s, const PlanPeriod(2026), _pln),
-        closeTo(10 * 4.28, 1e-9),
+        closeTo(120 * 4.28, 1e-9),
       );
     });
 
@@ -199,11 +199,14 @@ void main() {
       expect(byCat.length, 3);
     });
 
-    test('kwota pozycji: miesiąc wprost, rok jako średnia, w walucie celu', () {
+    test('kwota pozycji: miesiąc wprost, rok jako suma, w walucie celu', () {
       final p = _pos(
         'eur',
         currency: Currency.EUR,
-        months: {'2026-06': const PlanMonth(amount: 120)},
+        months: {
+          '2026-06': const PlanMonth(amount: 120),
+          '2026-09': const PlanMonth(amount: 30),
+        },
       );
       expect(
         _svc.positionAmount(p, const PlanPeriod(2026, 6), _pln),
@@ -211,7 +214,7 @@ void main() {
       );
       expect(
         _svc.positionAmount(p, const PlanPeriod(2026), _pln),
-        closeTo(10 * 4.28, 1e-9),
+        closeTo(150 * 4.28, 1e-9),
       );
       expect(_svc.positionAmount(p, const PlanPeriod(2026, 7), _pln), 0);
     });

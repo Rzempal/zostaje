@@ -160,15 +160,26 @@ void main() {
     expect(find.textContaining('Pozycje -'), findsOneWidget);
     expect(find.text('Subskrypcje'), findsNothing);
 
-    // „Cały rok" i „Dzisiaj" stoją obok siebie w rogu paska (w czcionce
-    // testowej nie mieszczą się naraz — stąd przewinięcie do każdego).
-    await tester.ensureVisible(find.text('Cały rok'));
-    await tester.tap(find.text('Cały rok'));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('Zostaje · paź 2026'), findsNothing);
-    await tester.ensureVisible(find.text('Dzisiaj'));
-    await tester.tap(find.text('Dzisiaj'));
-    await tester.pumpAndSettle();
+    // „Dzisiaj" i przełącznik „Miesiąc / Rok" stoją obok siebie w rogu paska
+    // (w czcionce testowej nie mieszczą się naraz — stąd przewijanie).
+    Future<void> tap(String text) async {
+      await tester.ensureVisible(find.text(text));
+      await tester.tap(find.text(text));
+      await tester.pumpAndSettle();
+    }
+
+    // Widok roczny: sumy roku, bez paska miesięcy.
+    await tap('Rok');
+    expect(find.textContaining('Zostaje · rok 2026'), findsOneWidget);
+    expect(find.text('paź'), findsNothing);
+    // Z powrotem miesiąc — ten sam, co przed przełączeniem.
+    await tap('Miesiąc');
+    expect(find.textContaining('Zostaje · paź 2026'), findsOneWidget);
+
+    // „Dzisiaj" wraca do bieżącego miesiąca, a pasek przewija się do niego.
+    await tap('sty');
+    expect(find.textContaining('Zostaje · sty 2026'), findsOneWidget);
+    await tap('Dzisiaj');
     expect(find.textContaining('Zostaje · paź 2026'), findsOneWidget);
     expect(onScreen(tester, find.text('paź')), isTrue);
     expect(tester.takeException(), isNull);

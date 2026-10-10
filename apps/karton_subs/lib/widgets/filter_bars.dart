@@ -95,9 +95,8 @@ const kMonthsShort = [
 
 /// Filtr czasu: pasek lat, a po wybraniu roku — pasek jego miesięcy.
 ///
-/// „Dzisiaj" (bieżący rok i miesiąc) i „Cały rok" (bez wybranego miesiąca)
-/// stoją w pasku ekranu, nie tutaj — w rzędach lat i miesięcy zabierały
-/// miejsce. Dotknięcie wybranego miesiąca też wraca do całego roku.
+/// „Dzisiaj" i przełącznik widoku „Miesiąc / Rok" stoją w pasku ekranu, nie
+/// tutaj. Pasek miesięcy jest tylko w widoku miesięcznym ([showMonths]).
 class TimeFilterBar extends StatelessWidget {
   final List<int> years;
   final int? activeYear;
@@ -108,6 +107,9 @@ class TimeFilterBar extends StatelessWidget {
 
   /// Akcja przyklejona na końcu paska lat (np. „pokaż ukryte").
   final Widget? action;
+
+  /// Czy pokazać pasek miesięcy (widok miesięczny).
+  final bool showMonths;
 
   /// Czy jest „Wszystkie lata" (brak filtra roku). Plan roczny (ADR-035)
   /// zawsze pokazuje konkretny rok — średnia „ze wszystkich lat" nic by nie
@@ -124,6 +126,7 @@ class TimeFilterBar extends StatelessWidget {
     required this.onSelectMonth,
     this.action,
     this.allowAllYears = true,
+    this.showMonths = true,
   });
 
   @override
@@ -158,7 +161,7 @@ class TimeFilterBar extends StatelessWidget {
           yearsRow
         else
           FilterRow(filters: yearsRow, action: action),
-        if (activeYear != null)
+        if (activeYear != null && showMonths)
           _MonthsRow(
             months: monthsOfYear,
             active: activeMonth,
@@ -178,7 +181,8 @@ Widget _timeChip(String label, bool selected, VoidCallback onTap, {Key? key}) =>
       ),
     );
 
-/// Pasek miesięcy roku (same miesiące — „Cały rok" jest w pasku ekranu).
+/// Pasek miesięcy roku — zawsze jeden wybrany (widok roczny ma przełącznik
+/// w pasku ekranu).
 /// Wybrany miesiąc sam wjeżdża na środek paska, gdy nie widać go w całości —
 /// przy starcie na bieżącym miesiącu (np. „paź") stałby inaczej za prawą
 /// krawędzią. Widoczny w całości zostaje, gdzie jest.
@@ -250,7 +254,7 @@ class _MonthsRowState extends State<_MonthsRow> {
               _timeChip(
                 kMonthsShort[m - 1],
                 active == m,
-                () => widget.onSelect(active == m ? null : m),
+                () => widget.onSelect(m),
                 key: _keyOf(m),
               ),
           ],
