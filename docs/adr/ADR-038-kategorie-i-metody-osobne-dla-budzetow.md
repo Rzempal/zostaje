@@ -35,7 +35,9 @@ naraz — długą listę, w której pozycje różnych budżetów się mieszały.
    (przełącznik nad listą). W menu ⋮ wpisu: „Kopiuj do budżetu…" (niezależna
    kopia; tej samej nazwy nie dubluje), „Przenieś do budżetu…" (kopia tam,
    usunięcie tutaj — pozycje tego budżetu zostają bez niej, z ostrzeżeniem)
-   i „Usuń". W menu ekranu: „Kopiuj wszystkie do budżetu…".
+   i „Usuń". W menu ekranu: „Kopiuj wszystkie do budżetu…". Kategorie
+   zawsze alfabetycznie (po polsku: ą po a, ś po s), bez ręcznej kolejności
+   (2026-10-10) — także w formularzach, filtrze i podgrupach Planowania.
 5. **Przenoszenie i kopiowanie pozycji, pożyczek, subskrypcji i całych
    budżetów** (ADR-037): etykiety idą po nazwie. Gdy budżetowi docelowemu
    czegoś brakuje, okno pyta: „Dodaj je" albo „Bez nich" (pozycje bez

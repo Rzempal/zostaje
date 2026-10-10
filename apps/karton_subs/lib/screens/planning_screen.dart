@@ -10,6 +10,7 @@ import '../models/subscription.dart';
 import '../services/plan_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/text_sort.dart';
 import '../widgets/aurora_add_menu.dart';
 import '../widgets/aurora_chip.dart';
 import '../widgets/budget_widgets.dart' show BudgetEntryList, budgetNf;
@@ -860,11 +861,15 @@ class _PlanningScreenState extends State<PlanningScreen> {
     for (final it in items) {
       (groups[categoryOf(it)] ??= <T>[]).add(it);
     }
+    // Podgrupy alfabetycznie, jak lista kategorii; nieznana kategoria
+    // (usunięta) i „Bez kategorii" — na końcu.
     final keys = groups.keys.toList()
       ..sort((a, b) {
-        if (a == null) return 1;
-        if (b == null) return -1;
-        return (byId[a]?.order ?? 999).compareTo(byId[b]?.order ?? 999);
+        final ca = a == null ? null : byId[a];
+        final cb = b == null ? null : byId[b];
+        if (ca == null) return cb == null ? 0 : 1;
+        if (cb == null) return -1;
+        return plSortKey(ca.name).compareTo(plSortKey(cb.name));
       });
     return [
       for (final k in keys) ...[

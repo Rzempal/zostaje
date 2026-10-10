@@ -537,16 +537,12 @@ class BudgetController extends ChangeNotifier {
     return n;
   }
 
-  /// Niezależna kopia kategorii w budżecie [to], na końcu jego listy. Gdy
-  /// [to] ma już kategorię o tej nazwie, nic nie dubluje — zwraca `false`.
+  /// Niezależna kopia kategorii w budżecie [to] (lista jest alfabetyczna,
+  /// więc miejsce wynika z nazwy). Gdy [to] ma już kategorię o tej nazwie, nic
+  /// nie dubluje — zwraca `false`.
   Future<bool> copyCategoryTo(Category c, String to) async {
     if (_categoryNamed(to, c.name) != null) return false;
-    final order = _storage
-        .getCategories(to)
-        .fold(-1, (m, x) => max(m, x.order));
-    await _storage.saveCategory(
-      c.copyWith(id: _uuid.v4(), budgetId: to, order: order + 1),
-    );
+    await _storage.saveCategory(c.copyWith(id: _uuid.v4(), budgetId: to));
     notifyListeners();
     return true;
   }

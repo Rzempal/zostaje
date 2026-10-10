@@ -9,6 +9,7 @@ import '../models/budget_entry.dart';
 import '../models/plan_position.dart';
 import '../models/spending_allocation_item.dart';
 import '../utils/money_format.dart';
+import '../utils/text_sort.dart';
 import 'app_logger.dart';
 import 'storage_keys.dart';
 
@@ -132,13 +133,19 @@ class StorageService {
 
   /// Wszystkie kategorie, każdego budżetu — do kopii zapasowej, eksportu
   /// i podziału. Ekrany biorą listę swojego budżetu z [getCategories].
+  ///
+  /// Zawsze alfabetycznie (po polsku) — bez ręcznej kolejności: na długiej
+  /// liście kategorię znajduje się po nazwie.
   List<Category> getAllCategories() {
     final cats = _categoriesCache.values.toList();
-    cats.sort((a, b) => a.order.compareTo(b.order));
+    cats.sort((a, b) {
+      final byName = plSortKey(a.name).compareTo(plSortKey(b.name));
+      return byName != 0 ? byName : a.id.compareTo(b.id);
+    });
     return List.unmodifiable(cats);
   }
 
-  /// Kategorie budżetu [budgetId] (ADR-038), w kolejności z listy.
+  /// Kategorie budżetu [budgetId] (ADR-038), alfabetycznie.
   List<Category> getCategories(String budgetId) => [
     for (final c in getAllCategories())
       if (c.budgetId == budgetId) c,

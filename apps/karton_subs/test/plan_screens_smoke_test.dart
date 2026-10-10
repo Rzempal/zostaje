@@ -449,6 +449,8 @@ void main() {
     await pump(tester, const CategoryManagementScreen(), width: 480);
     expect(find.text('Lista budżetu'), findsOneWidget);
     expect(find.text('Inne'), findsOneWidget);
+    // Kategorie zawsze alfabetycznie — bez uchwytu do przeciągania.
+    expect(find.byIcon(LucideIcons.gripVertical), findsNothing);
     await pump(tester, const PaymentMethodManagementScreen(), width: 480);
     expect(find.text('Gotówka'), findsOneWidget);
 

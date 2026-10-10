@@ -1,5 +1,11 @@
 {
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101005",
+  "versionCode": 2026101005,
   "changelog": [
+    {
+      "version": "0.27.26101005",
+      "notes": "- Kategorie zawsze alfabetycznie (po polsku), bez przeciagania na liscie\n- Ta sama kolejnosc w formularzach, filtrze i podgrupach Planowania"
+    },
     {
       "version": "0.27.26101004",
       "notes": "- Ekran pozycji: budzet pozycji (ikona i nazwa) na poczatku linii pod tytulem"
@@ -35,15 +41,9 @@
     {
       "version": "0.27.26100901",
       "notes": "- Wydatki: przelacznik czesci stoi nad jej lista, przy prawej krawedzi (bez powtorzonego podtytulu)"
-    },
-    {
-      "version": "0.27.26100900",
-      "notes": "- Ekran pozycji: siatka 3x4 zamiast dlugiej listy\n- Szybkie wypelnianie: kwota w puste albo zaznaczone miesiace\n- Okres pozycji (od-do): miesiace przed startem i po splacie raty wyszarzone\n- Raty i starty ze starego budzetu dostaja okres automatycznie\n- Excel: kolumny Od i Do"
     }
   ],
-  "version": "0.27.26101004",
-  "releaseDate": "2026-10-10T14:12:05Z",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101004",
-  "releaseNotes": "- Ekran pozycji: budzet pozycji (ikona i nazwa) na poczatku linii pod tytulem",
-  "versionCode": 2026101004
+  "releaseDate": "2026-10-10T14:22:40Z",
+  "releaseNotes": "- Kategorie zawsze alfabetycznie (po polsku), bez przeciagania na liscie\n- Ta sama kolejnosc w formularzach, filtrze i podgrupach Planowania",
+  "version": "0.27.26101005"
 }

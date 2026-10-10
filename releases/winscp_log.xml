@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<session xmlns="http://winscp.net/schema/session/1.0" name="host361978@host361978.hostido.net.pl" start="2026-10-10T12:12:05.924Z">
+<session xmlns="http://winscp.net/schema/session/1.0" name="host361978@host361978.hostido.net.pl" start="2026-10-10T12:22:40.841Z">
   <rm>
     <filename value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/internal/zostaje-dev_latest.apk" />
     <result success="true" />
@@ -7,23 +7,23 @@
   <upload>
     <filename value="C:\Users\rzemp\GitHub\karton-subs\releases\zostaje-dev_latest.apk" />
     <destination value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/internal/zostaje-dev_latest.apk" />
-    <size value="27147648" />
+    <size value="27147652" />
     <result success="true" />
   </upload>
   <touch>
     <filename value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/internal/zostaje-dev_latest.apk" />
-    <modification value="2026-10-10T12:12:04.000Z" />
+    <modification value="2026-10-10T12:22:39.000Z" />
     <result success="true" />
   </touch>
   <upload>
     <filename value="C:\Users\rzemp\GitHub\karton-subs\releases\version-internal.json" />
     <destination value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/internal/version-internal.json" />
-    <size value="3578" />
+    <size value="3503" />
     <result success="true" />
   </upload>
   <touch>
     <filename value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/internal/version-internal.json" />
-    <modification value="2026-10-10T12:12:05.000Z" />
+    <modification value="2026-10-10T12:22:40.000Z" />
     <result success="true" />
   </touch>
 </session>

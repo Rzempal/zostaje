@@ -80,11 +80,11 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                     text: 'Ten budżet nie ma jeszcze kategorii.',
                     onCopyFrom: () => _copyFrom(budget),
                   )
-                : ReorderableListView.builder(
+                // Zawsze alfabetycznie (bez przeciągania) — kategorię
+                // znajduje się po nazwie.
+                : ListView.builder(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                     itemCount: categories.length,
-                    onReorder: (oldIndex, newIndex) =>
-                        _reorder(storage, categories, oldIndex, newIndex),
                     itemBuilder: (context, index) {
                       final cat = categories[index];
                       final subsCount = budget.countCategorySubscriptions(
@@ -161,7 +161,6 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                                   ),
                                 ],
                               ),
-                              const Icon(LucideIcons.gripVertical, size: 18),
                             ],
                           ),
                         ),
@@ -172,22 +171,6 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
         ],
       ),
     );
-  }
-
-  void _reorder(
-    StorageService storage,
-    List<Category> categories,
-    int oldIndex,
-    int newIndex,
-  ) {
-    if (newIndex > oldIndex) newIndex--;
-    final list = List<Category>.from(categories);
-    final item = list.removeAt(oldIndex);
-    list.insert(newIndex, item);
-    for (int i = 0; i < list.length; i++) {
-      storage.saveCategory(list[i].copyWith(order: i));
-    }
-    context.read<SubscriptionController>().refresh();
   }
 
   /// Podpis licznika użycia: „X subskrypcji · Y w budżecie" (pomija zerowe

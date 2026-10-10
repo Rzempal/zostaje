@@ -325,6 +325,29 @@ void main() {
       );
     });
 
+    test('kategorie zawsze alfabetycznie — dawna kolejność się nie liczy',
+        () async {
+      final b = _controller();
+      final firma = (await b.addBudget('Firma', 'briefcase')).id;
+      for (final (i, name) in ['Zakupy', 'Śnieżek', 'Auto'].indexed) {
+        await _storage.saveCategory(
+          Category(
+            id: 'c$i',
+            name: name,
+            colorHex: '#64748B',
+            iconName: 'folder',
+            order: i,
+            budgetId: firma,
+          ),
+        );
+      }
+      expect(_storage.getCategories(firma).map((c) => c.name), [
+        'Auto',
+        'Śnieżek',
+        'Zakupy',
+      ]);
+    });
+
     test('nowy budżet startuje z pustymi listami', () async {
       final b = _controller();
       final firma = (await b.addBudget('Firma', 'briefcase')).id;
