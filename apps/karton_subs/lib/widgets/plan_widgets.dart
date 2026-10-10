@@ -154,6 +154,12 @@ class PlanGroup extends StatelessWidget {
   final ValueChanged<String?> onShow;
   final bool showProportion;
 
+  /// Filtry list grupy (np. kategorie w Wydatkach) — pod pigułkami części.
+  final Widget? filters;
+
+  /// Napis, gdy filtry nie zostawiły w grupie nic do pokazania.
+  final String? emptyText;
+
   const PlanGroup({
     super.key,
     required this.title,
@@ -164,6 +170,8 @@ class PlanGroup extends StatelessWidget {
     required this.only,
     required this.onShow,
     this.showProportion = false,
+    this.filters,
+    this.emptyText,
   });
 
   static String _signed(double v) => budgetNf.format(v.abs() < 0.005 ? 0 : v);
@@ -261,6 +269,17 @@ class PlanGroup extends StatelessWidget {
                       ],
                     ],
                   ),
+                ),
+              ),
+            ),
+          ?filters,
+          if (parts.isEmpty && emptyText != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                emptyText!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: c.textMuted,
                 ),
               ),
             ),

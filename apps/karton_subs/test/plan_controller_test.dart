@@ -226,7 +226,8 @@ void main() {
       expect(oct.loansNet, -166.67);
     });
 
-    test('edycja warunków przelicza raty; odznaczony zakup znika', () async {
+    test('edycja warunków przelicza raty; zakup zostaje osobną pozycją',
+        () async {
       final link = await addDreamy();
       await plan.saveInstallmentLoan(
         linkId: link,
@@ -237,8 +238,47 @@ void main() {
       final parts = plan.loanParts(link);
       expect(parts.repayment!.months, hasLength(10));
       expect(parts.repayment!.periodEnd, '2027-07');
-      expect(parts.purchase, isNull);
-      expect(plan.positions.where((p) => p.linkId == link), hasLength(2));
+      // Zakup zmienia się i usuwa na jego ekranie — zapis pożyczki go nie rusza.
+      expect(parts.purchase!.amountIn('2026-09'), 2000);
+      expect(plan.positions.where((p) => p.linkId == link), hasLength(3));
+    });
+
+    test('zakup w dniu wypłaty idzie za jej nową datą, przestawiony zostaje',
+        () async {
+      final link = await addDreamy();
+      PlanLoanTerms drawnOn(DateTime day) => PlanLoanTerms(
+        principal: 2000,
+        count: 12,
+        installment: 166.67,
+        rrso: 0,
+        drawdown: day,
+        firstMonth: '2026-11',
+        day: 13,
+      );
+
+      await plan.saveInstallmentLoan(
+        linkId: link,
+        name: 'Odkurzacz',
+        currency: Currency.PLN,
+        terms: drawnOn(DateTime(2026, 10, 2)),
+      );
+      var purchase = plan.loanParts(link).purchase!;
+      expect(purchase.months.keys, ['2026-10']);
+      expect(purchase.dayIn('2026-10'), 2);
+
+      // Przestawiony ręcznie na inny miesiąc — zostaje, gdzie jest.
+      await plan.setMonths(purchase.id, {
+        '2026-10': null,
+        '2026-12': const PlanMonth(amount: 2000, day: 5),
+      });
+      await plan.saveInstallmentLoan(
+        linkId: link,
+        name: 'Odkurzacz',
+        currency: Currency.PLN,
+        terms: drawnOn(DateTime(2026, 10, 20)),
+      );
+      purchase = plan.loanParts(link).purchase!;
+      expect(purchase.months.keys, ['2026-12']);
     });
 
     test('ręcznie poprawiona rata jest wykrywana przed nadpisaniem', () async {

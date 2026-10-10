@@ -47,6 +47,13 @@ spłata po okresie bezodsetkowym", liczona osobno od wpływów i wydatków.
 - Usunięcie zakupu nie kasuje pożyczki; usunięcie pożyczki pyta o zakup
   (zostaje jako zwykły wydatek bez powiązania albo znika). Zakup nie jest
   kandydatem do „Zaplanuj kolejny rok".
+- **Przejście w obie strony** (2026-10-10): w formularzu pożyczki zakup
+  dodaje przycisk „Dodaj" (pola kwoty i kategorii, zakup powstaje przy
+  zapisie — już nie domyślnie zaznaczony checkbox), a istniejący pokazuje się
+  z kwotą i przyciskiem „Pokaż" → ekran zakupu. Na ekranie zakupu „Otwórz
+  pożyczkę" (albo „Wróć do pożyczki", gdy przyszło się z niej). Istniejący
+  zakup to osobna pozycja: zapis pożyczki go nie nadpisuje ani nie usuwa —
+  tylko przesuwa za nową datą wypłaty, gdy stał w dniu wypłaty.
 
 ### 3. Trzy z czterech — reszta się liczy
 

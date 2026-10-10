@@ -33,11 +33,15 @@ class CategoryFilterBar extends StatelessWidget {
   final String? selected;
   final void Function(String?) onSelect;
 
+  /// Wcięcie paska; w treści listy (która ma już własne) — zero.
+  final EdgeInsetsGeometry padding;
+
   const CategoryFilterBar({
     super.key,
     required this.categories,
     required this.selected,
     required this.onSelect,
+    this.padding = const EdgeInsets.symmetric(horizontal: 16),
   });
 
   @override
@@ -45,7 +49,7 @@ class CategoryFilterBar extends StatelessWidget {
     return SizedBox(
       height: 48,
       child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: padding,
         scrollDirection: Axis.horizontal,
         children: [
           Center(

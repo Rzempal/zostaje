@@ -1,8 +1,10 @@
 {
-  "version": "0.27.26101006",
-  "releaseNotes": "- Planowanie: Dzisiaj i przelacznik Miesiac / Rok w lewym gornym rogu\n- Widok roczny: sumy roku (pozycje, grupy, Zostaje), bez paska miesiecy\n- Dzisiaj: biezacy miesiac w widoku miesiecznym, biezacy rok w rocznym\n- Inny rok w widoku miesiecznym zachowuje miesiac",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101006",
+  "versionCode": 2026101007,
   "changelog": [
+    {
+      "version": "0.27.26101007",
+      "notes": "- Pozyczka ratalna: zakup przyciskiem Dodaj (zamiast checkboxa), istniejacy z kwota i przyciskiem Pokaz\n- Z zakupu Otworz pozyczke, a gdy przyszlo sie z pozyczki - Wroc do pozyczki\n- Zapis pozyczki nie nadpisuje ani nie usuwa zakupu, tylko przesuwa go za data wyplaty"
+    },
     {
       "version": "0.27.26101006",
       "notes": "- Planowanie: Dzisiaj i przelacznik Miesiac / Rok w lewym gornym rogu\n- Widok roczny: sumy roku (pozycje, grupy, Zostaje), bez paska miesiecy\n- Dzisiaj: biezacy miesiac w widoku miesiecznym, biezacy rok w rocznym\n- Inny rok w widoku miesiecznym zachowuje miesiac"
@@ -38,12 +40,10 @@
     {
       "version": "0.27.26100903",
       "notes": "- Budzety z wlasnymi nazwami i ikonami (Ustawienia - Budzety)\n- Przelacznik budzetu: lista rozwijana u gory, gest przesuniecia\n- Ukrywanie budzetu zamiast trybu budzetu\n- Przenies / kopiuj do innego budzetu: calosc, zaznaczone pozycje, pozycja, pozyczka, subskrypcja\n- Usuwanie budzetu z ostrzezeniem i opcja przeniesienia"
-    },
-    {
-      "version": "0.27.26100902",
-      "notes": "- Sekcja Pozyczki: pozyczka z karty i pozyczki ratalne\n- Pozyczka ratalna: wyplata jako wplyw, raty, RRSO; z trzech wartosci liczy czwarta i sprawdza zgodnosc\n- Opcjonalny zakup tego dnia jako wydatek (raty nie licza sie drugi raz)\n- Pozyczki netto zamiast karty netto\n- Formularz pozycji: bez gotowego ustawienia Raty"
     }
   ],
-  "releaseDate": "2026-10-10T14:34:35Z",
-  "versionCode": 2026101006
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101007",
+  "releaseDate": "2026-10-10T14:45:25Z",
+  "version": "0.27.26101007",
+  "releaseNotes": "- Pozyczka ratalna: zakup przyciskiem Dodaj (zamiast checkboxa), istniejacy z kwota i przyciskiem Pokaz\n- Z zakupu Otworz pozyczke, a gdy przyszlo sie z pozyczki - Wroc do pozyczki\n- Zapis pozyczki nie nadpisuje ani nie usuwa zakupu, tylko przesuwa go za data wyplaty"
 }

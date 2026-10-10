@@ -376,10 +376,11 @@ class _PlanningScreenState extends State<PlanningScreen> {
     bool inPeriod(PlanPosition p) => period.isYear
         ? p.hasYear(_year)
         : p.months.containsKey(period.monthKey);
-    bool keep(PlanPosition p) =>
-        (_showHidden || !p.archived) &&
-        (_filterCategoryId == null || p.categoryId == _filterCategoryId) &&
-        inPeriod(p);
+    bool keep(PlanPosition p) => (_showHidden || !p.archived) && inPeriod(p);
+    // Filtr kategorii stoi w grupie Wydatki i dotyczy tylko jej list —
+    // pozycji wydatków i subskrypcji; Wpływy, Pożyczki i „Zostaje" bez niego.
+    bool inCategory(String? categoryId) =>
+        _filterCategoryId == null || categoryId == _filterCategoryId;
     double amount(PlanPosition p) => plan.amountOf(p, period);
     int cmp(PlanPosition a, PlanPosition b) => switch (_sort) {
       _PlanSort.alpha => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
@@ -390,7 +391,14 @@ class _PlanningScreenState extends State<PlanningScreen> {
         all.where((p) => p.kind == PlanKind.income && keep(p)).toList()
           ..sort(cmp);
     final expenses =
-        all.where((p) => p.kind == PlanKind.expense && keep(p)).toList()
+        all
+            .where(
+              (p) =>
+                  p.kind == PlanKind.expense &&
+                  keep(p) &&
+                  inCategory(p.categoryId),
+            )
+            .toList()
           ..sort(cmp);
 
     // Pożyczki (karta i ratalne): para jest widoczna, gdy którakolwiek strona
@@ -402,7 +410,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
       final rep = pair.repayment;
       final visible =
           (_showHidden || !loan.archived) &&
-          _filterCategoryId == null &&
           (inPeriod(loan) || (rep != null && inPeriod(rep)));
       if (!visible) continue;
       final net = amount(loan) - (rep == null ? 0 : amount(rep));
@@ -428,8 +435,7 @@ class _PlanningScreenState extends State<PlanningScreen> {
         subsAll
             .where(
               (s) =>
-                  (_filterCategoryId == null ||
-                      s.categoryId == _filterCategoryId) &&
+                  inCategory(s.categoryId) &&
                   (_showHidden ||
                       (period.isYear ? s.isActive : subAmount(s) > 0)),
             )
@@ -447,8 +453,10 @@ class _PlanningScreenState extends State<PlanningScreen> {
 
     final empty = all.isEmpty && subsAll.isEmpty;
 
+    // W filtrze tylko kategorie wydatków i subskrypcji.
     final usedCatIds = <String>{
-      for (final p in all) ?p.categoryId,
+      for (final p in all)
+        if (p.kind == PlanKind.expense) ?p.categoryId,
       for (final s in subsAll) ?s.categoryId,
     };
     final filterCategories = storage
@@ -605,30 +613,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
                   onPressed: () => _bulkDelete(selection),
                 ),
               ],
-            )
-          else if (!empty && filterCategories.isNotEmpty)
-            FilterRow(
-              filters: CategoryFilterBar(
-                categories: filterCategories,
-                selected: _filterCategoryId,
-                onSelect: (id) => setState(() => _filterCategoryId = id),
-              ),
-              action: IconButton(
-                visualDensity: VisualDensity.compact,
-                isSelected: _byCategory,
-                tooltip: _byCategory
-                    ? 'Podgrupy po kategoriach (włączone)'
-                    : 'Grupuj po kategoriach',
-                style: _byCategory
-                    ? IconButton.styleFrom(
-                        backgroundColor: context.semanticColors.primary
-                            .withValues(alpha: 0.25),
-                        foregroundColor: context.semanticColors.primary,
-                      )
-                    : null,
-                icon: const Icon(LucideIcons.layers, size: 18),
-                onPressed: () => setState(() => _byCategory = !_byCategory),
-              ),
             ),
           TimeFilterBar(
             years: years,
@@ -690,13 +674,11 @@ class _PlanningScreenState extends State<PlanningScreen> {
                   if (empty)
                     const _EmptyPlan()
                   else ...[
-                    if (_filterCategoryId == null) ...[
-                      PlanSummaryCard(
-                        period: period,
-                        totals: plan.totals(period),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
+                    PlanSummaryCard(
+                      period: period,
+                      totals: plan.totals(period),
+                    ),
+                    const SizedBox(height: 16),
                     if (yearEmpty) ...[
                       _CopyYearHint(
                         year: _year,
@@ -713,13 +695,21 @@ class _PlanningScreenState extends State<PlanningScreen> {
                         onToggle: () => _toggleSection(_kIncomes),
                         children: _rows(incomes, period, amount, false),
                       ),
-                    if (expenses.isNotEmpty || subs.isNotEmpty)
+                    // Z wybraną kategorią grupa zostaje także pusta — inaczej
+                    // filtra nie dałoby się zmienić.
+                    if (expenses.isNotEmpty ||
+                        subs.isNotEmpty ||
+                        _filterCategoryId != null)
                       PlanGroup(
                         title: 'Wydatki',
                         total: -(_sum(expenses, amount) + subsTotal),
                         collapsed: _collapsed.contains(_kExpensesGroup),
                         onToggle: () => _toggleSection(_kExpensesGroup),
                         showProportion: true,
+                        filters: filterCategories.isEmpty
+                            ? null
+                            : _categoryFilters(filterCategories),
+                        emptyText: 'Brak wydatków w tej kategorii.',
                         only: _onlyPart(_kExpenses, _kSubscriptions),
                         onShow: (id) =>
                             _showOnly(_kExpenses, _kSubscriptions, id),
@@ -835,6 +825,34 @@ class _PlanningScreenState extends State<PlanningScreen> {
       ),
     );
   }
+
+  /// Szybkie filtry kategorii i podgrupy po kategoriach — w grupie Wydatki,
+  /// bo dotyczą tylko jej list, obok pigułek „Razem / Pozycje / Subskrypcje".
+  Widget _categoryFilters(List<Category> categories) => FilterRow(
+    filters: CategoryFilterBar(
+      categories: categories,
+      selected: _filterCategoryId,
+      onSelect: (id) => setState(() => _filterCategoryId = id),
+      padding: EdgeInsets.zero,
+    ),
+    action: IconButton(
+      visualDensity: VisualDensity.compact,
+      isSelected: _byCategory,
+      tooltip: _byCategory
+          ? 'Podgrupy po kategoriach (włączone)'
+          : 'Grupuj po kategoriach',
+      style: _byCategory
+          ? IconButton.styleFrom(
+              backgroundColor: context.semanticColors.primary.withValues(
+                alpha: 0.25,
+              ),
+              foregroundColor: context.semanticColors.primary,
+            )
+          : null,
+      icon: const Icon(LucideIcons.layers, size: 18),
+      onPressed: () => setState(() => _byCategory = !_byCategory),
+    ),
+  );
 
   double _sum(List<PlanPosition> items, double Function(PlanPosition) amount) =>
       items.where((p) => !p.archived).fold(0.0, (s, p) => s + amount(p));

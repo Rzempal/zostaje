@@ -391,6 +391,22 @@ void main() {
     expect(find.textContaining('Kredyty ratalne '), findsOneWidget);
     expect(find.textContaining('rata 1 z 12'), findsOneWidget);
     expect(find.textContaining('Pożyczki netto'), findsOneWidget);
+
+    // Pożyczka z zakupem: „Pokaż" prowadzi do zakupu, a stamtąd „Wróć do
+    // pożyczki" — w obie strony.
+    await pump(
+      tester,
+      const InstallmentLoanFormScreen(linkId: 'L2'),
+      height: 2000,
+    );
+    expect(find.text('Zakup „Odkurzacz"'), findsOneWidget);
+    await tester.ensureVisible(find.text('Pokaż'));
+    await tester.tap(find.text('Pokaż'));
+    await tester.pumpAndSettle();
+    expect(find.text('Zakup z pożyczki ratalnej'), findsOneWidget);
+    await tester.tap(find.text('Wróć do pożyczki'));
+    await tester.pumpAndSettle();
+    expect(find.text('Pokaż'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -418,6 +434,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('Dane się nie zgadzają'), findsOneWidget);
     expect(find.text('Przyjmij ratę 166,67'), findsOneWidget);
+
+    // Nowa pożyczka bez zakupu — „Dodaj" pokazuje pola zakupu.
+    expect(find.widgetWithText(TextFormField, 'Kwota zakupu'), findsNothing);
+    await tester.ensureVisible(find.text('Dodaj'));
+    await tester.tap(find.text('Dodaj'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(TextFormField, 'Kwota zakupu'), findsOneWidget);
+    expect(find.text('Nie dodawaj'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

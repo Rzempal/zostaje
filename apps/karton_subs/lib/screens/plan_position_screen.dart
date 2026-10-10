@@ -32,10 +32,15 @@ class PlanPositionScreen extends StatefulWidget {
   final String positionId;
   final int initialYear;
 
+  /// Otwarty z formularza pożyczki („Pokaż" zakup) — przycisk pożyczki wraca
+  /// wtedy do niej, zamiast otwierać drugi formularz na wierzchu.
+  final bool openedFromLoan;
+
   const PlanPositionScreen({
     super.key,
     required this.positionId,
     required this.initialYear,
+    this.openedFromLoan = false,
   });
 
   @override
@@ -520,13 +525,20 @@ class _PlanPositionScreenState extends State<PlanPositionScreen> {
                         ),
                       ),
                       TextButton(
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                InstallmentLoanFormScreen(linkId: p.linkId),
-                          ),
+                        onPressed: widget.openedFromLoan
+                            ? () => Navigator.of(context).pop()
+                            : () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => InstallmentLoanFormScreen(
+                                    linkId: p.linkId,
+                                  ),
+                                ),
+                              ),
+                        child: Text(
+                          widget.openedFromLoan
+                              ? 'Wróć do pożyczki'
+                              : 'Otwórz pożyczkę',
                         ),
-                        child: const Text('Otwórz pożyczkę'),
                       ),
                     ],
                   ),

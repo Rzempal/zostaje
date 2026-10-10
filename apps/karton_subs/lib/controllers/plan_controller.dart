@@ -327,7 +327,11 @@ class PlanController extends ChangeNotifier {
   /// wpływ w dniu wypłaty, raty z warunków (z okresem od pierwszej do
   /// ostatniej raty) i — gdy podano [purchase] — zakup tego dnia jako zwykły
   /// wydatek. Raty są w Pożyczkach, zakup w Wydatkach, więc ten sam koszt
-  /// nie liczy się dwa razy. Odznaczony zakup istniejącej pożyczki znika.
+  /// nie liczy się dwa razy.
+  ///
+  /// Istniejący zakup to osobna pozycja (zmienia się ją i usuwa na jej
+  /// ekranie): bez [purchase] zostaje, a gdy stał w dniu wypłaty — idzie za
+  /// jej nową datą.
   Future<String> saveInstallmentLoan({
     String? linkId,
     required String name,
@@ -413,8 +417,22 @@ class PlanController extends ChangeNotifier {
           categoryId: purchase.categoryId,
         ),
       );
-    } else if (existing.purchase != null) {
-      await _storage.deletePlanPosition(existing.purchase!.id);
+    } else if (existing.purchase case final p?) {
+      // Zakup stał w dniu dawnej wypłaty, a wypłata się przesunęła — idzie
+      // za nią. Przestawiony osobno (inny dzień) zostaje, gdzie jest.
+      final oldDraw = existing.repayment?.loanTerms?.drawdown;
+      final only = p.months.length == 1 ? p.months.entries.single : null;
+      if (oldDraw != null &&
+          only != null &&
+          only.key == BudgetEntry.monthKeyOf(oldDraw) &&
+          (only.value.day ?? p.day) == oldDraw.day &&
+          (only.key != drawKey || oldDraw.day != terms.drawdown.day)) {
+        await _save(
+          p.copyWith(
+            months: {drawKey: only.value.copyWith(day: terms.drawdown.day)},
+          ),
+        );
+      }
     }
     _log.info('Saved installment loan: $name (${terms.count} rat)');
     notifyListeners();
