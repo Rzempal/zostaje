@@ -1,8 +1,14 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101009",
-  "releaseDate": "2026-10-10T15:00:29Z",
-  "version": "0.27.26101009",
+  "version": "0.27.26101010",
+  "versionCode": 2026101010,
+  "releaseNotes": "- Subskrypcje w ukladzie pozycji: Subskrypcja przed nazwa, metoda, dzien platnosci zamiast daty startu, kategoria\n- Pasek 12 miesiecy przy subskrypcji: miesiace z platnoscia (miesieczna - caly rok, roczna - jedna kratka)",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101010",
+  "releaseDate": "2026-10-10T16:31:50Z",
   "changelog": [
+    {
+      "version": "0.27.26101010",
+      "notes": "- Subskrypcje w ukladzie pozycji: Subskrypcja przed nazwa, metoda, dzien platnosci zamiast daty startu, kategoria\n- Pasek 12 miesiecy przy subskrypcji: miesiace z platnoscia (miesieczna - caly rok, roczna - jedna kratka)"
+    },
     {
       "version": "0.27.26101009",
       "notes": "- Budzet: przelacznik Statystyki / Kalendarz w tym samym stylu co Rok / Miesiac w Planowaniu"
@@ -38,12 +44,6 @@
     {
       "version": "0.27.26101001",
       "notes": "- Ekran pozycji: kwota edytuje miesiac, kolko po prawej zaznacza (bez przytrzymania)\n- Kafel miesiaca: dzien w linii miesiaca, brak kwoty zamiast kreski\n- Duplikuj: pozycja, pozyczka, subskrypcja i zaznaczone pozycje (w tym samym budzecie, z dopiskiem kopia)"
-    },
-    {
-      "version": "0.27.26101000",
-      "notes": "- Planowanie: start na biezacym miesiacu, Dzisiaj w lewym gornym rogu\n- Pasek miesiecy sam przewija sie do wybranego miesiaca\n- Wydatki i Pozyczki: pigulki Razem i czesci (Razem zapala wszystkie, czesc pokazuje tylko swoja liste)\n- Zaznacz wszystkie: tylko pozycje na widoku"
     }
-  ],
-  "versionCode": 2026101009,
-  "releaseNotes": "- Budzet: przelacznik Statystyki / Kalendarz w tym samym stylu co Rok / Miesiac w Planowaniu"
+  ]
 }

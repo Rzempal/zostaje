@@ -300,25 +300,47 @@ class PlanGroup extends StatelessWidget {
   }
 }
 
-/// Pasek dwunastu kratek: w których miesiącach roku pozycja obowiązuje.
-/// Wybrany miesiąc (filtr) jest obwiedziony — widać od razu, czy pozycja
+/// Pasek dwunastu kratek: w których miesiącach roku jest kwota — pozycji
+/// albo płatność subskrypcji (miesięczna świeci cała, roczna jedną kratką).
+/// Wybrany miesiąc (filtr) jest obwiedziony — widać od razu, czy płatność
 /// w nim jest i jak wygląda reszta roku.
 class PlanMonthStrip extends StatelessWidget {
-  final PlanPosition position;
-  final int year;
+  /// Miesiące roku (1–12) z kwotą.
+  final Set<int> months;
+
+  /// Wpływ (zielony) czy wydatek (czerwony); [color] nadpisuje.
+  final bool inflow;
+  final Color? color;
   final int? highlightMonth;
 
   const PlanMonthStrip({
     super.key,
-    required this.position,
-    required this.year,
+    required this.months,
+    this.inflow = false,
+    this.color,
     this.highlightMonth,
   });
+
+  /// Pasek pozycji planu: miesiące roku [year], w których ma kwotę.
+  PlanMonthStrip.ofPosition(
+    PlanPosition position,
+    int year, {
+    Key? key,
+    int? highlightMonth,
+  }) : this(
+         key: key,
+         months: {
+           for (var m = 1; m <= 12; m++)
+             if (position.months.containsKey(planMonthKey(year, m))) m,
+         },
+         inflow: position.isInflow,
+         highlightMonth: highlightMonth,
+       );
 
   @override
   Widget build(BuildContext context) {
     final c = context.semanticColors;
-    final color = position.isInflow ? c.positive : c.negative;
+    final color = this.color ?? (inflow ? c.positive : c.negative);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -328,7 +350,7 @@ class PlanMonthStrip extends StatelessWidget {
             height: 10,
             margin: const EdgeInsets.only(left: 1.5),
             decoration: BoxDecoration(
-              color: position.months.containsKey(planMonthKey(year, m))
+              color: months.contains(m)
                   ? color.withValues(alpha: 0.85)
                   : c.textMuted.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(1.5),
@@ -465,9 +487,9 @@ class PlanPositionRow extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        PlanMonthStrip(
-                          position: p,
-                          year: period.year,
+                        PlanMonthStrip.ofPosition(
+                          p,
+                          period.year,
                           highlightMonth: period.month,
                         ),
                       ],

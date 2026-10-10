@@ -737,6 +737,18 @@ class _PlanningScreenState extends State<PlanningScreen> {
                                       subscription: s,
                                       amountText:
                                           '−${budgetNf.format(subAmount(s))}',
+                                      // Pasek jak przy pozycjach: miesiące
+                                      // roku, w których subskrypcja kosztuje.
+                                      paidMonths: {
+                                        for (var m = 1; m <= 12; m++)
+                                          if (plan.subscriptionAmountOf(
+                                                s,
+                                                PlanPeriod(_year, m),
+                                              ) >
+                                              0)
+                                            m,
+                                      },
+                                      highlightMonth: period.month,
                                       onTap: () => _push(
                                         AddSubscriptionScreen(existing: s),
                                       ),

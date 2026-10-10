@@ -159,6 +159,10 @@ void main() {
     expect(find.textContaining('Subskrypcje -'), findsOneWidget);
     expect(find.textContaining('Pozycje -'), findsOneWidget);
     expect(find.text('Subskrypcje'), findsNothing);
+    // Subskrypcja w układzie pozycji: przedrostek przy nazwie, dzień płatności
+    // zamiast daty startu.
+    expect(find.textContaining('Subskrypcja · Netflix'), findsOneWidget);
+    expect(find.textContaining('dzień 15'), findsOneWidget);
 
     // „Dzisiaj" i przełącznik „Rok / Miesiąc" stoją obok siebie w rogu paska
     // (w czcionce testowej nie mieszczą się naraz — stąd przewijanie).
