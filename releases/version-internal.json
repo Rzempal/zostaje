@@ -1,7 +1,12 @@
 {
-  "releaseDate": "2026-10-10T14:49:56Z",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101008",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101009",
+  "releaseDate": "2026-10-10T15:00:29Z",
+  "version": "0.27.26101009",
   "changelog": [
+    {
+      "version": "0.27.26101009",
+      "notes": "- Budzet: przelacznik Statystyki / Kalendarz w tym samym stylu co Rok / Miesiac w Planowaniu"
+    },
     {
       "version": "0.27.26101008",
       "notes": "- Filtry kategorii (z podgrupami) w grupie Wydatki, pod pigulkami Razem / Pozycje / Subskrypcje - dotycza tylko wydatkow; Wplywy, Pozyczki i Zostaje bez filtra\n- Przelacznik widoku w kolejnosci Rok / Miesiac\n- (z 0.27.26101007) Pozyczka ratalna: zakup przyciskiem Dodaj, istniejacy - Pokaz; z zakupu Otworz / Wroc do pozyczki"
@@ -37,13 +42,8 @@
     {
       "version": "0.27.26101000",
       "notes": "- Planowanie: start na biezacym miesiacu, Dzisiaj w lewym gornym rogu\n- Pasek miesiecy sam przewija sie do wybranego miesiaca\n- Wydatki i Pozyczki: pigulki Razem i czesci (Razem zapala wszystkie, czesc pokazuje tylko swoja liste)\n- Zaznacz wszystkie: tylko pozycje na widoku"
-    },
-    {
-      "version": "0.27.26100904",
-      "notes": "- Budzet: zakladki Statystyki i Kalendarz w jednej linii z budzetem\n- Wydatki i Pozyczki: chevron grupy zwija calosc, pilsy tylko swoje listy\n- Pozyczki: osobno Karta kredytowa i Kredyty ratalne\n- Subskrypcja: zmiana budzetu tylko w menu (Przenies / Kopiuj)"
     }
   ],
-  "releaseNotes": "- Filtry kategorii (z podgrupami) w grupie Wydatki, pod pigulkami Razem / Pozycje / Subskrypcje - dotycza tylko wydatkow; Wplywy, Pozyczki i Zostaje bez filtra\n- Przelacznik widoku w kolejnosci Rok / Miesiac\n- (z 0.27.26101007) Pozyczka ratalna: zakup przyciskiem Dodaj, istniejacy - Pokaz; z zakupu Otworz / Wroc do pozyczki",
-  "version": "0.27.26101008",
-  "versionCode": 2026101008
+  "versionCode": 2026101009,
+  "releaseNotes": "- Budzet: przelacznik Statystyki / Kalendarz w tym samym stylu co Rok / Miesiac w Planowaniu"
 }

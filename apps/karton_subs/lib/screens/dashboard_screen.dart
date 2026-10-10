@@ -12,6 +12,7 @@ import '../services/storage_service.dart';
 import '../services/update_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/money_format.dart';
+import '../widgets/aurora_segmented.dart';
 import '../widgets/budget_widgets.dart';
 import '../widgets/category_breakdown_chart.dart';
 import '../widgets/flow_view_controls.dart';
@@ -270,20 +271,26 @@ class _DashboardScreenState extends State<DashboardScreen>
       backgroundColor: Colors.transparent,
       body: Column(
         children: [
-          // Zakładki w jednej linii z przełącznikiem budżetu i „i" — rząd
-          // ekranu mniej na sam pasek zakładek.
+          // Przełącznik „Statystyki / Kalendarz" w jednej linii z budżetem
+          // i „i" — ten sam styl co „Rok / Miesiąc" w Planowaniu.
           WorkspaceTopBar(
             info: SectionInfo.budget,
-            leading: TabBar(
-              controller: _tab,
-              isScrollable: true,
-              tabAlignment: TabAlignment.start,
-              dividerColor: Colors.transparent,
-              labelPadding: const EdgeInsets.symmetric(horizontal: 12),
-              tabs: const [
-                Tab(text: 'Statystyki'),
-                Tab(text: 'Kalendarz'),
-              ],
+            leading: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.only(left: 8),
+              // Indeks zmienia też przesunięcie palcem (TabBarView).
+              child: ListenableBuilder(
+                listenable: _tab,
+                builder: (context, _) => AuroraSegmented<int>(
+                  compact: true,
+                  segments: const [
+                    AuroraSegment(value: 0, label: 'Statystyki'),
+                    AuroraSegment(value: 1, label: 'Kalendarz'),
+                  ],
+                  selected: _tab.index,
+                  onChanged: _tab.animateTo,
+                ),
+              ),
             ),
           ),
           const Padding(

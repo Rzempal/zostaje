@@ -183,8 +183,8 @@ Serce aplikacji -- obliczenia finansowe wykonywane lokalnie:
 w pigulce nawigacji na dole, wiec pasek ja tylko dublowal. Zamiast niego jeden
 `WorkspaceTopBar` na gorze ekranow Budzet i Planowanie: po prawej przelacznik
 budzetu (globalny — ten sam stan na obu ekranach) i ikona „i" z opisem sekcji,
-po lewej tresc ekranu (Budzet: zakladki „Statystyki | Kalendarz", wczesniej
-w osobnej linii pod paskiem; Planowanie: „Dzisiaj" i przelacznik „Rok / Miesiac"). Akcje kontekstowe zeszly do
+po lewej tresc ekranu (Budzet: przelacznik „Statystyki / Kalendarz" w stylu
+„Rok / Miesiac", wczesniej zakladki w osobnej linii pod paskiem; Planowanie: „Dzisiaj" i przelacznik „Rok / Miesiac"). Akcje kontekstowe zeszly do
 miejsc, na ktore dzialaja: sortowanie i grupowanie sekcji miesiaca do naglowkow
 „Platnosci" i „Podsumowanie miesiaca" (`FlowViewControls`), a sortowanie listy
 pozycji — nad te liste. Podekrany Ustawien zachowuja `AppBar` (przycisk powrotu).

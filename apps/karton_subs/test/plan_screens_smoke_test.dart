@@ -524,8 +524,10 @@ void main() {
     expect(find.text('Statystyki'), findsOneWidget);
     expect(find.text('Osobisty'), findsOneWidget);
 
+    // Przełącznik „Statystyki / Kalendarz" (styl jak „Rok / Miesiąc").
     await tester.tap(find.text('Kalendarz'));
     await tester.pumpAndSettle();
+    expect(find.text('Średnio miesięcznie'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }
