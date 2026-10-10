@@ -409,6 +409,11 @@ void main() {
     expect(find.textContaining('Kredyty ratalne '), findsOneWidget);
     expect(find.textContaining('rata 1 z 12'), findsOneWidget);
     expect(find.textContaining('Pożyczki netto'), findsOneWidget);
+    // Podpisy obu pożyczek: strzałka „potem" jest ikoną — znaku „→" nie ma
+    // w foncie telefonu, więc stał niżej niż minus i półpauza.
+    expect(find.textContaining('spłata 25 lis'), findsOneWidget);
+    expect(find.textContaining('raty paź 2026 – wrz 2027'), findsOneWidget);
+    expect(find.byIcon(LucideIcons.moveRight), findsNWidgets(2));
 
     // Pożyczka z zakupem: „Pokaż" prowadzi do zakupu, a stamtąd „Wróć do
     // pożyczki" — w obie strony.

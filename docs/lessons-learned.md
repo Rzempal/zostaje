@@ -4,6 +4,31 @@
 
 ---
 
+## 2026-10-10: Znak spoza fontu telefonu stoi krzywo („→")
+
+### Problem
+W podpisach pozyczek („+6 000,00 → splata 10 paz −6 000,00") strzalka byla mala
+i siedziala przy dolnej krawedzi malych liter, a minus i polpauza wyzej. `analyze`
+i testy tego nie widza — czcionka testowa rysuje kazdy znak jako kwadrat.
+
+### Przyczyna
+Aplikacja nie ma wlasnego fontu, tekst idzie systemowym Roboto. Roboto nie ma znaku
+„→" (sprawdzone w pliku fontu), wiec telefon bierze go z fontu zastepczego o innych
+proporcjach. Polpauza „–", minus „−", plus, „·" i „×" sa w Roboto i stoja razem
+na srodku wysokosci cyfr.
+
+### Rozwiazanie
+Strzalka jako ikona w tekscie: `planArrowSpan` (Lucide `moveRight`,
+`PlaceholderAlignment.middle`) — srodek linii, czyli wysokosc cyfr i minusa; rosnie
+razem z tekstem przy wiekszej czcionce systemowej.
+
+### Wniosek
+Przed uzyciem znaku spoza podstawowego alfabetu (strzalki, symbole) sprawdz, czy jest
+w Roboto. Jesli nie — ikona albo slowo, nie znak. Zostaja jeszcze „→" w podpowiedziach
+i menu (np. „Sortuj: A→Z", „Ustawienia → Metody platnosci") — do poprawy osobno.
+
+---
+
 ## 2026-08-04: Co lezy w sejfie systemowym, nie przezyje wymiany telefonu
 
 ### Problem

@@ -48,6 +48,20 @@ String? planPositionPeriodText(PlanPosition p) {
   return null;
 }
 
+/// Strzałka „potem" w podpisie („wypłata → spłata", „wypłata → raty").
+/// Znaku „→" nie ma w foncie telefonu (Roboto) — telefon brał go z fontu
+/// zastępczego, mniejszego i osadzonego niżej niż minus czy półpauza. Ikona
+/// stoi na środku linii, czyli na wysokości cyfr, minusa i półpauzy, i rośnie
+/// razem z tekstem przy większej czcionce systemowej.
+WidgetSpan planArrowSpan(TextStyle? style) => WidgetSpan(
+  alignment: PlaceholderAlignment.middle,
+  child: Icon(
+    LucideIcons.moveRight,
+    size: style?.fontSize ?? 11,
+    color: style?.color,
+  ),
+);
+
 /// Sekcja listy: nagłówek z sumą (tapnięcie zwija) i wiersze pod nim. Suma
 /// zostaje widoczna po zwinięciu — po to się sekcję zwija.
 class PlanSection extends StatelessWidget {
@@ -767,11 +781,22 @@ class InstallmentLoanRow extends StatelessWidget {
                       '${budgetNf.format(total - t.principal)}',
                       style: small,
                     ),
-                    Text(
-                      'wypłata ${t.drawdown.day} $drawMonth '
-                      '${planSignedAmount(t.principal, inflow: true)} → raty '
-                      '${planMonthLabel(t.firstMonth)} – '
-                      '${planMonthLabel(t.lastMonth)}',
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text:
+                                'wypłata ${t.drawdown.day} $drawMonth '
+                                '${planSignedAmount(t.principal, inflow: true)} ',
+                          ),
+                          planArrowSpan(small),
+                          TextSpan(
+                            text:
+                                ' raty ${planMonthLabel(t.firstMonth)} – '
+                                '${planMonthLabel(t.lastMonth)}',
+                          ),
+                        ],
+                      ),
                       style: small,
                     ),
                   ],
@@ -819,6 +844,7 @@ class CardLoanRow extends StatelessWidget {
     final theme = Theme.of(context);
     final c = context.semanticColors;
     final color = net >= 0 ? c.positive : c.negative;
+    final caption = theme.textTheme.labelSmall?.copyWith(color: c.textMuted);
     return InkWell(
       onTap: onTap,
       child: Opacity(
@@ -855,15 +881,23 @@ class CardLoanRow extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      '${loan.paymentMethod ?? 'Karta'} · '
-                      '${_side(loan, inflow: true)} → '
-                      'spłata ${_side(repayment, inflow: false)}',
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text:
+                                '${loan.paymentMethod ?? 'Karta'} · '
+                                '${_side(loan, inflow: true)} ',
+                          ),
+                          planArrowSpan(caption),
+                          TextSpan(
+                            text: ' spłata ${_side(repayment, inflow: false)}',
+                          ),
+                        ],
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: c.textMuted,
-                      ),
+                      style: caption,
                     ),
                   ],
                 ),

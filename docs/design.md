@@ -134,6 +134,12 @@ Skala bez zmian względem Ledger Glass. Kwoty finansowe nadal używają **tabula
 | Label | 12px | 500 | Chipy, delta-pille, meta |
 | Caption | 11px | 400 | Podpisy wykresów, daty osi |
 
+**Znaki spoza fontu:** tekst idzie systemowym Roboto. Znaku, którego w nim nie ma
+(np. strzałka „→"), telefon szuka w foncie zastępczym — wychodzi mniejszy i niżej
+niż reszta linii. W Roboto są i stoją na jednej wysokości (środek cyfr): półpauza
+„–", minus „−", plus, „·", „×". Strzałka w podpisie to ikona `planArrowSpan`
+(Lucide `moveRight`, środek linii), nie znak.
+
 ### Kwota-bohater (gradientowa)
 
 Główna liczba na Pulpicie jest wypełniona gradientem `--accent-gradient`.
