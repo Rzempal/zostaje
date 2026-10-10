@@ -1,5 +1,10 @@
 {
+  "versionCode": 2026101006,
   "changelog": [
+    {
+      "version": "0.27.26101006",
+      "notes": "- bug fixes"
+    },
     {
       "version": "0.27.26101005",
       "notes": "- Budzet: przelacznik Statystyki / Kalendarz w tym samym stylu co Rok / Miesiac w Planowaniu"
@@ -35,15 +40,10 @@
     {
       "version": "0.27.26100901",
       "notes": "- Wydatki: przelacznik czesci stoi nad jej lista, przy prawej krawedzi (bez powtorzonego podtytulu)"
-    },
-    {
-      "version": "0.27.26100900",
-      "notes": "- Ekran pozycji: siatka roku zamiast dlugiej listy\n- Szybkie wypelnianie: kwota w puste albo zaznaczone miesiace\n- Okres pozycji: miesiace przed startem i po splacie raty wyszarzone\n- Wydatki: chevron w naglowku rozwija obie listy\n- Excel: kolumny Od i Do"
     }
   ],
-  "releaseDate": "2026-10-10T16:03:55Z",
-  "releaseNotes": "- Budzet: przelacznik Statystyki / Kalendarz w tym samym stylu co Rok / Miesiac w Planowaniu",
-  "version": "0.27.26101005",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026101005",
-  "versionCode": 2026101005
+  "releaseDate": "2026-10-10T16:48:05Z",
+  "releaseNotes": "- bug fixes",
+  "version": "0.27.26101006",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026101006"
 }
