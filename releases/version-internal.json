@@ -1,8 +1,13 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026100904",
-  "versionCode": 2026100904,
-  "releaseDate": "2026-10-09T20:53:53Z",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101000",
+  "version": "0.27.26101000",
+  "releaseNotes": "- Planowanie: start na biezacym miesiacu, Dzisiaj w lewym gornym rogu\n- Pasek miesiecy sam przewija sie do wybranego miesiaca\n- Wydatki i Pozyczki: pigulki Razem i czesci (Razem zapala wszystkie, czesc pokazuje tylko swoja liste)\n- Zaznacz wszystkie: tylko pozycje na widoku",
+  "releaseDate": "2026-10-10T09:00:49Z",
   "changelog": [
+    {
+      "version": "0.27.26101000",
+      "notes": "- Planowanie: start na biezacym miesiacu, Dzisiaj w lewym gornym rogu\n- Pasek miesiecy sam przewija sie do wybranego miesiaca\n- Wydatki i Pozyczki: pigulki Razem i czesci (Razem zapala wszystkie, czesc pokazuje tylko swoja liste)\n- Zaznacz wszystkie: tylko pozycje na widoku"
+    },
     {
       "version": "0.27.26100904",
       "notes": "- Budzet: zakladki Statystyki i Kalendarz w jednej linii z budzetem\n- Wydatki i Pozyczki: chevron grupy zwija calosc, pilsy tylko swoje listy\n- Pozyczki: osobno Karta kredytowa i Kredyty ratalne\n- Subskrypcja: zmiana budzetu tylko w menu (Przenies / Kopiuj)"
@@ -38,12 +43,7 @@
     {
       "version": "0.26.26100701",
       "notes": "- Kopia zapasowa niesie plan roczny (wersja 8)\n- Eksport/import planu w Excelu: tabela roku, arkusz na rok\n- Usunieta synchronizacja budzetu domowego\n- Minus przy sumach wydatkow i subskrypcji w naglowkach\n- Naprawa: po odtworzeniu kopii znikaly stare subskrypcje dopiero po restarcie"
-    },
-    {
-      "version": "0.26.26100700",
-      "notes": "- Przebudowa E3b: zakladka Biezace i skan paragonow usuniete\n- Planner Na biezace wydatki zamieniony na zwykle pozycje planu (co miesiac)\n- Nawigacja: Budzet, Planowanie, Ustawienia\n- Aplikacja mniejsza o ok. 13 MB"
     }
   ],
-  "releaseNotes": "- Budzet: zakladki Statystyki i Kalendarz w jednej linii z budzetem\n- Wydatki i Pozyczki: chevron grupy zwija calosc, pilsy tylko swoje listy\n- Pozyczki: osobno Karta kredytowa i Kredyty ratalne\n- Subskrypcja: zmiana budzetu tylko w menu (Przenies / Kopiuj)",
-  "version": "0.27.26100904"
+  "versionCode": 2026101000
 }

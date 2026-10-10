@@ -134,24 +134,39 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// Czy element widać w całości w poziomie ekranu [width] (domyślny telefon).
+  bool onScreen(WidgetTester tester, Finder finder, {double width = 360}) {
+    final rect = tester.getRect(finder);
+    return rect.left >= 0 && rect.right <= width;
+  }
+
   testWidgets('Planowanie: rok i miesiąc rysują się bez błędów', (
     tester,
   ) async {
     await tester.runAsync(seed);
     await pump(tester, const PlanningScreen(), height: 1600);
+    // Start na bieżącym miesiącu (data testowa: październik 2026); chip „paź"
+    // sam wjechał na widok paska miesięcy.
+    expect(find.textContaining('Zostaje · paź 2026'), findsOneWidget);
+    expect(onScreen(tester, find.text('paź')), isTrue);
     expect(find.text('Wpływy'), findsWidgets);
     expect(find.text('Pożyczki'), findsOneWidget);
-    // Części grupy Wydatki: przełącznik z sumą jest zarazem ich nagłówkiem
-    // (bez osobnego podtytułu z tą samą nazwą).
+    // Pigułki grupy Wydatki: „Razem" i części z sumami (bez podtytułów
+    // z tą samą nazwą).
+    expect(find.text('Razem'), findsOneWidget);
     expect(find.textContaining('Subskrypcje -'), findsOneWidget);
     expect(find.textContaining('Pozycje -'), findsOneWidget);
     expect(find.text('Subskrypcje'), findsNothing);
 
-    // „Dzisiaj" = październik 2026 (data testowa); chip „paź" leży poza
-    // widocznym fragmentem poziomego paska miesięcy.
+    // Cały rok, a „Dzisiaj" w rogu paska wraca do bieżącego miesiąca.
+    await tester.ensureVisible(find.text('Cały rok'));
+    await tester.tap(find.text('Cały rok'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Zostaje · paź 2026'), findsNothing);
     await tester.tap(find.text('Dzisiaj'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Zostaje · paź 2026'), findsOneWidget);
+    expect(onScreen(tester, find.text('paź')), isTrue);
     expect(tester.takeException(), isNull);
   });
 
@@ -216,7 +231,10 @@ void main() {
       width: 480,
       height: 1400,
     );
-    expect(find.textContaining('wrz 2026 – lip 2027 · 11 mies.'), findsOneWidget);
+    expect(
+      find.textContaining('wrz 2026 – lip 2027 · 11 mies.'),
+      findsOneWidget,
+    );
     expect(find.text('przed startem'), findsNWidgets(8));
     // Listopad bez kwoty to jedyny „pusty" miesiąc w okresie.
     expect(find.text('Puste (1)'), findsOneWidget);
@@ -329,13 +347,13 @@ void main() {
         }),
       );
     });
+    // Start na bieżącym miesiącu (październik 2026): rata 1, wypłata we wrześniu.
     await pump(tester, const PlanningScreen(), height: 2000);
-    await tester.tap(find.text('Dzisiaj'));
-    await tester.pumpAndSettle();
 
     expect(find.text('Pożyczki'), findsOneWidget);
     expect(find.text('Karta kredytowa'), findsNothing);
-    // Części grupy „Pożyczki" — przełączniki z sumą, jak w „Wydatkach".
+    // Pigułki grupy „Pożyczki" — „Razem" i części z sumami, jak w „Wydatkach".
+    expect(find.text('Razem'), findsNWidgets(2));
     expect(find.textContaining('Karta kredytowa '), findsOneWidget);
     expect(find.textContaining('Kredyty ratalne '), findsOneWidget);
     expect(find.textContaining('rata 1 z 12'), findsOneWidget);
@@ -363,10 +381,7 @@ void main() {
     expect(find.textContaining('rata wyliczona'), findsOneWidget);
 
     // Wpisana inna rata — cztery wartości się nie zgadzają.
-    await tester.enterText(
-      find.widgetWithText(TextFormField, 'Rata'),
-      '170',
-    );
+    await tester.enterText(find.widgetWithText(TextFormField, 'Rata'), '170');
     await tester.pumpAndSettle();
     expect(find.textContaining('Dane się nie zgadzają'), findsOneWidget);
     expect(find.text('Przyjmij ratę 166,67'), findsOneWidget);

@@ -93,12 +93,10 @@ const kMonthsShort = [
   'gru',
 ];
 
-/// Filtr czasu: pasek lat ze skrótem **„Dzisiaj"**, a po wybraniu roku — pasek
-/// jego miesięcy.
+/// Filtr czasu: pasek lat, a po wybraniu roku — pasek jego miesięcy.
 ///
-/// „Dzisiaj" ustawia bieżący rok ORAZ miesiąc, więc od razu pokazuje ten
-/// miesiąc — jedno tapnięcie zamiast dwóch (rok, potem miesiąc). To najczęstsze
-/// pytanie do listy, więc ma być najkrótszą drogą.
+/// Skrót „Dzisiaj" (bieżący rok i miesiąc) stoi w pasku ekranu, nie tutaj —
+/// w rzędzie lat zabierał miejsce i gasił wybrany rok.
 class TimeFilterBar extends StatelessWidget {
   final List<int> years;
   final int? activeYear;
@@ -106,10 +104,6 @@ class TimeFilterBar extends StatelessWidget {
   final int? activeMonth;
   final void Function(int?) onSelectYear;
   final void Function(int?) onSelectMonth;
-
-  /// Skrót „Dzisiaj" — bieżący rok + bieżący miesiąc.
-  final VoidCallback onToday;
-  final bool todaySelected;
 
   /// Akcja przyklejona na końcu paska lat (np. „pokaż ukryte").
   final Widget? action;
@@ -127,21 +121,12 @@ class TimeFilterBar extends StatelessWidget {
     required this.activeMonth,
     required this.onSelectYear,
     required this.onSelectMonth,
-    required this.onToday,
-    this.todaySelected = false,
     this.action,
     this.allowAllYears = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    Widget chip(String label, bool selected, VoidCallback onTap) => Center(
-      child: Padding(
-        padding: const EdgeInsets.only(right: 8),
-        child: AuroraChip(label: label, selected: selected, onTap: onTap),
-      ),
-    );
-
     final yearsRow = SizedBox(
       height: 48,
       child: ListView(
@@ -149,17 +134,18 @@ class TimeFilterBar extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         children: [
           if (allowAllYears)
-            chip('Wszystkie lata', activeYear == null, () => onSelectYear(null)),
+            _timeChip(
+              'Wszystkie lata',
+              activeYear == null,
+              () => onSelectYear(null),
+            ),
           ...years.map(
-            (y) => chip(
+            (y) => _timeChip(
               '$y',
-              activeYear == y && !todaySelected,
-              () => onSelectYear(
-                allowAllYears && activeYear == y ? null : y,
-              ),
+              activeYear == y,
+              () => onSelectYear(allowAllYears && activeYear == y ? null : y),
             ),
           ),
-          chip('Dzisiaj', todaySelected, onToday),
         ],
       ),
     );
@@ -172,28 +158,107 @@ class TimeFilterBar extends StatelessWidget {
         else
           FilterRow(filters: yearsRow, action: action),
         if (activeYear != null)
-          SizedBox(
-            height: 48,
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              scrollDirection: Axis.horizontal,
-              children: [
-                chip(
-                  'Cały rok',
-                  activeMonth == null,
-                  () => onSelectMonth(null),
-                ),
-                ...monthsOfYear.map(
-                  (m) => chip(
-                    kMonthsShort[m - 1],
-                    activeMonth == m,
-                    () => onSelectMonth(activeMonth == m ? null : m),
-                  ),
-                ),
-              ],
-            ),
+          _MonthsRow(
+            months: monthsOfYear,
+            active: activeMonth,
+            onSelect: onSelectMonth,
           ),
       ],
+    );
+  }
+}
+
+Widget _timeChip(String label, bool selected, VoidCallback onTap, {Key? key}) =>
+    Center(
+      key: key,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: AuroraChip(label: label, selected: selected, onTap: onTap),
+      ),
+    );
+
+/// Pasek miesięcy roku. Wybrany miesiąc sam wjeżdża na środek paska, gdy nie
+/// widać go w całości — przy starcie na bieżącym miesiącu (np. „paź") stałby
+/// inaczej za prawą krawędzią. Widoczny w całości zostaje, gdzie jest.
+class _MonthsRow extends StatefulWidget {
+  final List<int> months;
+  final int? active;
+  final void Function(int?) onSelect;
+
+  const _MonthsRow({
+    required this.months,
+    required this.active,
+    required this.onSelect,
+  });
+
+  @override
+  State<_MonthsRow> createState() => _MonthsRowState();
+}
+
+class _MonthsRowState extends State<_MonthsRow> {
+  /// Klucz każdego chipu (`null` = „Cały rok") — do odszukania wybranego.
+  final _keys = <int?, GlobalKey>{};
+
+  GlobalKey _keyOf(int? month) => _keys.putIfAbsent(month, GlobalKey.new);
+
+  @override
+  void initState() {
+    super.initState();
+    _revealActive(animate: false);
+  }
+
+  @override
+  void didUpdateWidget(_MonthsRow old) {
+    super.didUpdateWidget(old);
+    if (old.active != widget.active) _revealActive(animate: true);
+  }
+
+  void _revealActive({required bool animate}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final chip = _keyOf(widget.active).currentContext;
+      if (!mounted || chip == null) return;
+      final box = chip.findRenderObject() as RenderBox?;
+      final row = context.findRenderObject() as RenderBox?;
+      if (box == null || row == null || !box.attached) return;
+      final left = box.localToGlobal(Offset.zero, ancestor: row).dx;
+      if (left >= 0 && left + box.size.width <= row.size.width) return;
+      Scrollable.ensureVisible(
+        chip,
+        alignment: 0.5,
+        duration: animate ? const Duration(milliseconds: 250) : Duration.zero,
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final active = widget.active;
+    // Wszystkie chipy naraz (nie ListView): wybrany musi istnieć, żeby dało
+    // się go przewinąć na widok, a miesięcy jest tylko 13.
+    return SizedBox(
+      height: 48,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _timeChip(
+              'Cały rok',
+              active == null,
+              () => widget.onSelect(null),
+              key: _keyOf(null),
+            ),
+            for (final m in widget.months)
+              _timeChip(
+                kMonthsShort[m - 1],
+                active == m,
+                () => widget.onSelect(active == m ? null : m),
+                key: _keyOf(m),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

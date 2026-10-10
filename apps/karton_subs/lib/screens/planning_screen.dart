@@ -11,6 +11,7 @@ import '../services/plan_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/aurora_add_menu.dart';
+import '../widgets/aurora_chip.dart';
 import '../widgets/budget_widgets.dart' show BudgetEntryList, budgetNf;
 import '../widgets/category_icons.dart' show subscriptionIcon;
 import '../widgets/filter_bars.dart';
@@ -32,24 +33,27 @@ enum _PlanSort { alpha, amountDesc }
 
 /// Klucze sekcji (stan zwinięcia) — osobne od dawnych „Cyklicznych".
 const _kIncomes = 'plan_incomes';
-const _kExpenses = 'plan_expenses';
 
 /// Cała grupa „Wydatki" (chevron w nagłówku) — niezależnie od jej części.
 const _kExpensesGroup = 'plan_expenses_group';
 
-/// Części grupy „Pożyczki": karta kredytowa i kredyty ratalne (ADR-036).
-const _kCardLoans = 'plan_loans_card';
-const _kInstallmentLoans = 'plan_loans_installment';
 /// Sekcja „Pożyczki" (dawniej „Karta kredytowa") — klucz zwinięcia zostaje,
 /// żeby zapamiętany stan sekcji nie przepadł.
 const _kLoans = 'plan_card';
+
+/// Części grup (pigułki): zapisany klucz = część ukryta, więc „tylko pozycje"
+/// to ukryte subskrypcje — ten sam zapis co dawne zwijanie części.
+const _kExpenses = 'plan_expenses';
 const _kSubscriptions = 'plan_subscriptions';
+const _kCardLoans = 'plan_loans_card';
+const _kInstallmentLoans = 'plan_loans_installment';
 
 /// Zakładka „Planowanie" — plan roczny aktywnego budżetu (ADR-035).
 ///
 /// Wpływy, wydatki, karta i subskrypcje na jednym ekranie. Filtr na cały rok
 /// pokazuje średnie miesięczne, filtr na miesiąc — kwoty tego miesiąca.
-/// Pozycja widoczna w miesiącu to pozycja, która w nim obowiązuje.
+/// Pozycja widoczna w miesiącu to pozycja, która w nim obowiązuje. Ekran
+/// startuje na bieżącym miesiącu; „Dzisiaj" w rogu paska do niego wraca.
 class PlanningScreen extends StatefulWidget {
   const PlanningScreen({super.key});
 
@@ -74,13 +78,35 @@ class _PlanningScreenState extends State<PlanningScreen> {
   @override
   void initState() {
     super.initState();
-    _year = context.read<PlanController>().today.year;
+    // Start na bieżącym miesiącu — najczęstsze pytanie do planu.
+    final today = context.read<PlanController>().today;
+    _year = today.year;
+    _month = today.month;
     _collapsed = context.read<StorageService>().getCollapsedBudgetSections();
   }
 
   void _toggleSection(String key) {
     setState(() {
       if (!_collapsed.remove(key)) _collapsed.add(key);
+    });
+    context.read<StorageService>().setCollapsedBudgetSections(_collapsed);
+  }
+
+  /// Część grupy pokazana sama (pigułka) albo `null` = „Razem". Ukryte obie
+  /// (stan sprzed pigułek) też znaczy „Razem" — inaczej grupa byłaby pusta.
+  String? _onlyPart(String a, String b) {
+    final hideA = _collapsed.contains(a), hideB = _collapsed.contains(b);
+    if (hideA == hideB) return null;
+    return hideA ? b : a;
+  }
+
+  void _showOnly(String a, String b, String? only) {
+    setState(() {
+      _collapsed
+        ..remove(a)
+        ..remove(b);
+      if (only == a) _collapsed.add(b);
+      if (only == b) _collapsed.add(a);
     });
     context.read<StorageService>().setCollapsedBudgetSections(_collapsed);
   }
@@ -234,7 +260,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
 
   Future<void> _push(Widget screen) =>
       Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
-
 
   void _showSubscriptionActions(Subscription sub) {
     final subs = context.read<SubscriptionController>();
@@ -404,8 +429,17 @@ class _PlanningScreenState extends State<PlanningScreen> {
         .where((c) => usedCatIds.contains(c.id))
         .toList();
 
+    // „Zaznacz wszystkie" i akcje zbiorcze — tylko pozycje na widoku: bez
+    // zwiniętych sekcji i bez listy schowanej pigułką „Subskrypcje".
+    final expensesShown =
+        !_collapsed.contains(_kExpensesGroup) &&
+        (subs.isEmpty ||
+            _onlyPart(_kExpenses, _kSubscriptions) != _kSubscriptions);
     final visibleIds = {
-      for (final p in [...incomes, ...expenses]) p.id,
+      if (!_collapsed.contains(_kIncomes))
+        for (final p in incomes) p.id,
+      if (expensesShown)
+        for (final p in expenses) p.id,
     };
     final selection = _selected.where(visibleIds.contains).toSet();
     final anyActiveSelected = [
@@ -436,12 +470,11 @@ class _PlanningScreenState extends State<PlanningScreen> {
           AuroraAddAction(
             icon: subscriptionIcon,
             label: 'Dodaj subskrypcję',
-            onTap: () =>
-                _push(
-                  AddSubscriptionScreen(
-                    initialBudgetId: context.read<BudgetController>().budgetId,
-                  ),
-                ),
+            onTap: () => _push(
+              AddSubscriptionScreen(
+                initialBudgetId: context.read<BudgetController>().budgetId,
+              ),
+            ),
           ),
           AuroraAddAction(
             icon: LucideIcons.creditCard,
@@ -462,7 +495,22 @@ class _PlanningScreenState extends State<PlanningScreen> {
       ),
       body: Column(
         children: [
-          const WorkspaceTopBar(info: SectionInfo.planning),
+          WorkspaceTopBar(
+            info: SectionInfo.planning,
+            // „Dzisiaj" w pustym rogu paska; wcięcie wyrównuje go z chipami
+            // filtrów pod spodem.
+            leading: Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: AuroraChip(
+                label: 'Dzisiaj',
+                selected: isToday,
+                onTap: () => setState(() {
+                  _year = today.year;
+                  _month = today.month;
+                }),
+              ),
+            ),
+          ),
           if (_selecting)
             SelectionBar(
               count: selection.length,
@@ -540,11 +588,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
             monthsOfYear: const [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
             activeMonth: _month,
             allowAllYears: false,
-            todaySelected: isToday,
-            onToday: () => setState(() {
-              _year = today.year;
-              _month = today.month;
-            }),
             onSelectYear: (y) => setState(() {
               if (y == null) return;
               _year = y;
@@ -627,23 +670,24 @@ class _PlanningScreenState extends State<PlanningScreen> {
                         collapsed: _collapsed.contains(_kExpensesGroup),
                         onToggle: () => _toggleSection(_kExpensesGroup),
                         showProportion: true,
+                        only: _onlyPart(_kExpenses, _kSubscriptions),
+                        onShow: (id) =>
+                            _showOnly(_kExpenses, _kSubscriptions, id),
                         parts: [
                           if (expenses.isNotEmpty)
                             PlanGroupPart(
+                              id: _kExpenses,
                               label: 'Pozycje',
                               amount: -_sum(expenses, amount),
                               color: c.negative,
-                              open: !_collapsed.contains(_kExpenses),
-                              onToggle: () => _toggleSection(_kExpenses),
                               children: _rows(expenses, period, amount, true),
                             ),
                           if (subs.isNotEmpty)
                             PlanGroupPart(
+                              id: _kSubscriptions,
                               label: 'Subskrypcje',
                               amount: -subsTotal,
                               color: c.trial,
-                              open: !_collapsed.contains(_kSubscriptions),
-                              onToggle: () => _toggleSection(_kSubscriptions),
                               children: _grouped(
                                 subs,
                                 (s) => s.categoryId,
@@ -670,17 +714,19 @@ class _PlanningScreenState extends State<PlanningScreen> {
                         total: loanRows.fold(0.0, (s, r) => s + r.net),
                         collapsed: _collapsed.contains(_kLoans),
                         onToggle: () => _toggleSection(_kLoans),
+                        only: _onlyPart(_kCardLoans, _kInstallmentLoans),
+                        onShow: (id) =>
+                            _showOnly(_kCardLoans, _kInstallmentLoans, id),
                         parts: [
                           if (cardLoanRows.isNotEmpty)
                             PlanGroupPart(
+                              id: _kCardLoans,
                               label: 'Karta kredytowa',
                               amount: cardLoanRows.fold(
                                 0.0,
                                 (s, r) => s + r.net,
                               ),
                               color: c.warning,
-                              open: !_collapsed.contains(_kCardLoans),
-                              onToggle: () => _toggleSection(_kCardLoans),
                               children: [
                                 BudgetEntryList(
                                   rows: [
@@ -701,15 +747,13 @@ class _PlanningScreenState extends State<PlanningScreen> {
                             ),
                           if (installmentRows.isNotEmpty)
                             PlanGroupPart(
+                              id: _kInstallmentLoans,
                               label: 'Kredyty ratalne',
                               amount: installmentRows.fold(
                                 0.0,
                                 (s, r) => s + r.net,
                               ),
                               color: c.trial,
-                              open: !_collapsed.contains(_kInstallmentLoans),
-                              onToggle: () =>
-                                  _toggleSection(_kInstallmentLoans),
                               children: [
                                 BudgetEntryList(
                                   rows: [

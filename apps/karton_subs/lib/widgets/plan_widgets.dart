@@ -9,6 +9,7 @@ import '../services/plan_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/money_format.dart';
+import 'aurora_chip.dart';
 import 'budget_widgets.dart' show budgetNf;
 import 'category_icons.dart';
 import 'filter_bars.dart' show kMonthsShort;
@@ -106,24 +107,22 @@ class PlanSection extends StatelessWidget {
   }
 }
 
-/// Część grupy planu: przełącznik z nazwą i sumą, a pod nim — gdy otwarta —
-/// jej lista.
+/// Część grupy planu: pigułka z nazwą i sumą oraz lista pod nią.
 class PlanGroupPart {
+  /// Klucz części — zapamiętany wybór „tylko ta część".
+  final String id;
   final String label;
 
   /// Suma części ze znakiem kierunku (wydatek ujemny, wpływ dodatni).
   final double amount;
   final Color color;
-  final bool open;
-  final VoidCallback onToggle;
   final List<Widget> children;
 
   const PlanGroupPart({
+    required this.id,
     required this.label,
     required this.amount,
     required this.color,
-    required this.open,
-    required this.onToggle,
     required this.children,
   });
 }
@@ -131,11 +130,13 @@ class PlanGroupPart {
 /// Grupa planu z częściami (ADR-035–037): „Wydatki" (pozycje i subskrypcje)
 /// i „Pożyczki" (karta kredytowa i kredyty ratalne).
 ///
-/// Chevron w nagłówku zwija CAŁĄ grupę; przełącznik każdej części — tylko
-/// jej listę. Przełącznik stoi tam, gdzie zaczyna się lista części, przy
-/// prawej krawędzi, i jest zarazem jej nagłówkiem (nazwa nie powtarza się
-/// w osobnym podtytule). Pasek proporcji — dla części o tym samym kierunku
-/// pieniędzy (wydatki); przy pożyczkach netto bywa plus i minus naraz.
+/// Chevron w nagłówku zwija CAŁĄ grupę. Pod nagłówkiem rząd pigułek jak filtr
+/// kategorii: „Razem" i części z sumami. „Razem" pokazuje listy części jedna
+/// pod drugą (bez mieszania), pigułka części — tylko jej listę. Zapalone
+/// pigułki = widoczne listy, więc przy „Razem" świecą wszystkie. Rząd stoi
+/// przy prawej krawędzi, a gdy się nie mieści — przewija się w bok. Pasek
+/// proporcji — dla części o tym samym kierunku pieniędzy (wydatki); przy
+/// pożyczkach netto bywa plus i minus naraz.
 class PlanGroup extends StatelessWidget {
   final String title;
 
@@ -146,6 +147,11 @@ class PlanGroup extends StatelessWidget {
 
   /// Części z czymkolwiek do pokazania (puste pomija wywołujący).
   final List<PlanGroupPart> parts;
+
+  /// Część pokazana sama ([PlanGroupPart.id]); `null` = „Razem". Część,
+  /// której w okresie nie ma, liczy się jak „Razem".
+  final String? only;
+  final ValueChanged<String?> onShow;
   final bool showProportion;
 
   const PlanGroup({
@@ -155,6 +161,8 @@ class PlanGroup extends StatelessWidget {
     required this.collapsed,
     required this.onToggle,
     required this.parts,
+    required this.only,
+    required this.onShow,
     this.showProportion = false,
   });
 
@@ -166,46 +174,13 @@ class PlanGroup extends StatelessWidget {
     final c = context.semanticColors;
     final weights = [for (final p in parts) p.amount.abs()];
     final weightSum = weights.fold(0.0, (a, b) => a + b);
-
-    Widget chip(PlanGroupPart p) => Material(
-      color: p.color.withValues(alpha: p.open ? 0.22 : 0.10),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadii.control),
-        side: BorderSide(
-          color: p.open ? p.color : Colors.transparent,
-          width: 1,
-        ),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadii.control),
-        onTap: p.onToggle,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: Text(
-                  '${p.label} ${_signed(p.amount)}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: c.textPrimary,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 4),
-              Icon(
-                p.open ? LucideIcons.chevronUp : LucideIcons.chevronDown,
-                size: 14,
-                color: c.textMuted,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    // Jedna część — bez pigułek, sama lista.
+    final pills = parts.length > 1;
+    final shownId = pills && parts.any((p) => p.id == only) ? only : null;
+    final shown = [
+      for (final p in parts)
+        if (shownId == null || p.id == shownId) p,
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -237,7 +212,7 @@ class PlanGroup extends StatelessWidget {
           ),
         ),
         if (!collapsed) ...[
-          if (showProportion && parts.length > 1 && weightSum > 0)
+          if (showProportion && pills && weightSum > 0)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: ClipRRect(
@@ -260,12 +235,44 @@ class PlanGroup extends StatelessWidget {
                 ),
               ),
             ),
-          for (final p in parts) ...[
+          if (pills)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Align(alignment: Alignment.centerRight, child: chip(p)),
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AuroraChip(
+                        label: 'Razem',
+                        selected: shownId == null,
+                        onTap: () => onShow(null),
+                      ),
+                      for (final p in parts) ...[
+                        const SizedBox(width: 8),
+                        AuroraChip(
+                          label: '${p.label} ${_signed(p.amount)}',
+                          selected: shownId == null || shownId == p.id,
+                          accent: p.color,
+                          onTap: () => onShow(p.id),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
             ),
-            if (p.open) ...p.children,
+          for (final (i, p) in shown.indexed) ...[
+            // Granica list części przy „Razem" — zamiast podtytułów, które
+            // powtarzałyby nazwy z pigułek.
+            if (i > 0)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Divider(height: 2, thickness: 2, color: c.border),
+              ),
+            ...p.children,
           ],
         ],
         const SizedBox(height: 16),

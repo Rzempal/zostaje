@@ -1,40 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<session xmlns="http://winscp.net/schema/session/1.0" name="host361978@host361978.hostido.net.pl" start="2026-10-09T19:15:37.130Z">
+<session xmlns="http://winscp.net/schema/session/1.0" name="host361978@host361978.hostido.net.pl" start="2026-10-10T07:00:50.873Z">
   <rm>
-    <filename value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/zostaje_latest.apk" />
+    <filename value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/internal/zostaje-dev_latest.apk" />
     <result success="true" />
   </rm>
   <upload>
-    <filename value="C:\Users\rzemp\GitHub\karton-subs\releases\zostaje_latest.apk" />
-    <destination value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/zostaje_latest.apk" />
-    <size value="26946776" />
+    <filename value="C:\Users\rzemp\GitHub\karton-subs\releases\zostaje-dev_latest.apk" />
+    <destination value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/internal/zostaje-dev_latest.apk" />
+    <size value="27016428" />
     <result success="true" />
   </upload>
   <touch>
-    <filename value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/zostaje_latest.apk" />
-    <modification value="2026-10-09T19:15:35.000Z" />
+    <filename value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/internal/zostaje-dev_latest.apk" />
+    <modification value="2026-10-10T07:00:48.000Z" />
     <result success="true" />
   </touch>
   <upload>
-    <filename value="C:\Users\rzemp\GitHub\karton-subs\releases\version.json" />
-    <destination value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/version.json" />
-    <size value="4396" />
+    <filename value="C:\Users\rzemp\GitHub\karton-subs\releases\version-internal.json" />
+    <destination value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/internal/version-internal.json" />
+    <size value="3453" />
     <result success="true" />
   </upload>
   <touch>
-    <filename value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/version.json" />
-    <modification value="2026-10-09T19:15:36.000Z" />
-    <result success="true" />
-  </touch>
-  <upload>
-    <filename value="C:\Users\rzemp\GitHub\karton-subs\releases\changelog.md" />
-    <destination value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/changelog.md" />
-    <size value="16583" />
-    <result success="true" />
-  </upload>
-  <touch>
-    <filename value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/changelog.md" />
-    <modification value="2026-10-09T19:15:36.000Z" />
+    <filename value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/internal/version-internal.json" />
+    <modification value="2026-10-10T07:00:49.000Z" />
     <result success="true" />
   </touch>
 </session>
