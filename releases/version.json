@@ -1,7 +1,14 @@
 {
-  "version": "0.27.26101000",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026101000",
+  "version": "0.27.26101001",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026101001",
+  "releaseDate": "2026-10-10T12:23:27Z",
+  "releaseNotes": "- Ekran pozycji: kwota edytuje miesiac, kolko po prawej zaznacza (bez przytrzymania)\n- Kafel miesiaca: dzien w linii miesiaca, brak kwoty zamiast kreski\n- Duplikuj: pozycja, pozyczka, subskrypcja i zaznaczone pozycje (w tym samym budzecie, z dopiskiem kopia)",
+  "versionCode": 2026101001,
   "changelog": [
+    {
+      "version": "0.27.26101001",
+      "notes": "- Ekran pozycji: kwota edytuje miesiac, kolko po prawej zaznacza (bez przytrzymania)\n- Kafel miesiaca: dzien w linii miesiaca, brak kwoty zamiast kreski\n- Duplikuj: pozycja, pozyczka, subskrypcja i zaznaczone pozycje (w tym samym budzecie, z dopiskiem kopia)"
+    },
     {
       "version": "0.27.26101000",
       "notes": "- Planowanie: start na biezacym miesiacu, Dzisiaj w lewym gornym rogu\n- Pasek miesiecy sam przewija sie do wybranego miesiaca\n- Wydatki i Pozyczki: pigulki Razem i czesci (Razem pokazuje obie listy, czesc tylko swoja)\n- Zaznacz wszystkie: tylko pozycje na widoku"
@@ -37,13 +44,6 @@
     {
       "version": "0.26.26081800",
       "notes": "- Scalanie zaznaczonych wydatkow w jeden wpis: suma kwot, data najstarszej pozycji, wzorzec wybierany z listy\n- Pozycje karty kredytowej sa chronione przed scaleniem, bo ich usuniecie kasuje kaskada zakup\n- Splaty karty na Biezacych oraz wplywy z karty na Wplywach zwijaja sie w jeden wiersz z suma\n- Rozwinieta grupa ma wciecie, wiec widac przynaleznosc pozycji"
-    },
-    {
-      "version": "0.26.26081400",
-      "notes": "- Zapis w stalym miejscu na dole ekranu zamiast przycisku na koncu przewijanej listy\n- Pigulka Anuluj / Zapisz jedzie nad klawiatura, wiec jest widoczna caly czas\n- Dotyczy dodawania i edycji wydatku biezacego, pozycji budzetu i subskrypcji oraz arkuszy metody platnosci i kategorii\n- Pigulka ma to samo rozmyte szklo co pasek nawigacji i nie zaslania siatki ikon przy edycji kategorii\n- Zapis znika z paska tytulu, gdzie przy edycji dublowal przycisk z dolu"
     }
-  ],
-  "versionCode": 2026101000,
-  "releaseNotes": "- Planowanie: start na biezacym miesiacu, Dzisiaj w lewym gornym rogu\n- Pasek miesiecy sam przewija sie do wybranego miesiaca\n- Wydatki i Pozyczki: pigulki Razem i czesci (Razem pokazuje obie listy, czesc tylko swoja)\n- Zaznacz wszystkie: tylko pozycje na widoku",
-  "releaseDate": "2026-10-10T09:52:28Z"
+  ]
 }
