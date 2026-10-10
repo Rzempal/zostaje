@@ -1,6 +1,11 @@
 {
-  "releaseNotes": "- Ekran pozycji: kwota edytuje miesiac, kolko po prawej zaznacza (bez przytrzymania)\n- Kafel miesiaca: dzien w linii miesiaca, brak kwoty zamiast kreski\n- Duplikuj: pozycja, pozyczka, subskrypcja i zaznaczone pozycje (w tym samym budzecie, z dopiskiem kopia)",
+  "version": "0.27.26101002",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101002",
   "changelog": [
+    {
+      "version": "0.27.26101002",
+      "notes": "- Kategorie i metody platnosci osobne dla kazdego budzetu\n- Istniejace dane podzielone: uzywane w kilku budzetach - kopia w kazdym, nieuzywane - do Osobistego\n- Ekrany Kategorie i Metody platnosci: lista wybranego budzetu, Kopiuj i Przenies do budzetu, Kopiuj wszystkie\n- Nowy budzet z pustymi listami (podpowiedz: skopiuj z innego budzetu)\n- Przenoszenie i kopiowanie do budzetu: pytanie o brakujace kategorie i metody (Dodaj je / Bez nich)\n- Kopia zapasowa w wersji 9 (wszystkie kategorie i metody z budzetami)"
+    },
     {
       "version": "0.27.26101001",
       "notes": "- Ekran pozycji: kwota edytuje miesiac, kolko po prawej zaznacza (bez przytrzymania)\n- Kafel miesiaca: dzien w linii miesiaca, brak kwoty zamiast kreski\n- Duplikuj: pozycja, pozyczka, subskrypcja i zaznaczone pozycje (w tym samym budzecie, z dopiskiem kopia)"
@@ -36,14 +41,9 @@
     {
       "version": "0.26.26100800",
       "notes": "- Planowanie: grupa Wydatki = pozycje + subskrypcje, pasek proporcji i przelaczniki list\n- Karta kredytowa poza wydatkami"
-    },
-    {
-      "version": "0.26.26100702",
-      "notes": "- Planowanie: Subskrypcje i Karta kredytowa wciete pod Wydatkami\n- Minus przy wydatkach w karcie Zostaje\n- Excel: wydatki jako liczby ujemne\n- Usuniety nieuzywany kod starego budzetu"
     }
   ],
-  "versionCode": 2026101001,
-  "releaseDate": "2026-10-10T11:53:15Z",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101001",
-  "version": "0.27.26101001"
+  "versionCode": 2026101002,
+  "releaseDate": "2026-10-10T12:44:54Z",
+  "releaseNotes": "- Kategorie i metody platnosci osobne dla kazdego budzetu\n- Istniejace dane podzielone: uzywane w kilku budzetach - kopia w kazdym, nieuzywane - do Osobistego\n- Ekrany Kategorie i Metody platnosci: lista wybranego budzetu, Kopiuj i Przenies do budzetu, Kopiuj wszystkie\n- Nowy budzet z pustymi listami (podpowiedz: skopiuj z innego budzetu)\n- Przenoszenie i kopiowanie do budzetu: pytanie o brakujace kategorie i metody (Dodaj je / Bez nich)\n- Kopia zapasowa w wersji 9 (wszystkie kategorie i metody z budzetami)"
 }

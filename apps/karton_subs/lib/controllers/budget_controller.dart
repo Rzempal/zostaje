@@ -1,7 +1,10 @@
-import 'package:flutter/foundation.dart';
+import 'dart:math' show max;
+
+import 'package:flutter/foundation.dart' hide Category;
 import 'package:uuid/uuid.dart';
 
 import '../models/budget.dart';
+import '../models/category.dart';
 import '../models/plan_position.dart';
 import '../models/subscription.dart';
 import '../services/app_logger.dart';
@@ -155,6 +158,7 @@ class BudgetController extends ChangeNotifier {
       await _subscriptions.delete(sub.id);
     }
     await _storage.deletePaymentDoneOf(id);
+    await _storage.deleteDictionariesOf(id);
     _budgets = [
       for (final b in _budgets)
         if (b.id != id) b,
@@ -176,6 +180,9 @@ class BudgetController extends ChangeNotifier {
 
   int positionCountOf(String id) => _storage.getPlanPositions(id).length;
 
+  /// Pozycje planu budżetu [id] (z ukrytymi).
+  List<PlanPosition> positionsOf(String id) => _storage.getPlanPositions(id);
+
   List<Subscription> subscriptionsOf(String id) => [
     for (final s in _storage.getSubscriptions())
       if (s.budgetId == id) s,
@@ -194,15 +201,35 @@ class BudgetController extends ChangeNotifier {
   }
 
   /// Przenosi pozycje (z grupami pożyczek) do budżetu [to] — razem
-  /// z odhaczonymi płatnościami. Zwraca liczbę przeniesionych pozycji.
-  Future<int> movePositions(Iterable<String> ids, String to) async {
+  /// z odhaczonymi płatnościami. Kategoria i metoda płatności idą po nazwie
+  /// (ADR-038): brakujące w [to] dochodzą tam przy [addMissing], inaczej
+  /// pozycja przychodzi bez nich. Zwraca liczbę przeniesionych pozycji.
+  Future<int> movePositions(
+    Iterable<String> ids,
+    String to, {
+    bool addMissing = true,
+  }) async {
     final bySource = <String, Set<String>>{};
     for (final id in _withGroups(ids)) {
       final p = _storage.getPlanPosition(id);
       if (p == null || p.budgetId == to) continue;
       bySource.putIfAbsent(p.budgetId, () => {}).add(id);
+      final labels = await _labelsIn(
+        to,
+        p.budgetId,
+        p.categoryId,
+        p.paymentMethod,
+        addMissing: addMissing,
+      );
       await _storage.savePlanPosition(
-        p.copyWith(budgetId: to, updatedAt: DateTime.now()),
+        p.copyWith(
+          budgetId: to,
+          categoryId: labels.categoryId,
+          clearCategoryId: labels.categoryId == null,
+          paymentMethod: labels.method,
+          clearPaymentMethod: labels.method == null,
+          updatedAt: DateTime.now(),
+        ),
       );
     }
     for (final MapEntry(key: from, value: moved) in bySource.entries) {
@@ -216,9 +243,14 @@ class BudgetController extends ChangeNotifier {
 
   /// Kopiuje pozycje (z grupami pożyczek) do budżetu [to]. Kopie dostają
   /// nowe identyfikatory — pożyczka nowe wspólne powiązanie — a odhaczenia
-  /// płatności się nie kopiują. Zwraca liczbę skopiowanych pozycji.
-  Future<int> copyPositions(Iterable<String> ids, String to) async {
-    final copies = await _copyPositions(ids, to: to);
+  /// płatności się nie kopiują; etykiety jak w [movePositions]. Zwraca liczbę
+  /// skopiowanych pozycji.
+  Future<int> copyPositions(
+    Iterable<String> ids,
+    String to, {
+    bool addMissing = true,
+  }) async {
+    final copies = await _copyPositions(ids, to: to, addMissing: addMissing);
     _log.info('Copied ${copies.length} plan positions to $to');
     return copies.length;
   }
@@ -247,6 +279,7 @@ class BudgetController extends ChangeNotifier {
     Iterable<String> ids, {
     String? to,
     String nameSuffix = '',
+    bool addMissing = true,
   }) async {
     final now = DateTime.now();
     final newLinks = <String, String>{};
@@ -258,10 +291,19 @@ class BudgetController extends ChangeNotifier {
           ? null
           : newLinks.putIfAbsent(p.linkId!, () => _uuid.v4());
       final copyId = _uuid.v4();
+      final labels = await _labelsIn(
+        to ?? p.budgetId,
+        p.budgetId,
+        p.categoryId,
+        p.paymentMethod,
+        addMissing: addMissing,
+      );
       final json = p.toJson()
         ..['id'] = copyId
         ..['budgetId'] = to ?? p.budgetId
         ..['name'] = '${p.name}$nameSuffix'
+        ..['categoryId'] = labels.categoryId
+        ..['paymentMethod'] = labels.method
         ..['linkId'] = link
         ..['createdAt'] = now.toIso8601String()
         ..['updatedAt'] = now.toIso8601String();
@@ -272,20 +314,53 @@ class BudgetController extends ChangeNotifier {
     return copies;
   }
 
-  Future<void> moveSubscriptions(Iterable<Subscription> subs, String to) async {
+  /// Subskrypcje do budżetu [to]; etykiety jak w [movePositions].
+  Future<void> moveSubscriptions(
+    Iterable<Subscription> subs,
+    String to, {
+    bool addMissing = true,
+  }) async {
     for (final s in subs) {
-      if (s.budgetId != to) {
-        await _subscriptions.update(s.copyWith(budgetId: to));
-      }
+      if (s.budgetId == to) continue;
+      await _subscriptions.update(
+        await _relabel(s, to, addMissing: addMissing),
+      );
     }
   }
 
   /// Kopie subskrypcji w budżecie [to] — nowe identyfikatory i własne
-  /// przypomnienia (kontroler subskrypcji je planuje).
-  Future<void> copySubscriptions(Iterable<Subscription> subs, String to) async {
+  /// przypomnienia (kontroler subskrypcji je planuje); etykiety jak
+  /// w [movePositions].
+  Future<void> copySubscriptions(
+    Iterable<Subscription> subs,
+    String to, {
+    bool addMissing = true,
+  }) async {
     for (final s in subs) {
-      await _subscriptions.add(s.copyWith(id: _uuid.v4(), budgetId: to));
+      final copy = await _relabel(s, to, addMissing: addMissing);
+      await _subscriptions.add(copy.copyWith(id: _uuid.v4()));
     }
+  }
+
+  Future<Subscription> _relabel(
+    Subscription s,
+    String to, {
+    required bool addMissing,
+  }) async {
+    final labels = await _labelsIn(
+      to,
+      s.budgetId,
+      s.categoryId,
+      s.paymentMethod,
+      addMissing: addMissing,
+    );
+    return s.copyWith(
+      budgetId: to,
+      categoryId: labels.categoryId,
+      clearCategoryId: labels.categoryId == null,
+      paymentMethod: labels.method,
+      clearPaymentMethod: labels.method == null,
+    );
   }
 
   /// Duplikat subskrypcji w jej budżecie, z dopiskiem [kCopySuffix] — własne
@@ -301,11 +376,13 @@ class BudgetController extends ChangeNotifier {
   }
 
   /// Cała zawartość budżetu [from] — pozycje planu i subskrypcje — do [to].
-  Future<void> moveAll(String from, String to) async {
-    await movePositions([
-      for (final p in _storage.getPlanPositions(from)) p.id,
-    ], to);
-    await moveSubscriptions(subscriptionsOf(from), to);
+  Future<void> moveAll(String from, String to, {bool addMissing = true}) async {
+    await movePositions(
+      [for (final p in _storage.getPlanPositions(from)) p.id],
+      to,
+      addMissing: addMissing,
+    );
+    await moveSubscriptions(subscriptionsOf(from), to, addMissing: addMissing);
   }
 
   /// Kopia całej zawartości budżetu [from] w [to]; subskrypcje — gdy
@@ -314,71 +391,279 @@ class BudgetController extends ChangeNotifier {
     String from,
     String to, {
     bool withSubscriptions = true,
+    bool addMissing = true,
   }) async {
-    await copyPositions([
-      for (final p in _storage.getPlanPositions(from)) p.id,
-    ], to);
+    await copyPositions(
+      [for (final p in _storage.getPlanPositions(from)) p.id],
+      to,
+      addMissing: addMissing,
+    );
     if (withSubscriptions) {
-      await copySubscriptions(subscriptionsOf(from), to);
+      await copySubscriptions(
+        subscriptionsOf(from),
+        to,
+        addMissing: addMissing,
+      );
     }
   }
 
   /// Subskrypcje aktywnego budżetu — sekcja planu.
   List<Subscription> get subscriptions => subscriptionsOf(_budgetId);
 
-  // ── Słowniki: użycie i kaskady (Kategorie / Metody płatności) ───────────────
-  // Słowniki są wspólne dla wszystkich budżetów, więc operacje działają na
-  // pozycjach planu WSZYSTKICH budżetów, niezależnie od aktywnego. Subskrypcje
-  // obsługują ekrany słowników osobno (SubscriptionController).
+  // ── Słowniki: osobne dla budżetów (ADR-038) ────────────────────────────────
+  // Każdy budżet ma własne kategorie i metody płatności. Pozycje i subskrypcje
+  // wskazują kategorię identyfikatorem (należy do jednego budżetu), a metodę
+  // nazwą — więc zmiany metody dotyczą tylko pozycji i subskrypcji jej budżetu.
 
-  /// Liczba pozycji planu (wszystkie budżety) w danej kategorii.
+  static String _key(String name) => name.toLowerCase().trim();
+
+  Category? _categoryNamed(String budgetId, String name) => _storage
+      .getCategories(budgetId)
+      .where((c) => _key(c.name) == _key(name))
+      .firstOrNull;
+
+  PaymentMethod? _methodNamed(String budgetId, String name) => _storage
+      .getPaymentMethods(budgetId)
+      .where((m) => _key(m.name) == _key(name))
+      .firstOrNull;
+
+  /// Liczba pozycji planu w kategorii.
   int countCategoryUsage(String categoryId) => _storage
       .getPlanPositions()
       .where((p) => p.categoryId == categoryId)
       .length;
 
-  /// Liczba pozycji planu (wszystkie budżety) z daną metodą płatności.
-  int countPaymentMethodUsage(String name) =>
-      _storage.getPlanPositions().where((p) => p.paymentMethod == name).length;
+  /// Liczba subskrypcji w kategorii.
+  int countCategorySubscriptions(String categoryId) => _storage
+      .getSubscriptions()
+      .where((s) => s.categoryId == categoryId)
+      .length;
 
-  /// Przenosi pozycje planu z kategorii [fromId] do [toId] (usunięcie
-  /// kategorii). Zwraca liczbę zmienionych pozycji.
-  Future<int> reassignCategoryEverywhere(String fromId, String toId) =>
-      _updatePlanPositions(
-        (p) => p.categoryId == fromId,
-        (p) => p.copyWith(categoryId: toId),
-      );
+  /// Liczba pozycji planu budżetu [budgetId] z metodą płatności [name].
+  int countPaymentMethodUsage(String budgetId, String name) => _storage
+      .getPlanPositions(budgetId)
+      .where((p) => p.paymentMethod == name)
+      .length;
 
-  /// Zmienia nazwę metody płatności w pozycjach planu.
-  Future<int> renamePaymentMethodEverywhere(String oldName, String newName) {
-    if (oldName == newName) return Future.value(0);
-    return _updatePlanPositions(
-      (p) => p.paymentMethod == oldName,
-      (p) => p.copyWith(paymentMethod: newName),
-    );
+  /// Liczba subskrypcji budżetu [budgetId] z metodą płatności [name].
+  int countPaymentMethodSubscriptions(String budgetId, String name) =>
+      subscriptionsOf(budgetId).where((s) => s.paymentMethod == name).length;
+
+  /// „Inne" z budżetu kategorii [c] (po nazwie) — tam trafiają pozycje
+  /// usuwanej kategorii; `null` = budżet jej nie ma (zostaną bez kategorii).
+  Category? otherCategoryFor(Category c) => _storage
+      .getCategories(c.budgetId ?? _budgetId)
+      .where((x) => x.id != c.id && _key(x.name) == 'inne')
+      .firstOrNull;
+
+  /// Usuwa kategorię: jej pozycje i subskrypcje przechodzą do „Inne" tego
+  /// samego budżetu, a gdy jej nie ma — zostają bez kategorii.
+  Future<void> deleteCategory(Category c) async {
+    await _recategorize(c.id, otherCategoryFor(c)?.id);
+    await _storage.deleteCategory(c.id);
+    _log.info('Deleted category ${c.name}');
+    _subscriptions.refresh();
+    notifyListeners();
   }
 
-  /// Czyści metodę płatności (po nazwie) w pozycjach planu.
-  Future<int> clearPaymentMethodEverywhere(String name) => _updatePlanPositions(
-    (p) => p.paymentMethod == name,
-    (p) => p.copyWith(clearPaymentMethod: true),
-  );
-
-  Future<int> _updatePlanPositions(
-    bool Function(PlanPosition) where,
-    PlanPosition Function(PlanPosition) change,
-  ) async {
-    final hits = _storage.getPlanPositions().where(where).toList();
-    for (final p in hits) {
+  Future<void> _recategorize(String fromId, String? toId) async {
+    final now = DateTime.now();
+    for (final p in _storage.getPlanPositions()) {
+      if (p.categoryId != fromId) continue;
       await _storage.savePlanPosition(
-        change(p).copyWith(updatedAt: DateTime.now()),
+        p.copyWith(
+          categoryId: toId,
+          clearCategoryId: toId == null,
+          updatedAt: now,
+        ),
       );
     }
-    if (hits.isNotEmpty) {
-      _log.info('Dictionary cascade: ${hits.length} plan positions');
+    for (final s in _storage.getSubscriptions()) {
+      if (s.categoryId != fromId) continue;
+      await _storage.saveSubscription(
+        s.copyWith(categoryId: toId, clearCategoryId: toId == null),
+      );
+    }
+  }
+
+  /// Zmiana nazwy metody płatności w pozycjach i subskrypcjach jej budżetu.
+  Future<int> renamePaymentMethod(
+    String budgetId,
+    String oldName,
+    String newName,
+  ) => _setPaymentMethod(budgetId, oldName, newName);
+
+  /// Usuwa metodę płatności — pozycje i subskrypcje jej budżetu tracą
+  /// oznaczenie metody.
+  Future<void> deletePaymentMethod(PaymentMethod m) async {
+    await _setPaymentMethod(m.budgetId ?? _budgetId, m.name, null);
+    await _storage.deletePaymentMethod(m.id);
+    _log.info('Deleted payment method ${m.name}');
+    _subscriptions.refresh();
+    notifyListeners();
+  }
+
+  Future<int> _setPaymentMethod(
+    String budgetId,
+    String from,
+    String? to,
+  ) async {
+    if (from == to) return 0;
+    final now = DateTime.now();
+    var n = 0;
+    for (final p in _storage.getPlanPositions(budgetId)) {
+      if (p.paymentMethod != from) continue;
+      await _storage.savePlanPosition(
+        p.copyWith(
+          paymentMethod: to,
+          clearPaymentMethod: to == null,
+          updatedAt: now,
+        ),
+      );
+      n++;
+    }
+    for (final s in subscriptionsOf(budgetId)) {
+      if (s.paymentMethod != from) continue;
+      await _storage.saveSubscription(
+        s.copyWith(paymentMethod: to, clearPaymentMethod: to == null),
+      );
+      n++;
+    }
+    if (n > 0) {
+      _log.info('Payment method "$from" → "$to": $n items in $budgetId');
+      _subscriptions.refresh();
       notifyListeners();
     }
-    return hits.length;
+    return n;
+  }
+
+  /// Niezależna kopia kategorii w budżecie [to], na końcu jego listy. Gdy
+  /// [to] ma już kategorię o tej nazwie, nic nie dubluje — zwraca `false`.
+  Future<bool> copyCategoryTo(Category c, String to) async {
+    if (_categoryNamed(to, c.name) != null) return false;
+    final order = _storage
+        .getCategories(to)
+        .fold(-1, (m, x) => max(m, x.order));
+    await _storage.saveCategory(
+      c.copyWith(id: _uuid.v4(), budgetId: to, order: order + 1),
+    );
+    notifyListeners();
+    return true;
+  }
+
+  /// Przenosi kategorię do budżetu [to]: tam kopia (o ile nie ma tej nazwy),
+  /// tu usunięcie — pozycje i subskrypcje tego budżetu zostają bez niej.
+  Future<void> moveCategoryTo(Category c, String to) async {
+    await copyCategoryTo(c, to);
+    await _recategorize(c.id, null);
+    await _storage.deleteCategory(c.id);
+    _subscriptions.refresh();
+    notifyListeners();
+  }
+
+  /// Wszystkie kategorie budżetu [from] do [to] (bez nazw, które [to] już
+  /// ma). Zwraca liczbę skopiowanych.
+  Future<int> copyCategoriesTo(String from, String to) async {
+    var n = 0;
+    for (final c in _storage.getCategories(from)) {
+      if (await copyCategoryTo(c, to)) n++;
+    }
+    return n;
+  }
+
+  /// Niezależna kopia metody płatności w budżecie [to] — jak [copyCategoryTo].
+  Future<bool> copyPaymentMethodTo(PaymentMethod m, String to) async {
+    if (_methodNamed(to, m.name) != null) return false;
+    final order = _storage
+        .getPaymentMethods(to)
+        .fold(-1, (o, x) => max(o, x.order));
+    await _storage.savePaymentMethod(
+      m.copyWith(id: _uuid.v4(), budgetId: to, order: order + 1),
+    );
+    notifyListeners();
+    return true;
+  }
+
+  /// Przenosi metodę płatności do budżetu [to] — jak [moveCategoryTo].
+  Future<void> movePaymentMethodTo(PaymentMethod m, String to) async {
+    await copyPaymentMethodTo(m, to);
+    await deletePaymentMethod(m);
+  }
+
+  /// Wszystkie metody płatności budżetu [from] do [to] — jak
+  /// [copyCategoriesTo].
+  Future<int> copyPaymentMethodsTo(String from, String to) async {
+    var n = 0;
+    for (final m in _storage.getPaymentMethods(from)) {
+      if (await copyPaymentMethodTo(m, to)) n++;
+    }
+    return n;
+  }
+
+  /// Kategorie i metody płatności pozycji [positionIds] (z grupami pożyczek)
+  /// i subskrypcji [subs], których budżet [to] nie ma (po nazwie) — o to
+  /// pyta okno przed przeniesieniem albo kopią. Pusto = nic nie zginie.
+  ({List<String> categories, List<String> methods}) missingIn(
+    String to, {
+    Iterable<String> positionIds = const [],
+    Iterable<Subscription> subs = const [],
+  }) {
+    final categories = <String>{};
+    final methods = <String>{};
+    void check(String from, String? categoryId, String? method) {
+      if (from == to) return;
+      final c = categoryId == null ? null : _storage.getCategory(categoryId);
+      if (c != null && _categoryNamed(to, c.name) == null) {
+        categories.add(c.name);
+      }
+      if (method != null && _methodNamed(to, method) == null) {
+        methods.add(method);
+      }
+    }
+
+    for (final id in _withGroups(positionIds)) {
+      final p = _storage.getPlanPosition(id);
+      if (p != null) check(p.budgetId, p.categoryId, p.paymentMethod);
+    }
+    for (final s in subs) {
+      check(s.budgetId, s.categoryId, s.paymentMethod);
+    }
+    return (categories: categories.toList(), methods: methods.toList());
+  }
+
+  /// Etykiety pozycji lub subskrypcji z budżetu [from] w budżecie [to]:
+  /// kategoria i metoda o tej samej nazwie, a gdy ich tam brak — kopie
+  /// ([addMissing]) albo nic.
+  Future<({String? categoryId, String? method})> _labelsIn(
+    String to,
+    String from,
+    String? categoryId,
+    String? method, {
+    required bool addMissing,
+  }) async {
+    if (from == to) return (categoryId: categoryId, method: method);
+    String? category;
+    final c = categoryId == null ? null : _storage.getCategory(categoryId);
+    if (c != null) {
+      category = _categoryNamed(to, c.name)?.id;
+      if (category == null && addMissing) {
+        await copyCategoryTo(c, to);
+        category = _categoryNamed(to, c.name)?.id;
+      }
+    }
+    String? pm;
+    if (method != null) {
+      pm = _methodNamed(to, method)?.name;
+      if (pm == null && addMissing) {
+        await copyPaymentMethodTo(
+          _storage.paymentMethodNamed(from, method) ??
+              PaymentMethod(id: _uuid.v4(), name: method),
+          to,
+        );
+        pm = _methodNamed(to, method)?.name;
+      }
+    }
+    return (categoryId: category, method: pm);
   }
 
   // ── Płatności „wykonane" (lokalne, per zakres + źródło + data) ──────────────

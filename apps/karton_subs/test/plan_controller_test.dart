@@ -3,6 +3,7 @@ import 'package:karton_subs/controllers/budget_controller.dart';
 import 'package:karton_subs/controllers/plan_controller.dart';
 import 'package:karton_subs/controllers/subscription_controller.dart';
 import 'package:karton_subs/models/budget_entry.dart';
+import 'package:karton_subs/models/category.dart';
 import 'package:karton_subs/models/plan_position.dart';
 import 'package:karton_subs/models/subscription.dart';
 import 'package:karton_subs/services/notification_service.dart';
@@ -277,7 +278,17 @@ void main() {
     });
   });
 
-  test('kaskady słowników z Ustawień obejmują plan', () async {
+  test('kaskady słowników z Ustawień — tylko w budżecie słownika', () async {
+    await storage.saveCategory(
+      const Category(
+        id: 'cat_old',
+        name: 'Stara',
+        colorHex: '#64748B',
+        iconName: 'folder',
+        order: 50,
+        budgetId: kBudgetPersonal,
+      ),
+    );
     final p = await plan.create(
       name: 'Internet',
       kind: PlanKind.expense,
@@ -286,16 +297,39 @@ void main() {
       paymentMethod: 'ING',
       categoryId: 'cat_old',
     );
-    expect(budget.countPaymentMethodUsage('ING'), 1);
+    // Ta sama nazwa metody w innym budżecie to inna metoda (ADR-038).
+    await storage.savePlanPosition(
+      PlanPosition(
+        id: 'prad',
+        budgetId: kBudgetHousehold,
+        name: 'Prąd',
+        kind: PlanKind.expense,
+        currency: Currency.PLN,
+        months: const {'2026-10': PlanMonth(amount: 200)},
+        paymentMethod: 'ING',
+        createdAt: DateTime(2026, 1, 1),
+      ),
+    );
+    expect(budget.countPaymentMethodUsage(kBudgetPersonal, 'ING'), 1);
     expect(budget.countCategoryUsage('cat_old'), 1);
 
-    await budget.renamePaymentMethodEverywhere('ING', 'ING konto');
-    await budget.reassignCategoryEverywhere('cat_old', 'cat_new');
+    await budget.renamePaymentMethod(kBudgetPersonal, 'ING', 'ING konto');
     expect(plan.position(p.id)!.paymentMethod, 'ING konto');
-    expect(plan.position(p.id)!.categoryId, 'cat_new');
+    expect(storage.getPlanPosition('prad')!.paymentMethod, 'ING');
 
-    await budget.clearPaymentMethodEverywhere('ING konto');
+    // Usunięta kategoria oddaje pozycje do „Inne" swojego budżetu.
+    await budget.deleteCategory(storage.getCategory('cat_old')!);
+    expect(plan.position(p.id)!.categoryId, 'cat_other');
+
+    await budget.deletePaymentMethod(
+      const PaymentMethod(
+        id: 'pm_gone',
+        name: 'ING konto',
+        budgetId: kBudgetPersonal,
+      ),
+    );
     expect(plan.position(p.id)!.paymentMethod, isNull);
+    expect(storage.getPlanPosition('prad')!.paymentMethod, 'ING');
   });
 
   // Bieżące odpadły (ADR-035): ich stare wydatki zostają w zapisie jako

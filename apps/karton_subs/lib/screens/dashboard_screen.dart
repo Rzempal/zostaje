@@ -207,7 +207,9 @@ class _DashboardScreenState extends State<DashboardScreen>
           amount: pick(stats.months[m - 1]),
         ),
     ];
-    final categories = context.read<StorageService>().getCategories();
+    final categories = context.read<StorageService>().getCategories(
+      budget.budgetId,
+    );
 
     return [
       _YearNav(

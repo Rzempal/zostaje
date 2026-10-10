@@ -10,8 +10,10 @@ import 'package:karton_subs/models/subscription.dart';
 import 'package:karton_subs/screens/add_subscription_screen.dart';
 import 'package:karton_subs/screens/budgets_screen.dart';
 import 'package:karton_subs/screens/card_loan_form_screen.dart';
+import 'package:karton_subs/screens/category_management_screen.dart';
 import 'package:karton_subs/screens/dashboard_screen.dart';
 import 'package:karton_subs/screens/installment_loan_form_screen.dart';
+import 'package:karton_subs/screens/payment_method_management_screen.dart';
 import 'package:karton_subs/screens/plan_position_form_screen.dart';
 import 'package:karton_subs/screens/plan_position_screen.dart';
 import 'package:karton_subs/screens/planning_screen.dart';
@@ -433,6 +435,29 @@ void main() {
     expect(find.text('Przenieś i usuń…'), findsOneWidget);
     await tester.tap(find.text('Anuluj'));
     await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Kategorie i metody płatności: lista budżetu, pusta dla nowego', (
+    tester,
+  ) async {
+    // Szerzej niż telefon: czcionka testowa (litery jak kwadraty).
+    await pump(tester, const CategoryManagementScreen(), width: 480);
+    expect(find.text('Lista budżetu'), findsOneWidget);
+    expect(find.text('Inne'), findsOneWidget);
+    await pump(tester, const PaymentMethodManagementScreen(), width: 480);
+    expect(find.text('Gotówka'), findsOneWidget);
+
+    // Nowy budżet startuje z pustymi listami (ADR-038).
+    await tester.runAsync(() async {
+      final firma = await BudgetController(
+        storage,
+        SubscriptionController(storage, NotificationService()),
+      ).addBudget('Firma', 'briefcase');
+      await storage.setActiveBudgetId(firma.id);
+    });
+    await pump(tester, const CategoryManagementScreen(), width: 480);
+    expect(find.text('Skopiuj z innego budżetu…'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:uuid/uuid.dart';
 import '../models/subscription.dart';
 import '../models/budget.dart';
 import '../models/category.dart';
@@ -72,8 +73,7 @@ class StorageService {
     _loadPaymentMethodsCache();
     _loadBudgetEntriesCache();
     _loadPlanPositionsCache();
-    _seedDefaultCategories();
-    _seedDefaultPaymentMethods();
+    await ensureDictionaries();
     _initialized = true;
     _log.info(
       'StorageService initialized (${_subscriptionsCache.length} subs, ${_categoriesCache.length} cats, ${_paymentMethodsCache.length} payment methods, ${_budgetEntriesCache.length}+${_householdBudgetEntriesCache.length} budget entries)',
@@ -130,20 +130,19 @@ class StorageService {
     }
   }
 
-  void _seedDefaultCategories() {
-    if (_categoriesCache.isNotEmpty) return;
-    for (final cat in defaultCategories) {
-      _categoriesBox.put(cat.id, jsonEncode(cat.toJson()));
-      _categoriesCache[cat.id] = cat;
-    }
-    _log.info('Seeded ${defaultCategories.length} default categories');
-  }
-
-  List<Category> getCategories() {
+  /// Wszystkie kategorie, każdego budżetu — do kopii zapasowej, eksportu
+  /// i podziału. Ekrany biorą listę swojego budżetu z [getCategories].
+  List<Category> getAllCategories() {
     final cats = _categoriesCache.values.toList();
     cats.sort((a, b) => a.order.compareTo(b.order));
     return List.unmodifiable(cats);
   }
+
+  /// Kategorie budżetu [budgetId] (ADR-038), w kolejności z listy.
+  List<Category> getCategories(String budgetId) => [
+    for (final c in getAllCategories())
+      if (c.budgetId == budgetId) c,
+  ];
 
   Category? getCategory(String id) => _categoriesCache[id];
 
@@ -167,7 +166,7 @@ class StorageService {
 
   void _loadPaymentMethodsCache() {
     _paymentMethodsCache.clear();
-    _paymentMethodsSorted = null;
+    _invalidatePaymentMethods();
     for (final key in _paymentMethodsBox.keys) {
       try {
         final json = jsonDecode(_paymentMethodsBox.get(key as String)!);
@@ -180,30 +179,40 @@ class StorageService {
     }
   }
 
-  void _seedDefaultPaymentMethods() {
-    if (_paymentMethodsCache.isNotEmpty) return;
-    for (final pm in defaultPaymentMethods) {
-      _paymentMethodsBox.put(pm.id, jsonEncode(pm.toJson()));
-      _paymentMethodsCache[pm.id] = pm;
-    }
-    _paymentMethodsSorted = null;
-    _log.info('Seeded ${defaultPaymentMethods.length} default payment methods');
-  }
-
   /// Posortowana lista metod płatności, budowana raz i unieważniana przy każdym
   /// zapisie. Woła ją KAŻDY wiersz listy (żeby sprawdzić, czy płatność jest
   /// automatyczna), a wcześniej każde takie wywołanie tworzyło nową listę
   /// i sortowało ją od nowa — przy kilkuset wierszach to kilkaset sortowań
-  /// na jedno przemalowanie ekranu.
+  /// na jedno przemalowanie ekranu. To samo dla list poszczególnych budżetów.
   List<PaymentMethod>? _paymentMethodsSorted;
+  final Map<String, List<PaymentMethod>> _paymentMethodsByBudget = {};
 
-  List<PaymentMethod> getPaymentMethods() {
+  void _invalidatePaymentMethods() {
+    _paymentMethodsSorted = null;
+    _paymentMethodsByBudget.clear();
+  }
+
+  /// Wszystkie metody płatności, każdego budżetu — do kopii zapasowej
+  /// i podziału. Ekrany biorą listę swojego budżetu z [getPaymentMethods].
+  List<PaymentMethod> getAllPaymentMethods() {
     final cached = _paymentMethodsSorted;
     if (cached != null) return cached;
     final items = _paymentMethodsCache.values.toList()
       ..sort((a, b) => a.order.compareTo(b.order));
     return _paymentMethodsSorted = List.unmodifiable(items);
   }
+
+  /// Metody płatności budżetu [budgetId] (ADR-038), w kolejności z listy.
+  List<PaymentMethod> getPaymentMethods(String budgetId) =>
+      _paymentMethodsByBudget[budgetId] ??= List.unmodifiable([
+        for (final m in getAllPaymentMethods())
+          if (m.budgetId == budgetId) m,
+      ]);
+
+  /// Metoda o nazwie [name] w budżecie [budgetId] — pozycje i subskrypcje
+  /// wskazują metodę po nazwie.
+  PaymentMethod? paymentMethodNamed(String budgetId, String name) =>
+      getPaymentMethods(budgetId).where((m) => m.name == name).firstOrNull;
 
   PaymentMethod? getPaymentMethod(String id) => _paymentMethodsCache[id];
 
@@ -212,14 +221,235 @@ class StorageService {
     final toSave = stamp ? pm.copyWith(updatedAt: DateTime.now()) : pm;
     await _paymentMethodsBox.put(toSave.id, jsonEncode(toSave.toJson()));
     _paymentMethodsCache[toSave.id] = toSave;
-    _paymentMethodsSorted = null;
+    _invalidatePaymentMethods();
   }
 
   Future<void> deletePaymentMethod(String id) async {
     await _paymentMethodsBox.delete(id);
     _paymentMethodsCache.remove(id);
-    _paymentMethodsSorted = null;
+    _invalidatePaymentMethods();
     _log.info('Deleted payment method: $id');
+  }
+
+  // ── Słowniki osobne dla budżetów (ADR-038) ─────────────────────────────────
+
+  static const _uuid = Uuid();
+
+  /// Słowniki gotowe do pracy: przy pustej bazie domyślne kategorie i metody
+  /// płatności, a wpisy bez budżetu (sprzed podziału, ze starej kopii
+  /// zapasowej) przypisane do budżetów. Bez takich wpisów nic nie robi, więc
+  /// można to wołać przy każdym starcie i po każdym wczytaniu kopii.
+  Future<void> ensureDictionaries() async {
+    if (_categoriesCache.isEmpty) {
+      for (final c in defaultCategories) {
+        await saveCategory(c, stamp: false);
+      }
+    }
+    if (_paymentMethodsCache.isEmpty) {
+      for (final m in defaultPaymentMethods) {
+        await savePaymentMethod(m, stamp: false);
+      }
+    }
+    await _splitDictionariesByBudget();
+  }
+
+  /// Każdy wpis słownika w budżecie, a każda pozycja i subskrypcja z etykietami
+  /// swojego budżetu (ADR-038).
+  Future<void> _splitDictionariesByBudget() async {
+    final legacyCats = [
+      for (final c in getAllCategories())
+        if (c.budgetId == null) c,
+    ];
+    final legacyMethods = [
+      for (final m in getAllPaymentMethods())
+        if (m.budgetId == null) m,
+    ];
+    if (legacyCats.isNotEmpty || legacyMethods.isNotEmpty) {
+      await _assignLegacyDictionaries(legacyCats, legacyMethods);
+    }
+    await _repairCrossBudgetLabels();
+  }
+
+  /// Wpis bez budżetu trafia do każdego budżetu, który go używa: pierwszy
+  /// (osobisty, potem w kolejności listy) zachowuje identyfikator, pozostałe
+  /// dostają kopie. Nieużywany nigdzie — do budżetu osobistego. Gdy budżet ma
+  /// już wpis o tej nazwie, drugi nie powstaje: odwołania przechodzą na
+  /// istniejący. Kategorie pozycje wskazują identyfikatorem (stąd
+  /// przepinanie), metody płatności — nazwą (wystarczy wpis w budżecie).
+  Future<void> _assignLegacyDictionaries(
+    List<Category> legacyCats,
+    List<PaymentMethod> legacyMethods,
+  ) async {
+    final budgetIds = [for (final b in getBudgets()) b.id];
+    final home = budgetIds.contains(kBudgetPersonal)
+        ? kBudgetPersonal
+        : budgetIds.first;
+    List<String> owners(Set<String>? used) {
+      final list = [
+        if (used != null && used.contains(home)) home,
+        for (final id in budgetIds)
+          if (id != home && used != null && used.contains(id)) id,
+      ];
+      return list.isEmpty ? [home] : list;
+    }
+
+    String key(String name) => name.toLowerCase().trim();
+
+    final catUse = <String, Set<String>>{};
+    final methodUse = <String, Set<String>>{};
+    void use(String budgetId, String? categoryId, String? method) {
+      if (categoryId != null) (catUse[categoryId] ??= {}).add(budgetId);
+      if (method != null) (methodUse[method] ??= {}).add(budgetId);
+    }
+
+    for (final p in _planPositionsCache.values) {
+      use(p.budgetId, p.categoryId, p.paymentMethod);
+    }
+    for (final sub in _subscriptionsCache.values) {
+      use(sub.budgetId, sub.categoryId, sub.paymentMethod);
+    }
+
+    // Kategorie: budżet → nazwa → identyfikator; budżet → stare id → nowe.
+    final catIds = <String, Map<String, String>>{};
+    for (final c in _categoriesCache.values) {
+      final b = c.budgetId;
+      if (b != null) (catIds[b] ??= {})[key(c.name)] = c.id;
+    }
+    final remap = <String, Map<String, String>>{};
+    for (final c in legacyCats) {
+      var placed = false;
+      for (final b in owners(catUse[c.id])) {
+        final ids = catIds[b] ??= {};
+        final existing = ids[key(c.name)];
+        if (existing != null) {
+          (remap[b] ??= {})[c.id] = existing;
+        } else if (!placed) {
+          await saveCategory(c.copyWith(budgetId: b), stamp: false);
+          ids[key(c.name)] = c.id;
+          placed = true;
+        } else {
+          final copy = c.copyWith(id: _uuid.v4(), budgetId: b);
+          await saveCategory(copy, stamp: false);
+          ids[key(c.name)] = copy.id;
+          (remap[b] ??= {})[c.id] = copy.id;
+        }
+      }
+      if (!placed) await deleteCategory(c.id);
+    }
+    for (final p in _planPositionsCache.values.toList()) {
+      final to = remap[p.budgetId]?[p.categoryId];
+      if (to != null) await savePlanPosition(p.copyWith(categoryId: to));
+    }
+    for (final sub in _subscriptionsCache.values.toList()) {
+      final to = remap[sub.budgetId]?[sub.categoryId];
+      if (to != null) await saveSubscription(sub.copyWith(categoryId: to));
+    }
+
+    final methodNames = <String, Set<String>>{};
+    for (final m in _paymentMethodsCache.values) {
+      final b = m.budgetId;
+      if (b != null) (methodNames[b] ??= {}).add(key(m.name));
+    }
+    for (final m in legacyMethods) {
+      var placed = false;
+      for (final b in owners(methodUse[m.name])) {
+        final names = methodNames[b] ??= {};
+        if (!names.add(key(m.name))) continue;
+        await savePaymentMethod(
+          placed
+              ? m.copyWith(id: _uuid.v4(), budgetId: b)
+              : m.copyWith(budgetId: b),
+          stamp: false,
+        );
+        placed = true;
+      }
+      if (!placed) await deletePaymentMethod(m.id);
+    }
+    _log.info(
+      'Split dictionaries by budget: ${legacyCats.length} categories, '
+      '${legacyMethods.length} payment methods',
+    );
+  }
+
+  /// Pozycja albo subskrypcja z kategorią innego budżetu (np. ze starej kopii
+  /// zapasowej czy przeliczenia dawnych pozycji) dostaje kategorię swojego
+  /// budżetu o tej nazwie, a gdy jej brak — kopię. Tak samo metoda płatności,
+  /// której jej budżet nie ma, a ma ją inny. Przy spójnych danych nic nie robi.
+  Future<void> _repairCrossBudgetLabels() async {
+    final budgetIds = {for (final b in getBudgets()) b.id};
+    String key(String name) => name.toLowerCase().trim();
+    final catIds = <String, Map<String, String>>{};
+    for (final c in _categoriesCache.values) {
+      final b = c.budgetId;
+      if (b != null) (catIds[b] ??= {})[key(c.name)] = c.id;
+    }
+    final methodNames = <String, Set<String>>{};
+    for (final m in _paymentMethodsCache.values) {
+      final b = m.budgetId;
+      if (b != null) (methodNames[b] ??= {}).add(key(m.name));
+    }
+
+    var fixed = 0;
+    Future<String?> categoryIn(String budgetId, String? categoryId) async {
+      final c = categoryId == null ? null : _categoriesCache[categoryId];
+      if (c == null || c.budgetId == null || c.budgetId == budgetId) {
+        return null;
+      }
+      final ids = catIds[budgetId] ??= {};
+      final existing = ids[key(c.name)];
+      if (existing != null) return existing;
+      final copy = c.copyWith(id: _uuid.v4(), budgetId: budgetId);
+      await saveCategory(copy, stamp: false);
+      ids[key(c.name)] = copy.id;
+      return copy.id;
+    }
+
+    Future<void> methodIn(String budgetId, String? name) async {
+      if (name == null) return;
+      final names = methodNames[budgetId] ??= {};
+      if (names.contains(key(name))) return;
+      final source = getAllPaymentMethods()
+          .where((m) => m.budgetId != null && m.name == name)
+          .firstOrNull;
+      if (source == null) return;
+      await savePaymentMethod(
+        source.copyWith(id: _uuid.v4(), budgetId: budgetId),
+        stamp: false,
+      );
+      names.add(key(name));
+    }
+
+    for (final p in _planPositionsCache.values.toList()) {
+      if (!budgetIds.contains(p.budgetId)) continue;
+      final to = await categoryIn(p.budgetId, p.categoryId);
+      if (to != null) {
+        await savePlanPosition(p.copyWith(categoryId: to));
+        fixed++;
+      }
+      await methodIn(p.budgetId, p.paymentMethod);
+    }
+    for (final sub in _subscriptionsCache.values.toList()) {
+      if (!budgetIds.contains(sub.budgetId)) continue;
+      final to = await categoryIn(sub.budgetId, sub.categoryId);
+      if (to != null) {
+        await saveSubscription(sub.copyWith(categoryId: to));
+        fixed++;
+      }
+      await methodIn(sub.budgetId, sub.paymentMethod);
+    }
+    if (fixed > 0) {
+      _log.info('Re-pointed $fixed items to own-budget categories');
+    }
+  }
+
+  /// Usuwa kategorie i metody płatności budżetu (przy jego usunięciu).
+  Future<void> deleteDictionariesOf(String budgetId) async {
+    for (final c in getCategories(budgetId)) {
+      await deleteCategory(c.id);
+    }
+    for (final m in getPaymentMethods(budgetId)) {
+      await deletePaymentMethod(m.id);
+    }
   }
 
   // ── Budget entries (per zakres) ──────────────────────────────────────────────
@@ -390,11 +620,14 @@ class StorageService {
   /// ze starego pliku kasowaloby dane, ktorych nie ma czym wypelnic — tak
   /// zginal Planner przy pierwszej wersji tej funkcji (ADR-021).
   ///
-  /// Kategorie domyslne ZOSTAJA: eksport ich nie zapisuje (sa zawsze zasiane),
-  /// wiec ich skasowanie osierocilo by pozycje, ktore sie do nich odwoluja.
+  /// Kategorie domyslne ZOSTAJA przy kopii sprzed wersji 9 ([keepDefaultCategories]):
+  /// tamten eksport ich nie zapisywal, wiec ich skasowanie osierociloby pozycje.
+  /// Kopia v9 (ADR-038) niesie wszystkie kategorie i metody platnosci z budzetami.
   Future<void> clearForRestore({
     bool subscriptions = false,
     bool categories = false,
+    bool keepDefaultCategories = true,
+    bool paymentMethods = false,
     bool budgetPersonal = false,
     bool budgetHousehold = false,
     bool paymentDone = false,
@@ -425,10 +658,18 @@ class StorageService {
     if (paymentDone) await _paymentDoneBox.clear();
     if (categories) {
       for (final key in _categoriesBox.keys.toList()) {
-        if (defaultCategories.any((d) => d.id == key)) continue;
+        if (keepDefaultCategories &&
+            defaultCategories.any((d) => d.id == key)) {
+          continue;
+        }
         await _categoriesBox.delete(key);
         _categoriesCache.remove(key);
       }
+    }
+    if (paymentMethods) {
+      await _paymentMethodsBox.clear();
+      _paymentMethodsCache.clear();
+      _invalidatePaymentMethods();
     }
     if (spendingAllocation) {
       await setSpendingAllocationItems(BudgetScope.personal, const []);

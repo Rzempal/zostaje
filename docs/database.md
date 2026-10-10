@@ -109,6 +109,13 @@ erDiagram
 | `color` | string | tak | Kolor hex |
 | `iconName` | string | tak | Nazwa ikony Lucide |
 | `order` | int | tak | Kolejnosc wyswietlania |
+| `budgetId` | String | tak* | Budzet, do ktorego nalezy (ADR-038); kazdy budzet ma wlasna liste. *Brak = wpis sprzed podzialu — przypisywany przy starcie |
+
+Metoda platnosci (`PaymentMethod`) tez ma `budgetId` (ADR-038). Pozycje i subskrypcje
+wskazuja kategorie identyfikatorem, a metode NAZWA — ta sama nazwa w dwoch budzetach to
+dwie metody. Podzial danych sprzed ADR-038 (`StorageService.ensureDictionaries`): wpis
+uzywany w kilku budzetach — kopia w kazdym (pozycje przepiete), nieuzywany — do budzetu
+osobistego. Nowy budzet startuje z pustymi listami.
 
 **Limity:** max 20 kategorii
 
@@ -375,6 +382,7 @@ class Category {
   final String color;   // HEX
   final String iconName; // Lucide icon name
   final int order;
+  final String? budgetId; // budzet listy (ADR-038)
 }
 
 class PaymentMethod {
@@ -382,6 +390,7 @@ class PaymentMethod {
   final String name;
   final int order;
   final bool isAutomatic; // true = automatyczna (zolty na kalendarzu), false = manualna
+  final String? budgetId; // budzet listy (ADR-038)
 }
 ```
 
@@ -392,8 +401,8 @@ class PaymentMethod {
 | Metoda | Opis |
 |--------|------|
 | Hive Box: `subscriptions` | JSON subskrypcji (String values) |
-| Hive Box: `categories` | JSON kategorii |
-| Hive Box: `payment_methods` | JSON metod platnosci |
+| Hive Box: `categories` | JSON kategorii — wszystkich budzetow (`budgetId`, ADR-038); w kopii v9 wszystkie, takze domyslne |
+| Hive Box: `payment_methods` | JSON metod platnosci — wszystkich budzetow (`budgetId`, ADR-038) |
 | Hive Box: `budget_entries` | JSON pozycji budzetu **osobistego** — archiwum sprzed ADR-035, zrodlo konwersji |
 | Hive Box: `household_budget_entries` | JSON pozycji budzetu **domowego** (archiwum, jak wyzej; `updatedAt`/`deleted` z czasow synchronizacji) |
 | Hive Box: `plan_positions` | JSON pozycji planu rocznego (ADR-035) — wszystkie budzety |
@@ -429,8 +438,8 @@ backupu `.zostaje`. Serwis: `lib/services/excel_service.dart`.
 | Kwota | tak | — | >0 i <= 1 000 000. Akceptuje `43,00` i `43.00`, separator tysiecy. |
 | Waluta | nie | PLN | PLN/EUR/USD/GBP (po nazwie lub etykiecie). |
 | Cykl | nie | miesiecznie | tygodniowo/miesiecznie/kwartalnie/rocznie/`co N dni`. |
-| Kategoria | nie | brak | Tylko dopasowanie po nazwie do istniejacych (nie tworzy nowych). |
-| Metoda platnosci | nie | brak | Tylko dopasowanie po nazwie do istniejacych. |
+| Kategoria | nie | brak | Tylko dopasowanie po nazwie do kategorii budzetu wiersza (nie tworzy nowych; ADR-038). |
+| Metoda platnosci | nie | brak | Tylko dopasowanie po nazwie do metod budzetu wiersza. |
 | Aktywna | nie | tak | `nie/no/false/0/anulowana` = nieaktywna. |
 | Data startu | nie | dzis | ISO8601 lub `dd.MM.yyyy`. Poza zakresem 1990..+50 lat → dzis. |
 

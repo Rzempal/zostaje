@@ -229,14 +229,21 @@ void main() {
           'planPositions': [for (final p in plan) p.toJson()],
         };
 
-    test('eksport zapisuje plan i wersje 8', () async {
+    test('eksport zapisuje plan i wersję 9 — słowniki z budżetami (ADR-038)',
+        () async {
       await _storage.savePlanPosition(position('czynsz', 2000));
 
       final data =
           jsonDecode(_backup.buildJsonPayloadForTest()) as Map<String, dynamic>;
 
-      expect(data['version'], 8);
+      expect(data['version'], 9);
       expect((data['planPositions'] as List).single['id'], 'czynsz');
+      // Także domyślne kategorie — każda z budżetem.
+      final cats = (data['categories'] as List).cast<Map<String, dynamic>>();
+      expect(cats.map((c) => c['id']), contains('cat_other'));
+      expect(cats.every((c) => c['budgetId'] != null), isTrue);
+      final pms = (data['paymentMethods'] as List).cast<Map<String, dynamic>>();
+      expect(pms.every((m) => m['budgetId'] != null), isTrue);
     });
 
     test('ODTWORZENIE v8 bierze plan z pliku, bez przeliczania starych pozycji',
@@ -353,6 +360,79 @@ void main() {
     });
   });
 
+  group('Słowniki osobne dla budżetów (v9, ADR-038)', () {
+    Map<String, dynamic> cat(String id, String name, [String? budgetId]) => {
+      'id': id,
+      'name': name,
+      'colorHex': '#64748B',
+      'iconName': 'folder',
+      'order': 0,
+      'budgetId': ?budgetId,
+    };
+
+    PlanPosition position(String id, String budgetId, String categoryId) =>
+        PlanPosition(
+          id: id,
+          budgetId: budgetId,
+          name: id,
+          kind: PlanKind.expense,
+          currency: Currency.PLN,
+          months: const {'2026-10': PlanMonth(amount: 100)},
+          categoryId: categoryId,
+          createdAt: DateTime(2026, 10, 1),
+        );
+
+    test('ODTWORZENIE v9 zastępuje kategorie i metody — także domyślne',
+        () async {
+      await _backup.importFromBytes(
+        _file({
+          ..._payload(version: 9),
+          'categories': [cat('cat_firma', 'Firma', kBudgetHousehold)],
+          'paymentMethods': [
+            {
+              'id': 'pm_firma',
+              'name': 'Konto firmowe',
+              'order': 0,
+              'isAutomatic': true,
+              'budgetId': kBudgetHousehold,
+            },
+          ],
+        }),
+        replace: true,
+      );
+
+      expect(_storage.getAllCategories().map((c) => c.id), ['cat_firma']);
+      expect(_storage.getCategories(kBudgetHousehold).single.name, 'Firma');
+      expect(_storage.getAllPaymentMethods().map((m) => m.name), [
+        'Konto firmowe',
+      ]);
+    });
+
+    test('kopia sprzed v9: kategoria idzie do budżetów, które jej używają',
+        () async {
+      await _backup.importFromBytes(
+        _file({
+          ..._payload(version: 8),
+          'categories': [cat('cat_dom', 'Dom')],
+          'planPositions': [
+            position('p', kBudgetPersonal, 'cat_dom').toJson(),
+            position('h', kBudgetHousehold, 'cat_dom').toJson(),
+          ],
+          'planPeriods': true,
+        }),
+        replace: true,
+      );
+
+      final home = _storage
+          .getCategories(kBudgetHousehold)
+          .singleWhere((c) => c.name == 'Dom');
+      expect(home.id, isNot('cat_dom'));
+      expect(_storage.getCategory('cat_dom')!.budgetId, kBudgetPersonal);
+      expect(_storage.getPlanPosition('p')!.categoryId, 'cat_dom');
+      expect(_storage.getPlanPosition('h')!.categoryId, home.id);
+    });
+  });
+
   group('Wersje formatu', () {
     test('stary plik (v1, bez metod platnosci i Plannera) da sie wczytac', () {
       final payload = {
@@ -367,7 +447,7 @@ void main() {
       );
     });
 
-    test('plik z przyszlosci (wersja > 8) jest odrzucany, nie psuje danych',
+    test('plik z przyszlosci (wersja > 9) jest odrzucany, nie psuje danych',
         () async {
       await _storage.saveBudgetEntry(_entry('moja', 'Moja'), BudgetScope.personal);
 

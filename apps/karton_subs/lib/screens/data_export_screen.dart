@@ -88,7 +88,9 @@ class _DataExportScreenState extends State<DataExportScreen> {
     final storage = context.read<StorageService>();
     await _pdf.sharePdf(
       storage.getSubscriptions(),
-      storage.getCategories(),
+      // Raport obejmuje subskrypcje wszystkich budżetów — nazwy kategorii
+      // z każdego z nich (ADR-038).
+      storage.getAllCategories(),
       storage.getCurrency(),
     );
   }, import: false);

@@ -49,9 +49,13 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
   void initState() {
     super.initState();
     final plan = context.read<PlanController>();
+    // Karty budżetu pożyczki (ADR-038): edytowanej albo aktywnego.
+    final budgetId = widget.linkId == null
+        ? plan.budgetId
+        : plan.loanPair(widget.linkId!).loan?.budgetId ?? plan.budgetId;
     _cards = context
         .read<StorageService>()
-        .getPaymentMethods()
+        .getPaymentMethods(budgetId)
         .where((pm) => pm.isCreditCard)
         .toList();
     _currency = plan.target;

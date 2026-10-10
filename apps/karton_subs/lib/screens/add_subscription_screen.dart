@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
+import '../models/category.dart' show defaultCategories;
 import '../models/subscription.dart';
 import '../models/quick_add_templates.dart';
 import '../controllers/budget_controller.dart';
 import '../controllers/subscription_controller.dart';
-import '../widgets/budget_picker.dart' show showBudgetTargetSheet;
+import '../widgets/budget_picker.dart'
+    show askAddMissingLabels, showBudgetTargetSheet;
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/cycle_months_picker.dart';
@@ -76,10 +78,24 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       subtitle: copy ? 'Kopia ma własne przypomnienia.' : null,
     );
     if (target == null || !mounted) return;
+    final addMissing = await askAddMissingLabels(
+      context,
+      budgetName: target.budget.name,
+      missing: budgets.missingIn(target.budget.id, subs: [sub]),
+    );
+    if (addMissing == null || !mounted) return;
     if (copy) {
-      await budgets.copySubscriptions([sub], target.budget.id);
+      await budgets.copySubscriptions(
+        [sub],
+        target.budget.id,
+        addMissing: addMissing,
+      );
     } else {
-      await budgets.moveSubscriptions([sub], target.budget.id);
+      await budgets.moveSubscriptions(
+        [sub],
+        target.budget.id,
+        addMissing: addMissing,
+      );
     }
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -152,11 +168,15 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
     super.dispose();
   }
 
+  /// Budżet, którego kategorie i metody płatności pokazuje formularz
+  /// (ADR-038): edytowanej subskrypcji albo tej, którą się dodaje.
+  String get _listBudgetId => widget.existing?.budgetId ?? _budgetId;
+
   @override
   Widget build(BuildContext context) {
     final storage = context.read<StorageService>();
-    final categories = storage.getCategories();
-    final paymentMethods = storage.getPaymentMethods();
+    final categories = storage.getCategories(_listBudgetId);
+    final paymentMethods = storage.getPaymentMethods(_listBudgetId);
     // Tolerancja orphana: jeśli istniejąca subskrypcja ma wartość spoza
     // aktualnej listy (np. po usunięciu metody albo imporcie starego backupu),
     // pokazujemy ją w dropdownie, żeby nie "znikła" po wejściu w edycję.
@@ -515,8 +535,26 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       _amountCtrl.text = t.amount.toStringAsFixed(2);
       _currency = t.currency;
       _cycle = t.billingCycle;
-      _categoryId = t.categoryId;
+      _categoryId = _templateCategory(t);
     });
+  }
+
+  /// Kategoria szablonu w budżecie subskrypcji (ADR-038): domyślna o tym
+  /// identyfikatorze albo o tej nazwie. Budżet bez niej — bez kategorii;
+  /// szablon niczego do listy budżetu nie dodaje.
+  String? _templateCategory(SubscriptionTemplate t) {
+    final cats = context.read<StorageService>().getCategories(_listBudgetId);
+    final byId = cats.where((c) => c.id == t.categoryId).firstOrNull;
+    if (byId != null) return byId.id;
+    final name = defaultCategories
+        .where((c) => c.id == t.categoryId)
+        .firstOrNull
+        ?.name
+        .toLowerCase();
+    return cats
+        .where((c) => c.name.toLowerCase().trim() == name)
+        .firstOrNull
+        ?.id;
   }
 
   Future<void> _pickTrialEndDate() async {

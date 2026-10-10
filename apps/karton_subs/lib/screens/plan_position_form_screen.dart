@@ -56,6 +56,11 @@ class _PlanPositionFormScreenState extends State<PlanPositionFormScreen> {
 
   bool get _isEditing => widget.existing != null;
 
+  /// Budżet, którego kategorie i metody płatności pokazuje formularz
+  /// (ADR-038): edytowanej pozycji albo aktywny — tam trafi nowa.
+  String get _listBudgetId =>
+      widget.existing?.budgetId ?? context.read<PlanController>().budgetId;
+
   @override
   void initState() {
     super.initState();
@@ -453,7 +458,7 @@ class _PlanPositionFormScreenState extends State<PlanPositionFormScreen> {
                   selected: _categoryId == null,
                   onSelected: (_) => setState(() => _categoryId = null),
                 ),
-                for (final cat in storage.getCategories())
+                for (final cat in storage.getCategories(_listBudgetId))
                   FilterChip(
                     label: Text(cat.name),
                     selected: _categoryId == cat.id,
@@ -473,7 +478,7 @@ class _PlanPositionFormScreenState extends State<PlanPositionFormScreen> {
                   selected: _paymentMethod == null,
                   onSelected: (_) => setState(() => _paymentMethod = null),
                 ),
-                for (final pm in storage.getPaymentMethods())
+                for (final pm in storage.getPaymentMethods(_listBudgetId))
                   FilterChip(
                     avatar: Icon(
                       paymentMethodIcon(pm),

@@ -160,48 +160,4 @@ class SubscriptionController extends ChangeNotifier {
     if (sub == null) return;
     await update(sub.copyWith(isPinned: !sub.isPinned));
   }
-
-  // ── Payment methods (bulk ops) ─────────────────────────────────────────────
-
-  /// Zlicza subskrypcje używające metody płatności o danej nazwie.
-  int countSubscriptionsUsingPaymentMethod(String name) =>
-      _storage.getSubscriptions().where((s) => s.paymentMethod == name).length;
-
-  /// Propaguje nową nazwę metody płatności do wszystkich subskrypcji
-  /// używających starej nazwy. Nie wysyła notyfikacji (metoda płatności
-  /// nie wpływa na harmonogram).
-  Future<int> renamePaymentMethod(String oldName, String newName) async {
-    if (oldName == newName) return 0;
-    final affected = _storage
-        .getSubscriptions()
-        .where((s) => s.paymentMethod == oldName)
-        .toList();
-    for (final sub in affected) {
-      await _storage.saveSubscription(sub.copyWith(paymentMethod: newName));
-    }
-    if (affected.isNotEmpty) {
-      _log.info(
-          'Renamed payment method "$oldName" → "$newName" on ${affected.length} subscriptions');
-      notifyListeners();
-    }
-    return affected.length;
-  }
-
-  /// Czyści pole `paymentMethod` na wszystkich subskrypcjach używających
-  /// danej nazwy. Wywoływane przy usunięciu metody płatności.
-  Future<int> clearPaymentMethodFromAll(String name) async {
-    final affected = _storage
-        .getSubscriptions()
-        .where((s) => s.paymentMethod == name)
-        .toList();
-    for (final sub in affected) {
-      await _storage.saveSubscription(sub.copyWith(clearPaymentMethod: true));
-    }
-    if (affected.isNotEmpty) {
-      _log.info(
-          'Cleared payment method "$name" from ${affected.length} subscriptions');
-      notifyListeners();
-    }
-    return affected.length;
-  }
 }

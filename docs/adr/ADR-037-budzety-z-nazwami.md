@@ -6,6 +6,7 @@ Status: zaakceptowany
 > **Powiązane:** [ADR-035 Plan roczny](ADR-035-plan-roczny-pozycje-z-miesiacami.md)
 > (§2 budżety jako identyfikatory) | [ADR-014 Tryb budżetu](ADR-014-tryb-budzetu-osobisty-domowy-oba.md)
 > | [ADR-036 Pożyczki ratalne](ADR-036-pozyczki-ratalne.md)
+> | [ADR-038 Kategorie i metody osobne dla budżetów](ADR-038-kategorie-i-metody-osobne-dla-budzetow.md)
 
 ## Kontekst
 

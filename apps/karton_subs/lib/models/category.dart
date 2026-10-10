@@ -8,6 +8,11 @@ class Category {
   final int order;
   final bool excludeFromGhostAnalysis;
 
+  /// Budżet, do którego należy kategoria — każdy budżet ma własną listę
+  /// (ADR-038). `null` = wpis sprzed podziału albo domyślny przed pierwszym
+  /// uruchomieniem; [StorageService.ensureDictionaries] przypisuje go do budżetu.
+  final String? budgetId;
+
   /// Znacznik ostatniej zmiany — rozstrzyga scalanie przy synchronizacji
   /// budżetu domowego (ostatnia zmiana wygrywa, ADR-025).
   ///
@@ -25,6 +30,7 @@ class Category {
     required this.order,
     this.excludeFromGhostAnalysis = false,
     this.updatedAt,
+    this.budgetId,
   });
 
   factory Category.fromJson(Map<String, dynamic> json) {
@@ -38,6 +44,7 @@ class Category {
       updatedAt: json['updatedAt'] != null
           ? DateTime.tryParse(json['updatedAt'] as String)
           : null,
+      budgetId: json['budgetId'] as String?,
     );
   }
 
@@ -49,6 +56,7 @@ class Category {
         'order': order,
         'excludeFromGhostAnalysis': excludeFromGhostAnalysis,
         if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
+        if (budgetId != null) 'budgetId': budgetId,
       };
 
   Color get color {
@@ -64,6 +72,7 @@ class Category {
     int? order,
     bool? excludeFromGhostAnalysis,
     DateTime? updatedAt,
+    String? budgetId,
   }) {
     return Category(
       id: id ?? this.id,
@@ -73,6 +82,7 @@ class Category {
       order: order ?? this.order,
       excludeFromGhostAnalysis: excludeFromGhostAnalysis ?? this.excludeFromGhostAnalysis,
       updatedAt: updatedAt ?? this.updatedAt,
+      budgetId: budgetId ?? this.budgetId,
     );
   }
 

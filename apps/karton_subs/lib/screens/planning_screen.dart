@@ -157,7 +157,9 @@ class _PlanningScreenState extends State<PlanningScreen> {
       title: 'Kategoria dla ${ids.length} poz.',
       options: [
         (null, 'Brak kategorii'),
-        for (final c in context.read<StorageService>().getCategories())
+        for (final c in context.read<StorageService>().getCategories(
+          plan.budgetId,
+        ))
           (c.id, c.name),
       ],
     );
@@ -172,7 +174,9 @@ class _PlanningScreenState extends State<PlanningScreen> {
       title: 'Metoda płatności dla ${ids.length} poz.',
       options: [
         (null, 'Brak metody'),
-        for (final m in context.read<StorageService>().getPaymentMethods())
+        for (final m in context.read<StorageService>().getPaymentMethods(
+          plan.budgetId,
+        ))
           (m.name, m.name),
       ],
     );
@@ -438,7 +442,7 @@ class _PlanningScreenState extends State<PlanningScreen> {
       for (final s in subsAll) ?s.categoryId,
     };
     final filterCategories = storage
-        .getCategories()
+        .getCategories(budget.budgetId)
         .where((c) => usedCatIds.contains(c.id))
         .toList();
 
@@ -834,7 +838,10 @@ class _PlanningScreenState extends State<PlanningScreen> {
   ) {
     if (!_byCategory) return [BudgetEntryList(rows: rows(items))];
     final byId = {
-      for (final c in context.read<StorageService>().getCategories()) c.id: c,
+      for (final c in context.read<StorageService>().getCategories(
+        context.read<BudgetController>().budgetId,
+      ))
+        c.id: c,
     };
     final groups = <String?, List<T>>{};
     for (final it in items) {

@@ -70,7 +70,7 @@ lib/
 │   └── app_config.dart          # Build-time config (channels, URLs)
 ├── controllers/
 │   ├── subscription_controller.dart # Stan subskrypcji (CRUD + analytics)
-│   ├── budget_controller.dart   # Budzety z nazwami (ADR-037): lista, aktywny, ukrywanie, usuwanie, przenies/kopiuj; odhaczenia platnosci, kaskady slownikow
+│   ├── budget_controller.dart   # Budzety z nazwami (ADR-037): lista, aktywny, ukrywanie, usuwanie, przenies/kopiuj/duplikuj z etykietami; slowniki osobne dla budzetow (ADR-038); odhaczenia platnosci
 │   ├── plan_controller.dart     # Plan roczny aktywnego budzetu (ADR-035): pozycje, miesiace, karta, plan na kolejny rok
 ├── models/
 │   ├── subscription.dart        # Glowna encja + PaymentMethod
@@ -217,6 +217,8 @@ za krawedz na waskim ekranie.
 | **Ustawienia** | Trzy sekcje. **Personalizacja**: wyglad, waluta i limit, **Budzety** (lista z nazwami i ikonami: kolejnosc, ukrywanie, przenies/kopiuj, usuwanie — ADR-037), powiadomienia, **kategorie i metody platnosci** (slowniki, ktorymi uzytkownik opisuje SWOJ budzet — stad przy personalizacji, nie przy danych). **Dane**: **Backup** (kopia zapasowa i odtwarzanie) oraz **Eksport/import danych** (XLSX subskrypcji i planu roku w OBIE strony — arkusz planu to sposob udostepnienia budzetu (ADR-035), raport PDF — wczesniej ikony w paskach ekranow; arkusz to nie kopia zapasowa: import DOKLADA pozycje, nie odtwarza zdjec, odhaczen ani ustawien). **Aplikacja**: **aktualizacje OTA inline**, polityka prywatnosci, Developer Tools (tylko DEV). Karty frost |
 
 **Budzety z nazwami (ADR-037):** lista budzetow (nazwa, ikona, ukrycie) w ustawieniach; przelacznik w gornym pasku to lista rozwijana z „Zarzadzaj budzetami", gest przesuniecia = kolejny/poprzedni budzet (`ScopeSwipeArea`, wylaczony przy jednym widocznym budzecie). Ukrywanie zastapilo tryb budzetu (ADR-014). Przenies/kopiuj: caly budzet, zaznaczone pozycje, pojedyncza pozycja, pozyczka, subskrypcja; „Duplikuj" — kopia w tym samym budzecie z dopiskiem „(kopia)" (pojedyncza otwiera sie od razu). Formularze (takze subskrypcji) nie maja wyboru budzetu: nowe trafia do aktywnego, zmiana budzetu tylko przez ⋮ „Przenies do / Kopiuj do".
+
+**Kategorie i metody platnosci osobne dla budzetow (ADR-038):** kazdy budzet ma wlasne listy (`budgetId`); formularze, filtr, statystyki i kalendarz biora liste swojego budzetu. Ekrany Kategorie i Metody platnosci: przelacznik budzetu nad lista, w ⋮ wpisu „Kopiuj do budzetu…" / „Przenies do budzetu…" / „Usun", w ⋮ ekranu „Kopiuj wszystkie do budzetu…"; pusta lista (nowy budzet) podpowiada „Skopiuj z innego budzetu…". Przenoszenie i kopiowanie pozycji, subskrypcji i budzetow niesie etykiety po nazwie — brakujace w budzecie docelowym: okno „Dodaj je / Bez nich". Podzial danych sprzed zmiany i naprawa etykiet z innego budzetu: `StorageService.ensureDictionaries` (start i po wczytaniu kopii).
 
 ---
 

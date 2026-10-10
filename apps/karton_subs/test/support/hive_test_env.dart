@@ -42,12 +42,14 @@ Future<void> tearDownHiveStorage() async {
 }
 
 /// Czyści dane między testami. Kategorie i metody płatności wracają do stanu
-/// domyślnego (seed), bo [StorageService.clearForRestore] zachowuje wpisy
-/// wbudowane — tak samo jak przy odtwarzaniu z kopii.
+/// domyślnego (seed) — w budżecie osobistym, jak przy pierwszym uruchomieniu
+/// (ADR-038).
 Future<void> resetStorage(StorageService storage) async {
   await storage.clearForRestore(
     subscriptions: true,
     categories: true,
+    keepDefaultCategories: false,
+    paymentMethods: true,
     budgetPersonal: true,
     budgetHousehold: true,
     paymentDone: true,
@@ -62,4 +64,5 @@ Future<void> resetStorage(StorageService storage) async {
   for (final key in ['budgets', 'activeBudgetId', 'budgetMode']) {
     await settings.delete(key);
   }
+  await storage.ensureDictionaries();
 }

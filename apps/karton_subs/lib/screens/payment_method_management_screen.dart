@@ -11,7 +11,10 @@ import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/category_icons.dart'
     show paymentMethodIcon, paymentMethodIconColor;
+import '../widgets/budget_picker.dart'
+    show EmptyBudgetDictionary, showBudgetTargetSheet;
 import '../widgets/form_action_bar.dart';
+import '../widgets/workspace_top_bar.dart';
 
 class PaymentMethodManagementScreen extends StatefulWidget {
   const PaymentMethodManagementScreen({super.key});
@@ -23,14 +26,19 @@ class PaymentMethodManagementScreen extends StatefulWidget {
 
 class _PaymentMethodManagementScreenState
     extends State<PaymentMethodManagementScreen> {
+  void _snack(String text) => ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(content: Text(text)));
+
   @override
   Widget build(BuildContext context) {
     final storage = context.read<StorageService>();
-    // Watch controllers to rebuild after rename/clear bulk ops — metody są
-    // używane przez subskrypcje i budżet (pozycje + „Na bieżące wydatki").
+    // Liczniki reagują na zmiany subskrypcji i planu, a lista — na
+    // przełączenie budżetu (każdy ma własne metody, ADR-038).
     context.watch<SubscriptionController>();
-    context.watch<BudgetController>();
-    final methods = storage.getPaymentMethods();
+    final budget = context.watch<BudgetController>();
+    final budgetId = budget.budgetId;
+    final methods = storage.getPaymentMethods(budgetId);
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -41,85 +49,135 @@ class _PaymentMethodManagementScreenState
           IconButton(
             icon: const Icon(LucideIcons.plus),
             tooltip: 'Dodaj metodę płatności',
-            onPressed: () => _showEditor(context, storage, null),
+            onPressed: () => _showEditor(context, storage, null, budgetId),
+          ),
+          PopupMenuButton<String>(
+            tooltip: 'Więcej',
+            onSelected: (_) => _copyAll(budget),
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'copyAll',
+                child: Text('Kopiuj wszystkie do budżetu…'),
+              ),
+            ],
           ),
         ],
       ),
-      body: methods.isEmpty
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  'Brak metod płatności.\nDodaj pierwszą pozycję przyciskiem "+".',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium,
+      body: Column(
+        children: [
+          WorkspaceTopBar(
+            leading: Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: Text(
+                'Lista budżetu',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: context.semanticColors.textMuted,
                 ),
               ),
-            )
-          : ReorderableListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: methods.length,
-              onReorder: (oldIndex, newIndex) =>
-                  _reorder(storage, methods, oldIndex, newIndex),
-              itemBuilder: (context, index) {
-                final pm = methods[index];
-                final subsCount = context
-                    .read<SubscriptionController>()
-                    .countSubscriptionsUsingPaymentMethod(pm.name);
-                final budgetCount = context
-                    .read<BudgetController>()
-                    .countPaymentMethodUsage(pm.name);
-                return Card(
-                  key: ValueKey(pm.id),
-                  child: ListTile(
-                    // Ta sama regula co wszedzie indziej (ADR-033) — wczesniej
-                    // KAZDA metoda miala tu karte, wiec lista przeczyla temu,
-                    // co uzytkownik widzial przy pozycjach budzetu.
-                    leading: Icon(
-                      paymentMethodIcon(pm),
-                      color: paymentMethodIconColor(pm, context.semanticColors),
-                    ),
-                    title: Text(pm.name),
-                    subtitle: Text(
-                      [
-                        _usageLabel(subsCount, budgetCount),
-                        if (pm.isCreditCard) 'Karta · ${pm.graceDays} dni',
-                        pm.isCreditCard
-                            ? (pm.isAutomatic
-                                  ? 'Spłata automatyczna'
-                                  : 'Spłata ręczna')
-                            : (pm.isAutomatic ? 'Automatyczna' : 'Manualna'),
-                      ].join(' · '),
-                      style: theme.textTheme.labelMedium,
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(LucideIcons.edit3, size: 18),
-                          onPressed: () => _showEditor(context, storage, pm),
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            LucideIcons.trash2,
-                            size: 18,
-                            color: AppColors.negative,
-                          ),
-                          onPressed: () => _confirmDelete(
-                            context,
-                            storage,
-                            pm,
-                            subsCount,
-                            budgetCount,
-                          ),
-                        ),
-                        const Icon(LucideIcons.gripVertical, size: 18),
-                      ],
-                    ),
-                  ),
-                );
-              },
             ),
+          ),
+          Expanded(
+            child: methods.isEmpty
+                ? EmptyBudgetDictionary(
+                    text: 'Ten budżet nie ma jeszcze metod płatności.',
+                    onCopyFrom: () => _copyFrom(budget),
+                  )
+                : ReorderableListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                    itemCount: methods.length,
+                    onReorder: (oldIndex, newIndex) =>
+                        _reorder(storage, methods, oldIndex, newIndex),
+                    itemBuilder: (context, index) {
+                      final pm = methods[index];
+                      final subsCount = budget.countPaymentMethodSubscriptions(
+                        budgetId,
+                        pm.name,
+                      );
+                      final budgetCount = budget.countPaymentMethodUsage(
+                        budgetId,
+                        pm.name,
+                      );
+                      return Card(
+                        key: ValueKey(pm.id),
+                        child: ListTile(
+                          // Ta sama regula co wszedzie indziej (ADR-033) —
+                          // wczesniej KAZDA metoda miala tu karte, wiec lista
+                          // przeczyla temu, co uzytkownik widzial przy
+                          // pozycjach budzetu.
+                          leading: Icon(
+                            paymentMethodIcon(pm),
+                            color: paymentMethodIconColor(
+                              pm,
+                              context.semanticColors,
+                            ),
+                          ),
+                          title: Text(pm.name),
+                          subtitle: Text(
+                            [
+                              _usageLabel(subsCount, budgetCount),
+                              if (pm.isCreditCard)
+                                'Karta · ${pm.graceDays} dni',
+                              pm.isCreditCard
+                                  ? (pm.isAutomatic
+                                        ? 'Spłata automatyczna'
+                                        : 'Spłata ręczna')
+                                  : (pm.isAutomatic
+                                        ? 'Automatyczna'
+                                        : 'Manualna'),
+                            ].join(' · '),
+                            style: theme.textTheme.labelMedium,
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                tooltip: 'Edytuj',
+                                icon: const Icon(LucideIcons.edit3, size: 18),
+                                onPressed: () =>
+                                    _showEditor(context, storage, pm, budgetId),
+                              ),
+                              PopupMenuButton<String>(
+                                tooltip: 'Więcej',
+                                onSelected: (v) => switch (v) {
+                                  'copy' => _copyTo(pm),
+                                  'move' => _moveTo(pm, subsCount, budgetCount),
+                                  _ => _confirmDelete(
+                                    context,
+                                    pm,
+                                    subsCount,
+                                    budgetCount,
+                                  ),
+                                },
+                                itemBuilder: (_) => [
+                                  const PopupMenuItem(
+                                    value: 'copy',
+                                    child: Text('Kopiuj do budżetu…'),
+                                  ),
+                                  const PopupMenuItem(
+                                    value: 'move',
+                                    child: Text('Przenieś do budżetu…'),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'delete',
+                                    child: Text(
+                                      'Usuń',
+                                      style: TextStyle(
+                                        color: AppColors.negative,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Icon(LucideIcons.gripVertical, size: 18),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -149,13 +207,105 @@ class _PaymentMethodManagementScreenState
     return parts.isEmpty ? 'Nieużywana' : parts.join(' · ');
   }
 
+  /// Niezależna kopia w innym budżecie — tu nic się nie zmienia.
+  Future<void> _copyTo(PaymentMethod pm) async {
+    final budget = context.read<BudgetController>();
+    final target = await showBudgetTargetSheet(
+      context,
+      excludeBudgetId: budget.budgetId,
+      title: 'Kopiuj „${pm.name}" do budżetu…',
+    );
+    if (target == null || !mounted) return;
+    final done = await budget.copyPaymentMethodTo(pm, target.budget.id);
+    if (!mounted) return;
+    _snack(
+      done
+          ? 'Skopiowano „${pm.name}" do „${target.budget.name}"'
+          : 'W „${target.budget.name}" jest już „${pm.name}"',
+    );
+  }
+
+  /// Przeniesienie: tam kopia, tu usunięcie — z ostrzeżeniem, gdy metoda
+  /// jest w tym budżecie używana (pozycje stracą oznaczenie metody).
+  Future<void> _moveTo(PaymentMethod pm, int subsCount, int budgetCount) async {
+    final budget = context.read<BudgetController>();
+    final target = await showBudgetTargetSheet(
+      context,
+      excludeBudgetId: budget.budgetId,
+      title: 'Przenieś „${pm.name}" do budżetu…',
+    );
+    if (target == null || !mounted) return;
+    final used = <String>[
+      if (subsCount > 0) '$subsCount subskrypcji',
+      if (budgetCount > 0) '$budgetCount pozycji budżetu',
+    ];
+    if (used.isNotEmpty) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text('Przenieść „${pm.name}" do „${target.budget.name}"?'),
+          content: Text(
+            '${used.join(' i ')} w tym budżecie straci oznaczenie metody '
+            'płatności.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Anuluj'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Przenieś'),
+            ),
+          ],
+        ),
+      );
+      if (ok != true || !mounted) return;
+    }
+    await budget.movePaymentMethodTo(pm, target.budget.id);
+    if (mounted) {
+      _snack('Przeniesiono „${pm.name}" do „${target.budget.name}"');
+    }
+  }
+
+  Future<void> _copyAll(BudgetController budget) async {
+    final from = budget.budgetId;
+    final target = await showBudgetTargetSheet(
+      context,
+      excludeBudgetId: from,
+      title: 'Kopiuj wszystkie metody płatności do budżetu…',
+      subtitle: 'Metody, które tam już są, się nie zdublują.',
+    );
+    if (target == null || !mounted) return;
+    final n = await budget.copyPaymentMethodsTo(from, target.budget.id);
+    if (!mounted) return;
+    _snack(
+      n == 0
+          ? 'Wszystkie metody są już w „${target.budget.name}"'
+          : 'Skopiowano $n metod do „${target.budget.name}"',
+    );
+  }
+
+  /// Pusty budżet: metody z innego budżetu jednym ruchem.
+  Future<void> _copyFrom(BudgetController budget) async {
+    final to = budget.budgetId;
+    final source = await showBudgetTargetSheet(
+      context,
+      excludeBudgetId: to,
+      title: 'Skopiuj metody płatności z budżetu…',
+    );
+    if (source == null || !mounted) return;
+    final n = await budget.copyPaymentMethodsTo(source.budget.id, to);
+    if (mounted) _snack('Skopiowano $n metod z „${source.budget.name}"');
+  }
+
   void _confirmDelete(
     BuildContext context,
-    StorageService storage,
     PaymentMethod pm,
     int subsCount,
     int budgetCount,
   ) {
+    final budget = context.read<BudgetController>();
     final affected = <String>[
       if (subsCount > 0) '$subsCount subskrypcji',
       if (budgetCount > 0) '$budgetCount pozycji budżetu',
@@ -177,7 +327,7 @@ class _PaymentMethodManagementScreenState
           FilledButton(
             onPressed: () {
               Navigator.pop(ctx);
-              _deletePaymentMethod(storage, pm);
+              budget.deletePaymentMethod(pm);
             },
             style: FilledButton.styleFrom(backgroundColor: AppColors.negative),
             child: const Text('Usuń'),
@@ -187,35 +337,24 @@ class _PaymentMethodManagementScreenState
     );
   }
 
-  Future<void> _deletePaymentMethod(
-    StorageService storage,
-    PaymentMethod pm,
-  ) async {
-    final ctrl = context.read<SubscriptionController>();
-    final budget = context.read<BudgetController>();
-    await ctrl.clearPaymentMethodFromAll(pm.name);
-    await budget.clearPaymentMethodEverywhere(pm.name);
-    await storage.deletePaymentMethod(pm.id);
-    ctrl.refresh();
-  }
-
   void _showEditor(
     BuildContext context,
     StorageService storage,
     PaymentMethod? existing,
+    String budgetId,
   ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder: (ctx) => _PaymentMethodEditor(
         existing: existing,
+        budgetId: budgetId,
         onSave: (pm, oldName) async {
           final ctrl = context.read<SubscriptionController>();
           final budget = context.read<BudgetController>();
           await storage.savePaymentMethod(pm);
           if (oldName != null && oldName != pm.name) {
-            await ctrl.renamePaymentMethod(oldName, pm.name);
-            await budget.renamePaymentMethodEverywhere(oldName, pm.name);
+            await budget.renamePaymentMethod(budgetId, oldName, pm.name);
           }
           if (mounted) ctrl.refresh();
         },
@@ -227,11 +366,19 @@ class _PaymentMethodManagementScreenState
 class _PaymentMethodEditor extends StatefulWidget {
   final PaymentMethod? existing;
 
+  /// Budżet listy — nazwa musi być w nim unikalna, a nowa metoda do niego
+  /// należy (ADR-038).
+  final String budgetId;
+
   /// Callback: `(nowa metoda, stara nazwa lub null)`. Stara nazwa
   /// pozwala propagować zmianę do subskrypcji przy rename.
   final Future<void> Function(PaymentMethod, String? oldName) onSave;
 
-  const _PaymentMethodEditor({this.existing, required this.onSave});
+  const _PaymentMethodEditor({
+    this.existing,
+    required this.budgetId,
+    required this.onSave,
+  });
 
   @override
   State<_PaymentMethodEditor> createState() => _PaymentMethodEditorState();
@@ -370,15 +517,16 @@ class _PaymentMethodEditorState extends State<_PaymentMethodEditor> {
       }
     }
 
-    // Walidacja unikalności (case-insensitive)
+    // Walidacja unikalności w budżecie (case-insensitive)
     final storage = context.read<StorageService>();
-    final duplicate = storage.getPaymentMethods().any(
+    final siblings = storage.getPaymentMethods(widget.budgetId);
+    final duplicate = siblings.any(
       (pm) =>
           pm.name.toLowerCase() == name.toLowerCase() &&
           pm.id != widget.existing?.id,
     );
     if (duplicate) {
-      setState(() => _errorText = 'Metoda o tej nazwie już istnieje');
+      setState(() => _errorText = 'Metoda o tej nazwie już jest w budżecie');
       return;
     }
 
@@ -396,10 +544,11 @@ class _PaymentMethodEditorState extends State<_PaymentMethodEditor> {
         : PaymentMethod(
             id: const Uuid().v4(),
             name: name,
-            order: storage.getPaymentMethods().length,
+            order: siblings.length,
             isAutomatic: _isAutomatic,
             isCreditCard: _isCreditCard,
             graceDays: graceDays,
+            budgetId: widget.budgetId,
           );
 
     await widget.onSave(pm, oldName);

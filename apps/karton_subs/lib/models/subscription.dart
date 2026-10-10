@@ -435,6 +435,12 @@ class PaymentMethod {
   /// domyślny; liczy się jak epoka zero.
   final DateTime? updatedAt;
 
+  /// Budżet, do którego należy metoda — każdy budżet ma własną listę
+  /// (ADR-038; np. konto firmowe tylko w budżecie firmowym). Pozycje
+  /// wskazują metodę po nazwie, więc ta sama nazwa w dwóch budżetach to dwie
+  /// osobne metody. `null` = wpis sprzed podziału.
+  final String? budgetId;
+
   const PaymentMethod({
     required this.id,
     required this.name,
@@ -443,6 +449,7 @@ class PaymentMethod {
     this.isCreditCard = false,
     this.graceDays,
     this.updatedAt,
+    this.budgetId,
   });
 
   /// Czy z tej metody da się zbudować automat spłaty — sama flaga nie wystarczy,
@@ -459,6 +466,7 @@ class PaymentMethod {
     int? graceDays,
     bool clearGraceDays = false,
     DateTime? updatedAt,
+    String? budgetId,
   }) => PaymentMethod(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -467,6 +475,7 @@ class PaymentMethod {
     isCreditCard: isCreditCard ?? this.isCreditCard,
     graceDays: clearGraceDays ? null : (graceDays ?? this.graceDays),
     updatedAt: updatedAt ?? this.updatedAt,
+    budgetId: budgetId ?? this.budgetId,
   );
 
   // Nowe pola sa OPCJONALNE w JSON-ie: starsza aplikacja po drugiej stronie
@@ -481,6 +490,7 @@ class PaymentMethod {
     updatedAt: json['updatedAt'] != null
         ? DateTime.tryParse(json['updatedAt'] as String)
         : null,
+    budgetId: json['budgetId'] as String?,
   );
 
   Map<String, dynamic> toJson() => {
@@ -491,6 +501,7 @@ class PaymentMethod {
     if (isCreditCard) 'isCreditCard': true,
     if (graceDays != null) 'graceDays': graceDays,
     if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
+    if (budgetId != null) 'budgetId': budgetId,
   };
 }
 

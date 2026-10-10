@@ -69,6 +69,15 @@ class _InstallmentLoanFormScreenState extends State<InstallmentLoanFormScreen> {
 
   bool get _editing => widget.linkId != null;
 
+  /// Budżet, którego metody płatności i kategorie pokazuje formularz
+  /// (ADR-038): edytowanej pożyczki albo aktywny — tam trafi nowa.
+  String get _listBudgetId {
+    final plan = context.read<PlanController>();
+    final link = widget.linkId;
+    final parts = link == null ? null : plan.loanParts(link);
+    return (parts?.repayment ?? parts?.loan)?.budgetId ?? plan.budgetId;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -614,7 +623,7 @@ class _InstallmentLoanFormScreenState extends State<InstallmentLoanFormScreen> {
                   selected: _paymentMethod == null,
                   onSelected: (_) => setState(() => _paymentMethod = null),
                 ),
-                for (final pm in storage.getPaymentMethods())
+                for (final pm in storage.getPaymentMethods(_listBudgetId))
                   FilterChip(
                     avatar: Icon(
                       paymentMethodIcon(pm),
@@ -681,7 +690,7 @@ class _InstallmentLoanFormScreenState extends State<InstallmentLoanFormScreen> {
                           onSelected: (_) =>
                               setState(() => _purchaseCategoryId = null),
                         ),
-                        for (final cat in storage.getCategories())
+                        for (final cat in storage.getCategories(_listBudgetId))
                           FilterChip(
                             label: Text(cat.name),
                             selected: _purchaseCategoryId == cat.id,

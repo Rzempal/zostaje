@@ -58,9 +58,7 @@ class SubscriptionRow extends StatelessWidget {
     final method = s.paymentMethod;
     final methodAuto =
         method != null &&
-        storage.getPaymentMethods().any(
-          (p) => p.name == method && p.isAutomatic,
-        );
+        (storage.paymentMethodNamed(s.budgetId, method)?.isAutomatic ?? false);
 
     // Druga linia: typ · data · (trial / współdzielenie / anulowana) · metoda ·
     // kategoria. Data w tym samym formacie co pozycje budżetu — początek cyklu.

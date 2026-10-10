@@ -182,9 +182,63 @@ Future<({Budget budget, bool withSubscriptions})?> showBudgetTargetSheet(
   );
 }
 
+/// Pytanie przed przeniesieniem albo kopią do budżetu, któremu brakuje
+/// kategorii lub metod płatności przenoszonych pozycji (ADR-038 — listy są
+/// osobne): `true` — dodaj je tam, `false` — przenieś bez nich, `null` —
+/// anuluj. Bez braków od razu `true`, bez okna.
+Future<bool?> askAddMissingLabels(
+  BuildContext context, {
+  required String budgetName,
+  required ({List<String> categories, List<String> methods}) missing,
+}) async {
+  if (missing.categories.isEmpty && missing.methods.isEmpty) return true;
+  return showDialog<bool>(
+    context: context,
+    builder: (dctx) {
+      final theme = Theme.of(dctx);
+      return AlertDialog(
+        title: Text('W „$budgetName" brakuje etykiet'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (missing.categories.isNotEmpty)
+              Text('Kategorie: ${missing.categories.join(', ')}'),
+            if (missing.methods.isNotEmpty)
+              Text('Metody płatności: ${missing.methods.join(', ')}'),
+            const SizedBox(height: 12),
+            Text(
+              'Dodać je do tego budżetu? Bez nich pozycje przyjdą bez '
+              'kategorii i metody.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: dctx.semanticColors.textMuted,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dctx),
+            child: const Text('Anuluj'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dctx, false),
+            child: const Text('Bez nich'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dctx, true),
+            child: const Text('Dodaj je'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
 /// Przenosi albo kopiuje pozycje planu [ids] do wybranego budżetu
-/// (ADR-037) — z wyborem budżetu w arkuszu i komunikatem o wyniku. Pożyczka
-/// idzie w całości (wypłata, raty, zakup). Zwraca `true`, gdy coś zrobiono.
+/// (ADR-037) — z wyborem budżetu w arkuszu, pytaniem o brakujące etykiety
+/// i komunikatem o wyniku. Pożyczka idzie w całości (wypłata, raty, zakup).
+/// Zwraca `true`, gdy coś zrobiono.
 Future<bool> moveOrCopyPositions(
   BuildContext context,
   Set<String> ids, {
@@ -204,9 +258,23 @@ Future<bool> moveOrCopyPositions(
         : 'Razem z odhaczonymi płatnościami.',
   );
   if (target == null || !context.mounted) return false;
+  final addMissing = await askAddMissingLabels(
+    context,
+    budgetName: target.budget.name,
+    missing: budgets.missingIn(target.budget.id, positionIds: ids),
+  );
+  if (addMissing == null || !context.mounted) return false;
   final n = copy
-      ? await budgets.copyPositions(ids, target.budget.id)
-      : await budgets.movePositions(ids, target.budget.id);
+      ? await budgets.copyPositions(
+          ids,
+          target.budget.id,
+          addMissing: addMissing,
+        )
+      : await budgets.movePositions(
+          ids,
+          target.budget.id,
+          addMissing: addMissing,
+        );
   if (context.mounted) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -220,4 +288,43 @@ Future<bool> moveOrCopyPositions(
       );
   }
   return n > 0;
+}
+
+/// Pusta lista słownika (nowy budżet startuje bez kategorii i metod,
+/// ADR-038) — z podpowiedzią skopiowania listy z innego budżetu.
+class EmptyBudgetDictionary extends StatelessWidget {
+  final String text;
+  final VoidCallback onCopyFrom;
+
+  const EmptyBudgetDictionary({
+    super.key,
+    required this.text,
+    required this.onCopyFrom,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '$text\nDodaj pierwszą przyciskiem „+".',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              icon: const Icon(LucideIcons.copy, size: 16),
+              label: const Text('Skopiuj z innego budżetu…'),
+              onPressed: onCopyFrom,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

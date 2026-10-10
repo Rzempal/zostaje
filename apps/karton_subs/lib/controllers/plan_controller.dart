@@ -87,7 +87,7 @@ class PlanController extends ChangeNotifier {
         month: month,
         target: target,
         autoByPayment: {
-          for (final pm in _storage.getPaymentMethods())
+          for (final pm in _storage.getPaymentMethods(budgetId))
             pm.name: pm.isAutomatic,
         },
       );

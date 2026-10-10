@@ -61,7 +61,8 @@ class ExcelService {
   /// Buduje arkusz ze wszystkich subskrypcji i udostępnia przez system share.
   Future<void> exportToFile() async {
     final subs = _storage.getSubscriptions();
-    final categories = _storage.getCategories();
+    // Subskrypcje wszystkich budżetów — nazwy kategorii z każdego (ADR-038).
+    final categories = _storage.getAllCategories();
     final bytes = _buildWorkbook(subs, categories, _storage.getBudgets());
 
     final dir = await getTemporaryDirectory();
@@ -209,15 +210,18 @@ class ExcelService {
     _RawParse raw,
     String fallbackBudgetId,
   ) {
-    // Mapy do dopasowania po nazwie (case-insensitive). Zachowujemy oryginalną
-    // pisownię z bazy (id kategorii, dokładną nazwę metody płatności).
-    final catByName = <String, String>{};
-    for (final c in _storage.getCategories()) {
-      catByName[c.name.toLowerCase().trim()] = c.id;
+    // Mapy do dopasowania po nazwie (case-insensitive), osobno dla każdego
+    // budżetu — kategorie i metody są jego własne (ADR-038). Zachowujemy
+    // oryginalną pisownię z bazy (id kategorii, dokładną nazwę metody).
+    final catByName = <String, Map<String, String>>{};
+    for (final c in _storage.getAllCategories()) {
+      final b = c.budgetId;
+      if (b != null) (catByName[b] ??= {})[c.name.toLowerCase().trim()] = c.id;
     }
-    final pmByName = <String, String>{};
-    for (final p in _storage.getPaymentMethods()) {
-      pmByName[p.name.toLowerCase().trim()] = p.name;
+    final pmByName = <String, Map<String, String>>{};
+    for (final p in _storage.getAllPaymentMethods()) {
+      final b = p.budgetId;
+      if (b != null) (pmByName[b] ??= {})[p.name.toLowerCase().trim()] = p.name;
     }
     final existingNames = _storage
         .getSubscriptions()
@@ -260,8 +264,8 @@ class ExcelService {
 
   static ExcelImportResult _buildResult(
     _RawParse raw,
-    Map<String, String> catByName,
-    Map<String, String> pmByName,
+    Map<String, Map<String, String>> catByName,
+    Map<String, Map<String, String>> pmByName,
     Set<String> existingNames, [
     List<Budget> budgets = Budget.defaults,
     String fallbackBudgetId = kBudgetPersonal,
@@ -271,12 +275,17 @@ class ExcelService {
     final warnings = <String>[];
 
     for (final row in raw.rows) {
-      final categoryId = row.categoryName != null
-          ? catByName[row.categoryName!.toLowerCase().trim()]
-          : null;
-      final paymentMethod = row.paymentName != null
-          ? pmByName[row.paymentName!.toLowerCase().trim()]
-          : null;
+      // Kategoria i metoda z listy budżetu wiersza; brak na niej — pusto
+      // (import niczego do list budżetu nie dodaje).
+      final budgetId = _budgetFor(row.budgetName, budgets, fallbackBudgetId);
+      final categoryName = row.categoryName?.toLowerCase().trim();
+      final categoryId = categoryName == null
+          ? null
+          : catByName[budgetId]?[categoryName];
+      final paymentName = row.paymentName?.toLowerCase().trim();
+      final paymentMethod = paymentName == null
+          ? null
+          : pmByName[budgetId]?[paymentName];
 
       if (existingNames.contains(row.name.toLowerCase().trim())) {
         warnings.add('„${row.name}" — subskrypcja o tej nazwie już istnieje '
@@ -295,7 +304,7 @@ class ExcelService {
         startDate: row.startDate,
         isActive: row.isActive,
         paymentMethod: paymentMethod,
-        budgetId: _budgetFor(row.budgetName, budgets, fallbackBudgetId),
+        budgetId: budgetId,
         dataDodania: now,
       ));
     }
@@ -340,7 +349,7 @@ class ExcelService {
         _storage.getPlanPositions(budgetId).where((p) => !p.archived).toList();
     final bytes = PlanExcel.build(
       positions: positions,
-      categories: _storage.getCategories(),
+      categories: _storage.getCategories(budgetId),
       years: years,
     );
 
@@ -402,8 +411,10 @@ class ExcelService {
       throw const FormatException('Plik jest za duży (limit 5 MB)');
     }
 
+    // Kategorie budżetu, do którego trafią pozycje (ADR-038).
     final catByName = {
-      for (final c in _storage.getCategories()) c.name.toLowerCase().trim(): c.id,
+      for (final c in _storage.getCategories(budgetId))
+        c.name.toLowerCase().trim(): c.id,
     };
     return await compute(
       _parsePlanWorkbook,

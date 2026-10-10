@@ -27,7 +27,7 @@
 | 16 | Przebudowa: plan roczny (ADR-035) | ✅ Na PROD od 0.27 (2026-10-08); E7 (Supabase) odlozone — TBD |
 | 17 | Pozyczki ratalne (ADR-036) | ✅ PROD (2026-10-09) — sekcja Pozyczki, raty z RRSO, zakup jako wydatek |
 | 18 | Budzety z nazwami i ikonami (ADR-037) | ✅ PROD (2026-10-09) — dowolnie wiele budzetow z ikonami, ukrywanie, przenoszenie i kopiowanie miedzy budzetami |
-| 19 | Etykiety i metody platnosci osobne dla budzetow; duplikowanie, kolka w siatce miesiecy | etap 1 (duplikowanie, siatka) ✅ PROD (2026-10-10); 🚧 etap 2 (osobne kategorie i metody platnosci: podzial danych, przenies/kopiuj z pytaniem o brakujace, nowy budzet z pustymi listami) — w realizacji |
+| 19 | Etykiety i metody platnosci osobne dla budzetow; duplikowanie, kolka w siatce miesiecy | etap 1 (duplikowanie, siatka) ✅ PROD (2026-10-10); 🚧 etap 2 (osobne kategorie i metody platnosci, ADR-038) na DEV — do akceptacji |
 
 > **Stan na 2026-10-08:** przebudowa scalona do `main` i wydana na PROD (0.27).
 > Ostatnia wersja sprzed przebudowy to `v0.26.26100600` — punkt powrotu (zbudowac

@@ -5,7 +5,8 @@ import 'package:provider/provider.dart';
 import '../controllers/budget_controller.dart';
 import '../models/budget.dart';
 import '../theme/app_theme.dart';
-import '../widgets/budget_picker.dart' show showBudgetTargetSheet;
+import '../widgets/budget_picker.dart'
+    show askAddMissingLabels, showBudgetTargetSheet;
 import '../widgets/category_icons.dart'
     show availableIconNames, categoryIcon;
 
@@ -172,15 +173,28 @@ class BudgetsScreen extends StatelessWidget {
           : 'Pozycje planu i subskrypcje, razem z odhaczonymi płatnościami.',
       subscriptionsOption: copy,
     );
-    if (target == null) return;
+    if (target == null || !context.mounted) return;
+    final addMissing = await askAddMissingLabels(
+      context,
+      budgetName: target.budget.name,
+      missing: ctrl.missingIn(
+        target.budget.id,
+        positionIds: [for (final p in ctrl.positionsOf(b.id)) p.id],
+        subs: copy && !target.withSubscriptions
+            ? const []
+            : ctrl.subscriptionsOf(b.id),
+      ),
+    );
+    if (addMissing == null) return;
     if (copy) {
       await ctrl.copyAll(
         b.id,
         target.budget.id,
         withSubscriptions: target.withSubscriptions,
+        addMissing: addMissing,
       );
     } else {
-      await ctrl.moveAll(b.id, target.budget.id);
+      await ctrl.moveAll(b.id, target.budget.id, addMissing: addMissing);
     }
     if (context.mounted) {
       _snack(
@@ -246,8 +260,18 @@ class BudgetsScreen extends StatelessWidget {
         title: 'Przenieś zawartość „${b.name}" do…',
         subtitle: 'Potem budżet „${b.name}" zostanie usunięty.',
       );
-      if (target == null) return;
-      await ctrl.moveAll(b.id, target.budget.id);
+      if (target == null || !context.mounted) return;
+      final addMissing = await askAddMissingLabels(
+        context,
+        budgetName: target.budget.name,
+        missing: ctrl.missingIn(
+          target.budget.id,
+          positionIds: [for (final p in ctrl.positionsOf(b.id)) p.id],
+          subs: ctrl.subscriptionsOf(b.id),
+        ),
+      );
+      if (addMissing == null) return;
+      await ctrl.moveAll(b.id, target.budget.id, addMissing: addMissing);
       await ctrl.deleteBudget(b.id);
       if (context.mounted) {
         _snack(

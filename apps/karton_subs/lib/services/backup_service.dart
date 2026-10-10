@@ -216,23 +216,23 @@ class BackupService {
   @visibleForTesting
   String buildJsonPayloadForTest() {
     final subs = _storage.getSubscriptions();
-    final cats = _storage.getCategories();
-    final pms = _storage.getPaymentMethods();
+    final cats = _storage.getAllCategories();
+    final pms = _storage.getAllPaymentMethods();
     final budget = _storage.getBudgetEntries(BudgetScope.personal);
     final household = _storage.getBudgetEntries(BudgetScope.household);
     return jsonEncode({
-      // v8 (ADR-035): plan roczny w `planPositions`. Stara aplikacja odrzuca
-      // wersję > 7, zanim cokolwiek skasuje — nie wczyta pliku bez planu.
-      'version': 8,
+      // v9 (ADR-038): kategorie i metody płatności osobne dla budżetów — pełne
+      // listy z `budgetId`. v8 (ADR-035): plan roczny w `planPositions`. Stara
+      // aplikacja odrzuca nowszą wersję, zanim cokolwiek skasuje.
+      'version': 9,
       'exportDate': DateTime.now().toIso8601String(),
       'subscriptions': subs.map((s) => s.toJson()).toList(),
-      'categories': cats
-          .where((c) => !defaultCategories.any((d) => d.id == c.id))
-          .map((c) => c.toJson())
-          .toList(),
+      // Wszystkie kategorie, także domyślne: każda należy do budżetu, a zmiana
+      // nazwy domyślnej (ten sam identyfikator) przepadałaby przy odtworzeniu.
+      'categories': cats.map((c) => c.toJson()).toList(),
       // Pełna lista metod płatności (nie pomijamy defaultów — po
       // rename zachowują ten sam ID, ale zmienioną nazwę, więc filtr po ID
-      // byłby błędny). Przy imporcie upsert po ID.
+      // byłby błędny).
       'paymentMethods': pms.map((pm) => pm.toJson()).toList(),
       // Budżet osobisty (lokalny) i domowy (osobny zbiór, przyszła synchronizacja).
       'budgetEntries': budget.map((e) => e.toJson()).toList(),
@@ -275,9 +275,12 @@ class BackupService {
   }) async {
     final data = jsonDecode(jsonString) as Map<String, dynamic>;
     final version = data['version'] as int? ?? 1;
-    if (version > 8) {
+    if (version > 9) {
       throw FormatException('Nieobsługiwana wersja backupu: $version');
     }
+    // v9 niesie pełne słowniki z budżetami (ADR-038); starsza kopia —
+    // kategorie bez domyślnych i bez budżetów (podział po wczytaniu).
+    final fullDictionaries = version >= 9;
     // Liczba pozycji usuniętych przy odtwarzaniu — do uczciwego podsumowania.
     var removed = 0;
     if (replace) {
@@ -296,6 +299,8 @@ class BackupService {
       await _storage.clearForRestore(
         subscriptions: true, // obecne w każdej wersji formatu
         categories: true, // obecne w każdej wersji formatu
+        keepDefaultCategories: !fullDictionaries,
+        paymentMethods: fullDictionaries,
         budgetPersonal: hasBudget,
         budgetHousehold: hasHousehold,
         paymentDone: data['paymentDone'] != null,
@@ -415,6 +420,10 @@ class BackupService {
         _storage,
       ).reconvert(Subscription.devDateOverride ?? DateTime.now());
     }
+
+    // Słowniki ze starszej kopii (bez budżetów) — podział na budżety według
+    // użycia, już z wczytanymi pozycjami i subskrypcjami (ADR-038).
+    await _storage.ensureDictionaries();
 
     _log.info(
         'Import (${replace ? "odtworzenie" : "scalenie"}): $subsImported subs, '
