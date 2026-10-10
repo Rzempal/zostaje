@@ -1,10 +1,9 @@
 {
-  "version": "0.27.26101001",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026101001",
-  "releaseDate": "2026-10-10T12:23:27Z",
-  "releaseNotes": "- Ekran pozycji: kwota edytuje miesiac, kolko po prawej zaznacza (bez przytrzymania)\n- Kafel miesiaca: dzien w linii miesiaca, brak kwoty zamiast kreski\n- Duplikuj: pozycja, pozyczka, subskrypcja i zaznaczone pozycje (w tym samym budzecie, z dopiskiem kopia)",
-  "versionCode": 2026101001,
   "changelog": [
+    {
+      "version": "0.27.26101002",
+      "notes": "- Kategorie i metody platnosci osobne dla kazdego budzetu\n- Istniejace dane podzielone: uzywane w kilku budzetach - kopia w kazdym, nieuzywane - do Osobistego\n- Ekrany Kategorie i Metody platnosci: lista wybranego budzetu, Kopiuj i Przenies do budzetu, Kopiuj wszystkie\n- Nowy budzet z pustymi listami (podpowiedz: skopiuj z innego budzetu)\n- Przenoszenie i kopiowanie do budzetu: pytanie o brakujace kategorie i metody (Dodaj je / Bez nich)\n- Kopia zapasowa w wersji 9 (wszystkie kategorie i metody z budzetami)"
+    },
     {
       "version": "0.27.26101001",
       "notes": "- Ekran pozycji: kwota edytuje miesiac, kolko po prawej zaznacza (bez przytrzymania)\n- Kafel miesiaca: dzien w linii miesiaca, brak kwoty zamiast kreski\n- Duplikuj: pozycja, pozyczka, subskrypcja i zaznaczone pozycje (w tym samym budzecie, z dopiskiem kopia)"
@@ -40,10 +39,11 @@
     {
       "version": "0.26.26082300",
       "notes": "- Potwierdzenie platnosci z portfela telefonu (Samsung Wallet) czytane w okolo sekunde, bez silnika AI\n- Nazwa sklepu, kwota i data prosto z dokumentu, bez zgadywania roku\n- Odczyt nie wymaga obracania zdjecia, wiec jest szybszy"
-    },
-    {
-      "version": "0.26.26081800",
-      "notes": "- Scalanie zaznaczonych wydatkow w jeden wpis: suma kwot, data najstarszej pozycji, wzorzec wybierany z listy\n- Pozycje karty kredytowej sa chronione przed scaleniem, bo ich usuniecie kasuje kaskada zakup\n- Splaty karty na Biezacych oraz wplywy z karty na Wplywach zwijaja sie w jeden wiersz z suma\n- Rozwinieta grupa ma wciecie, wiec widac przynaleznosc pozycji"
     }
-  ]
+  ],
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026101002",
+  "version": "0.27.26101002",
+  "versionCode": 2026101002,
+  "releaseDate": "2026-10-10T13:16:50Z",
+  "releaseNotes": "- Kategorie i metody platnosci osobne dla kazdego budzetu\n- Istniejace dane podzielone: uzywane w kilku budzetach - kopia w kazdym, nieuzywane - do Osobistego\n- Ekrany Kategorie i Metody platnosci: lista wybranego budzetu, Kopiuj i Przenies do budzetu, Kopiuj wszystkie\n- Nowy budzet z pustymi listami (podpowiedz: skopiuj z innego budzetu)\n- Przenoszenie i kopiowanie do budzetu: pytanie o brakujace kategorie i metody (Dodaj je / Bez nich)\n- Kopia zapasowa w wersji 9 (wszystkie kategorie i metody z budzetami)"
 }
