@@ -514,17 +514,30 @@ class _PlanningScreenState extends State<PlanningScreen> {
         children: [
           WorkspaceTopBar(
             info: SectionInfo.planning,
-            // „Dzisiaj" w pustym rogu paska; wcięcie wyrównuje go z chipami
-            // filtrów pod spodem.
-            leading: Padding(
+            // „Dzisiaj" i „Cały rok" w pustym rogu paska; wcięcie wyrównuje je
+            // z chipami filtrów pod spodem. Na wąskim ekranie przewijają się
+            // w bok zamiast ucinać.
+            leading: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.only(left: 8),
-              child: AuroraChip(
-                label: 'Dzisiaj',
-                selected: isToday,
-                onTap: () => setState(() {
-                  _year = today.year;
-                  _month = today.month;
-                }),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AuroraChip(
+                    label: 'Dzisiaj',
+                    selected: isToday,
+                    onTap: () => setState(() {
+                      _year = today.year;
+                      _month = today.month;
+                    }),
+                  ),
+                  const SizedBox(width: 8),
+                  AuroraChip(
+                    label: 'Cały rok',
+                    selected: _month == null,
+                    onTap: () => setState(() => _month = null),
+                  ),
+                ],
               ),
             ),
           ),

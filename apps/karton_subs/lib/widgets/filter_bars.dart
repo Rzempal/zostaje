@@ -95,8 +95,9 @@ const kMonthsShort = [
 
 /// Filtr czasu: pasek lat, a po wybraniu roku — pasek jego miesięcy.
 ///
-/// Skrót „Dzisiaj" (bieżący rok i miesiąc) stoi w pasku ekranu, nie tutaj —
-/// w rzędzie lat zabierał miejsce i gasił wybrany rok.
+/// „Dzisiaj" (bieżący rok i miesiąc) i „Cały rok" (bez wybranego miesiąca)
+/// stoją w pasku ekranu, nie tutaj — w rzędach lat i miesięcy zabierały
+/// miejsce. Dotknięcie wybranego miesiąca też wraca do całego roku.
 class TimeFilterBar extends StatelessWidget {
   final List<int> years;
   final int? activeYear;
@@ -177,9 +178,10 @@ Widget _timeChip(String label, bool selected, VoidCallback onTap, {Key? key}) =>
       ),
     );
 
-/// Pasek miesięcy roku. Wybrany miesiąc sam wjeżdża na środek paska, gdy nie
-/// widać go w całości — przy starcie na bieżącym miesiącu (np. „paź") stałby
-/// inaczej za prawą krawędzią. Widoczny w całości zostaje, gdzie jest.
+/// Pasek miesięcy roku (same miesiące — „Cały rok" jest w pasku ekranu).
+/// Wybrany miesiąc sam wjeżdża na środek paska, gdy nie widać go w całości —
+/// przy starcie na bieżącym miesiącu (np. „paź") stałby inaczej za prawą
+/// krawędzią. Widoczny w całości zostaje, gdzie jest.
 class _MonthsRow extends StatefulWidget {
   final List<int> months;
   final int? active;
@@ -196,10 +198,10 @@ class _MonthsRow extends StatefulWidget {
 }
 
 class _MonthsRowState extends State<_MonthsRow> {
-  /// Klucz każdego chipu (`null` = „Cały rok") — do odszukania wybranego.
-  final _keys = <int?, GlobalKey>{};
+  /// Klucz każdego chipu — do odszukania wybranego.
+  final _keys = <int, GlobalKey>{};
 
-  GlobalKey _keyOf(int? month) => _keys.putIfAbsent(month, GlobalKey.new);
+  GlobalKey _keyOf(int month) => _keys.putIfAbsent(month, GlobalKey.new);
 
   @override
   void initState() {
@@ -215,7 +217,8 @@ class _MonthsRowState extends State<_MonthsRow> {
 
   void _revealActive({required bool animate}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final chip = _keyOf(widget.active).currentContext;
+      final active = widget.active;
+      final chip = active == null ? null : _keyOf(active).currentContext;
       if (!mounted || chip == null) return;
       final box = chip.findRenderObject() as RenderBox?;
       final row = context.findRenderObject() as RenderBox?;
@@ -235,7 +238,7 @@ class _MonthsRowState extends State<_MonthsRow> {
   Widget build(BuildContext context) {
     final active = widget.active;
     // Wszystkie chipy naraz (nie ListView): wybrany musi istnieć, żeby dało
-    // się go przewinąć na widok, a miesięcy jest tylko 13.
+    // się go przewinąć na widok, a miesięcy jest tylko 12.
     return SizedBox(
       height: 48,
       child: SingleChildScrollView(
@@ -243,12 +246,6 @@ class _MonthsRowState extends State<_MonthsRow> {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            _timeChip(
-              'Cały rok',
-              active == null,
-              () => widget.onSelect(null),
-              key: _keyOf(null),
-            ),
             for (final m in widget.months)
               _timeChip(
                 kMonthsShort[m - 1],

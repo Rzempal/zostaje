@@ -1,7 +1,12 @@
 {
-  "version": "0.27.26101002",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101002",
+  "releaseDate": "2026-10-10T13:20:23Z",
+  "releaseNotes": "- Planowanie: Caly rok obok Dzisiaj w lewym gornym rogu\n- Pasek miesiecy: same miesiace (dotkniecie wybranego wraca do calego roku)",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101003",
   "changelog": [
+    {
+      "version": "0.27.26101003",
+      "notes": "- Planowanie: Caly rok obok Dzisiaj w lewym gornym rogu\n- Pasek miesiecy: same miesiace (dotkniecie wybranego wraca do calego roku)"
+    },
     {
       "version": "0.27.26101002",
       "notes": "- Kategorie i metody platnosci osobne dla kazdego budzetu\n- Istniejace dane podzielone: uzywane w kilku budzetach - kopia w kazdym, nieuzywane - do Osobistego\n- Ekrany Kategorie i Metody platnosci: lista wybranego budzetu, Kopiuj i Przenies do budzetu, Kopiuj wszystkie\n- Nowy budzet z pustymi listami (podpowiedz: skopiuj z innego budzetu)\n- Przenoszenie i kopiowanie do budzetu: pytanie o brakujace kategorie i metody (Dodaj je / Bez nich)\n- Kopia zapasowa w wersji 9 (wszystkie kategorie i metody z budzetami)"
@@ -37,13 +42,8 @@
     {
       "version": "0.27.26100801",
       "notes": "- Wydatki: chevron w naglowku rozwija obie listy (albo zwija obie)"
-    },
-    {
-      "version": "0.26.26100800",
-      "notes": "- Planowanie: grupa Wydatki = pozycje + subskrypcje, pasek proporcji i przelaczniki list\n- Karta kredytowa poza wydatkami"
     }
   ],
-  "versionCode": 2026101002,
-  "releaseDate": "2026-10-10T12:44:54Z",
-  "releaseNotes": "- Kategorie i metody platnosci osobne dla kazdego budzetu\n- Istniejace dane podzielone: uzywane w kilku budzetach - kopia w kazdym, nieuzywane - do Osobistego\n- Ekrany Kategorie i Metody platnosci: lista wybranego budzetu, Kopiuj i Przenies do budzetu, Kopiuj wszystkie\n- Nowy budzet z pustymi listami (podpowiedz: skopiuj z innego budzetu)\n- Przenoszenie i kopiowanie do budzetu: pytanie o brakujace kategorie i metody (Dodaj je / Bez nich)\n- Kopia zapasowa w wersji 9 (wszystkie kategorie i metody z budzetami)"
+  "version": "0.27.26101003",
+  "versionCode": 2026101003
 }

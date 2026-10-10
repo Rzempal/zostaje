@@ -160,11 +160,13 @@ void main() {
     expect(find.textContaining('Pozycje -'), findsOneWidget);
     expect(find.text('Subskrypcje'), findsNothing);
 
-    // Cały rok, a „Dzisiaj" w rogu paska wraca do bieżącego miesiąca.
+    // „Cały rok" i „Dzisiaj" stoją obok siebie w rogu paska (w czcionce
+    // testowej nie mieszczą się naraz — stąd przewinięcie do każdego).
     await tester.ensureVisible(find.text('Cały rok'));
     await tester.tap(find.text('Cały rok'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Zostaje · paź 2026'), findsNothing);
+    await tester.ensureVisible(find.text('Dzisiaj'));
     await tester.tap(find.text('Dzisiaj'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Zostaje · paź 2026'), findsOneWidget);
