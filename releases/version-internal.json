@@ -1,8 +1,9 @@
 {
-  "releaseDate": "2026-10-10T13:20:23Z",
-  "releaseNotes": "- Planowanie: Caly rok obok Dzisiaj w lewym gornym rogu\n- Pasek miesiecy: same miesiace (dotkniecie wybranego wraca do calego roku)",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101003",
   "changelog": [
+    {
+      "version": "0.27.26101004",
+      "notes": "- Ekran pozycji: budzet pozycji (ikona i nazwa) na poczatku linii pod tytulem"
+    },
     {
       "version": "0.27.26101003",
       "notes": "- Planowanie: Caly rok obok Dzisiaj w lewym gornym rogu\n- Pasek miesiecy: same miesiace (dotkniecie wybranego wraca do calego roku)"
@@ -38,12 +39,11 @@
     {
       "version": "0.27.26100900",
       "notes": "- Ekran pozycji: siatka 3x4 zamiast dlugiej listy\n- Szybkie wypelnianie: kwota w puste albo zaznaczone miesiace\n- Okres pozycji (od-do): miesiace przed startem i po splacie raty wyszarzone\n- Raty i starty ze starego budzetu dostaja okres automatycznie\n- Excel: kolumny Od i Do"
-    },
-    {
-      "version": "0.27.26100801",
-      "notes": "- Wydatki: chevron w naglowku rozwija obie listy (albo zwija obie)"
     }
   ],
-  "version": "0.27.26101003",
-  "versionCode": 2026101003
+  "version": "0.27.26101004",
+  "releaseDate": "2026-10-10T14:12:05Z",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101004",
+  "releaseNotes": "- Ekran pozycji: budzet pozycji (ikona i nazwa) na poczatku linii pod tytulem",
+  "versionCode": 2026101004
 }

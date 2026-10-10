@@ -10,6 +10,7 @@ import '../theme/app_theme.dart';
 import '../utils/money_format.dart';
 import '../widgets/budget_picker.dart' show moveOrCopyPositions;
 import '../widgets/budget_widgets.dart' show budgetNf;
+import '../widgets/category_icons.dart' show categoryIcon;
 import '../widgets/filter_bars.dart' show kMonthsShort;
 import '../widgets/frost_card.dart';
 import '../widgets/plan_widgets.dart'
@@ -355,6 +356,7 @@ class _PlanPositionScreenState extends State<PlanPositionScreen> {
     final category = p.categoryId != null
         ? storage.getCategory(p.categoryId!)
         : null;
+    final budget = context.watch<BudgetController>().budgetById(p.budgetId);
     final color = p.isInflow ? c.positive : c.negative;
     final inPeriodKeys = _keys.where(p.inPeriod).toList();
     final todayKey = planMonthKey(plan.today.year, plan.today.month);
@@ -438,14 +440,43 @@ class _PlanPositionScreenState extends State<PlanPositionScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
               children: [
-                Text(
-                  [
-                    p.isInflow ? 'Wpływ' : 'Wydatek',
-                    ?category?.name,
-                    ?p.paymentMethod,
-                    if (p.day != null) 'dzień ${p.day}',
-                    if (p.archived) 'ukryta',
-                  ].join(' · '),
+                // Budżet pozycji na początku linii (ADR-037) — kategorie
+                // i metody są jego własne (ADR-038), więc warto go widzieć.
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      if (budget != null) ...[
+                        WidgetSpan(
+                          alignment: PlaceholderAlignment.middle,
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 4),
+                            child: Icon(
+                              categoryIcon(budget.icon),
+                              size: 14,
+                              color: c.primary,
+                            ),
+                          ),
+                        ),
+                        TextSpan(
+                          text: budget.name,
+                          style: TextStyle(
+                            color: c.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const TextSpan(text: ' · '),
+                      ],
+                      TextSpan(
+                        text: [
+                          p.isInflow ? 'Wpływ' : 'Wydatek',
+                          ?category?.name,
+                          ?p.paymentMethod,
+                          if (p.day != null) 'dzień ${p.day}',
+                          if (p.archived) 'ukryta',
+                        ].join(' · '),
+                      ),
+                    ],
+                  ),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: c.textMuted,
                   ),

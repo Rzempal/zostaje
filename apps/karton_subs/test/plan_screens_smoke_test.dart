@@ -190,6 +190,8 @@ void main() {
     );
     expect(find.text('paź'), findsOneWidget);
     expect(find.text('Szybkie wypełnianie'), findsOneWidget);
+    // Budżet pozycji na początku linii pod tytułem.
+    expect(find.textContaining('Osobisty · Wydatek'), findsOneWidget);
     // Dzień płatności w linii miesiąca (czynsz: dzień 5 w każdym miesiącu).
     expect(find.text(' · dz. 5'), findsNWidgets(12));
 
