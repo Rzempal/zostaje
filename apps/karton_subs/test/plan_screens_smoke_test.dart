@@ -186,6 +186,22 @@ void main() {
     );
     expect(find.text('paź'), findsOneWidget);
     expect(find.text('Szybkie wypełnianie'), findsOneWidget);
+    // Dzień płatności w linii miesiąca (czynsz: dzień 5 w każdym miesiącu).
+    expect(find.text(' · dz. 5'), findsNWidgets(12));
+
+    // Dotknięcie kwoty edytuje miesiąc (kółko jest od zaznaczania).
+    await tester.tap(find.text('paź'));
+    await tester.pumpAndSettle();
+    expect(find.text('Październik 2026'), findsOneWidget);
+    await tester.tap(find.text('Anuluj'));
+    await tester.pumpAndSettle();
+
+    // Duplikat w menu pozycji, obok przeniesienia i kopii.
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+    expect(find.text('Duplikuj pozycję'), findsOneWidget);
+    await tester.tapAt(const Offset(5, 700));
+    await tester.pumpAndSettle();
 
     // Rok bez planu — każdy miesiąc bez kwoty, „Puste" obejmie wszystkie.
     await tester.tap(find.byIcon(LucideIcons.chevronRight).first);
@@ -244,18 +260,18 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('przed startem pozycji'), findsOneWidget);
 
-    // …a przytrzymanie go nie zaznacza.
-    await tester.longPress(find.text('lut'));
-    await tester.pumpAndSettle();
+    // …i nie ma kółka do zaznaczenia.
+    expect(find.byTooltip('Zaznacz lut'), findsNothing);
     expect(find.text('Zaznaczone (0)'), findsOneWidget);
 
-    // Przytrzymanie zaczyna zaznaczanie, kolejne zaznacza zakres.
-    await tester.longPress(find.text('wrz'));
+    // Kółko po prawej zaznacza miesiąc — bez przytrzymania.
+    await tester.tap(find.byTooltip('Zaznacz wrz'));
     await tester.pumpAndSettle();
     expect(find.text('Zaznaczone (1)'), findsOneWidget);
-    await tester.longPress(find.text('gru'));
+    await tester.tap(find.byTooltip('Zaznacz gru'));
     await tester.pumpAndSettle();
-    expect(find.text('Zaznaczone (4)'), findsOneWidget);
+    expect(find.text('Zaznaczone (2)'), findsOneWidget);
+    expect(find.byTooltip('Odznacz wrz'), findsOneWidget);
 
     // Rok 2027: po lipcu rata się kończy.
     await tester.tap(find.byIcon(LucideIcons.chevronRight).first);

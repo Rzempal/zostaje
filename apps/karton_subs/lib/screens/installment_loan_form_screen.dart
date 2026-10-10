@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
+import '../controllers/budget_controller.dart';
 import '../controllers/plan_controller.dart';
 import '../models/budget_entry.dart' show BudgetEntry;
 import '../models/plan_position.dart';
@@ -361,6 +362,28 @@ class _InstallmentLoanFormScreenState extends State<InstallmentLoanFormScreen> {
     if (done && mounted) Navigator.of(context).pop();
   }
 
+  /// Duplikat całej pożyczki (wypłata, raty i zakup) w tym samym budżecie,
+  /// z dopiskiem „(kopia)", i od razu jej formularz — z zapisanej wersji.
+  Future<void> _duplicate() async {
+    final parts = context.read<PlanController>().loanParts(widget.linkId!);
+    final any = parts.repayment ?? parts.loan;
+    if (any == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    final link = await context.read<BudgetController>().duplicateLoan(any.id);
+    if (link == null || !mounted) return;
+    navigator.pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => InstallmentLoanFormScreen(linkId: link),
+      ),
+    );
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text('Utworzono kopię: „${any.name}$kCopySuffix"')),
+      );
+  }
+
   Future<void> _delete() async {
     final plan = context.read<PlanController>();
     final link = widget.linkId!;
@@ -392,7 +415,9 @@ class _InstallmentLoanFormScreenState extends State<InstallmentLoanFormScreen> {
             ),
             FilledButton(
               onPressed: () => Navigator.pop(dctx, true),
-              style: FilledButton.styleFrom(backgroundColor: AppColors.negative),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.negative,
+              ),
               child: const Text('Usuń'),
             ),
           ],
@@ -446,16 +471,19 @@ class _InstallmentLoanFormScreenState extends State<InstallmentLoanFormScreen> {
             ),
             PopupMenuButton<String>(
               tooltip: 'Więcej',
-              onSelected: (v) => _toBudget(copy: v == 'copy'),
+              onSelected: (v) => v == 'duplicate'
+                  ? _duplicate()
+                  : _toBudget(copy: v == 'copy'),
               itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: 'duplicate',
+                  child: Text('Duplikuj pożyczkę'),
+                ),
                 PopupMenuItem(
                   value: 'move',
                   child: Text('Przenieś do budżetu…'),
                 ),
-                PopupMenuItem(
-                  value: 'copy',
-                  child: Text('Kopiuj do budżetu…'),
-                ),
+                PopupMenuItem(value: 'copy', child: Text('Kopiuj do budżetu…')),
               ],
             ),
           ],
@@ -563,9 +591,7 @@ class _InstallmentLoanFormScreenState extends State<InstallmentLoanFormScreen> {
                     },
                     validator: (v) {
                       final d = int.tryParse((v ?? '').trim());
-                      return d == null || d < 1 || d > 31
-                          ? 'Dzień 1–31'
-                          : null;
+                      return d == null || d < 1 || d > 31 ? 'Dzień 1–31' : null;
                     },
                   ),
                 ),
@@ -694,7 +720,9 @@ class _InstallmentLoanFormScreenState extends State<InstallmentLoanFormScreen> {
       children: [
         Icon(icon, size: 18, color: color),
         const SizedBox(width: 8),
-        Expanded(child: Text(text, style: body?.copyWith(color: color))),
+        Expanded(
+          child: Text(text, style: body?.copyWith(color: color)),
+        ),
       ],
     );
 

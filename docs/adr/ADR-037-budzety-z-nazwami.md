@@ -51,6 +51,9 @@ budżetów z własnymi nazwami.
    Formularze nie mają wyboru budżetu — także formularz subskrypcji: nowa
    subskrypcja trafia do aktywnego budżetu, jak pozycja i pożyczka, a zmiana
    budżetu to tylko „Przenieś do / Kopiuj do" w menu ⋮.
+   Obok jest **„Duplikuj"** — kopia w tym samym budżecie (pozycja, pożyczka
+   w całości, subskrypcja, zaznaczone pozycje) z dopiskiem „(kopia)" w nazwie;
+   pojedyncza otwiera się od razu do poprawienia.
 7. **Usuwanie** budżetu: ostrzeżenie z liczbą pozycji i subskrypcji, że
    zniknie razem z nimi, z podpowiedzią przeniesienia — przyciski „Anuluj",
    „Przenieś i usuń…", „Usuń". Ostatniego budżetu usunąć się nie da.

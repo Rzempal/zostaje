@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
+import '../controllers/budget_controller.dart';
 import '../controllers/plan_controller.dart';
 import '../models/plan_position.dart';
 import '../services/storage_service.dart';
@@ -20,12 +21,12 @@ import 'plan_position_form_screen.dart';
 /// Szczegóły pozycji planu: dwanaście miesięcy wybranego roku w siatce
 /// (rząd = kwartał) i szybkie wypełnianie pod spodem (ADR-035).
 ///
-/// Dotknięcie miesiąca edytuje jeden; przytrzymanie zaczyna zaznaczanie
-/// (jak na liście Planowania), a kolejne przytrzymanie zaznacza zakres od
-/// ostatnio zaznaczonego miesiąca. Panel wpisuje kwotę i dzień w zaznaczone
-/// miesiące albo w puste miesiące roku. Miesiące poza okresem pozycji (przed
-/// startem, po spłacie raty) są wyszarzone — nie da się ich zaznaczyć ani
-/// wypełnić, a dotknięcie mówi dlaczego.
+/// Kafel ma dwa miejsca dotyku: kwota edytuje miesiąc, kółko po prawej go
+/// zaznacza (bez przytrzymania — od razu widać, że da się zaznaczyć). Panel
+/// wpisuje kwotę i dzień w zaznaczone miesiące albo w puste miesiące roku.
+/// Miesiące poza okresem pozycji (przed startem, po spłacie raty) są
+/// wyszarzone, bez kółka — nie da się ich zaznaczyć ani wypełnić, a dotknięcie
+/// mówi dlaczego.
 class PlanPositionScreen extends StatefulWidget {
   final String positionId;
   final int initialYear;
@@ -43,11 +44,7 @@ class PlanPositionScreen extends StatefulWidget {
 class _PlanPositionScreenState extends State<PlanPositionScreen> {
   late int _year = widget.initialYear;
   final Set<String> _selected = {};
-  bool _selecting = false;
-
-  /// Ostatnio zaznaczony miesiąc — początek zakresu przy kolejnym
-  /// przytrzymaniu.
-  String? _lastKey;
+  bool get _selecting => _selected.isNotEmpty;
   final _amountCtrl = TextEditingController();
   final _dayCtrl = TextEditingController();
 
@@ -71,9 +68,7 @@ class _PlanPositionScreenState extends State<PlanPositionScreen> {
   ];
 
   void _clearSelection() {
-    _selecting = false;
     _selected.clear();
-    _lastKey = null;
     _error = null;
   }
 
@@ -86,29 +81,7 @@ class _PlanPositionScreenState extends State<PlanPositionScreen> {
 
   void _toggle(String key) => setState(() {
     if (!_selected.remove(key)) _selected.add(key);
-    _lastKey = key;
     _error = null;
-    if (_selected.isEmpty) _selecting = false;
-  });
-
-  /// Przytrzymanie: pierwsze zaczyna zaznaczanie, kolejne zaznacza zakres
-  /// od ostatnio zaznaczonego miesiąca — z pominięciem miesięcy poza okresem.
-  void _longPress(PlanPosition p, String key) => setState(() {
-    _error = null;
-    final from = _lastKey;
-    if (!_selecting || from == null) {
-      _selecting = true;
-      _selected.add(key);
-    } else {
-      final first = from.compareTo(key) <= 0 ? from : key;
-      final last = from.compareTo(key) <= 0 ? key : from;
-      for (final k in _keys) {
-        if (k.compareTo(first) >= 0 && k.compareTo(last) <= 0 && p.inPeriod(k)) {
-          _selected.add(k);
-        }
-      }
-    }
-    _lastKey = key;
   });
 
   void _snack(String text, {SnackBarAction? action}) =>
@@ -227,7 +200,11 @@ class _PlanPositionScreenState extends State<PlanPositionScreen> {
     }
     final day = rawDay.isEmpty ? null : _parseDay(rawDay);
     if (rawDay.isNotEmpty && day == null) {
-      return (amount: null, day: null, error: 'Dzień musi być liczbą od 1 do 31');
+      return (
+        amount: null,
+        day: null,
+        error: 'Dzień musi być liczbą od 1 do 31',
+      );
     }
     return (amount: amount, day: day, error: null);
   }
@@ -260,7 +237,7 @@ class _PlanPositionScreenState extends State<PlanPositionScreen> {
   /// i wchodzi do planu; sam dzień zmienia tylko miesiące z kwotą.
   Future<void> _fillSelected(PlanPosition p) async {
     if (_selected.isEmpty) {
-      setState(() => _error = 'Przytrzymaj miesiąc, by go zaznaczyć');
+      setState(() => _error = 'Zaznacz miesiące kółkiem przy kwocie');
       return;
     }
     final input = _readPanel();
@@ -296,7 +273,7 @@ class _PlanPositionScreenState extends State<PlanPositionScreen> {
 
   Future<void> _removeSelected(PlanPosition p) async {
     if (_selected.isEmpty) {
-      setState(() => _error = 'Przytrzymaj miesiąc, by go zaznaczyć');
+      setState(() => _error = 'Zaznacz miesiące kółkiem przy kwocie');
       return;
     }
     final keys = _selected.where(p.months.containsKey).toList();
@@ -308,7 +285,9 @@ class _PlanPositionScreenState extends State<PlanPositionScreen> {
     if (!mounted) return;
     _endSelection();
     _snack(
-      n == 0 ? 'Zaznaczone miesiące nie mają kwot' : 'Usunięto z planu $n mies.',
+      n == 0
+          ? 'Zaznaczone miesiące nie mają kwot'
+          : 'Usunięto z planu $n mies.',
     );
   }
 
@@ -337,6 +316,30 @@ class _PlanPositionScreenState extends State<PlanPositionScreen> {
     if (ok != true || !mounted) return;
     Navigator.of(context).pop();
     await plan.deleteAll({p.id});
+  }
+
+  /// Duplikat w tym samym budżecie (z dopiskiem „(kopia)") i od razu jego
+  /// ekran — zwykle duplikuje się po to, żeby kopię zmienić. Część pożyczki
+  /// (zakup) duplikuje się z całą pożyczką, jak przy kopiowaniu.
+  Future<void> _duplicate(PlanPosition p) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    final copies = await context.read<BudgetController>().duplicatePositions({
+      p.id,
+    });
+    final copyId = copies[p.id];
+    if (copyId == null || !mounted) return;
+    navigator.pushReplacement(
+      MaterialPageRoute(
+        builder: (_) =>
+            PlanPositionScreen(positionId: copyId, initialYear: _year),
+      ),
+    );
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text('Utworzono kopię: „${p.name}$kCopySuffix"')),
+      );
   }
 
   @override
@@ -369,7 +372,9 @@ class _PlanPositionScreenState extends State<PlanPositionScreen> {
           ),
           PopupMenuButton<String>(
             onSelected: (v) async {
-              if (v == 'archive') {
+              if (v == 'duplicate') {
+                await _duplicate(p);
+              } else if (v == 'archive') {
                 await plan.setArchivedAll({p.id}, !p.archived);
               } else if (v == 'delete') {
                 await _delete(p);
@@ -388,9 +393,9 @@ class _PlanPositionScreenState extends State<PlanPositionScreen> {
               }
             },
             itemBuilder: (_) => [
-              PopupMenuItem(
-                value: 'archive',
-                child: Text(p.archived ? 'Przywróć do planu' : 'Ukryj pozycję'),
+              const PopupMenuItem(
+                value: 'duplicate',
+                child: Text('Duplikuj pozycję'),
               ),
               const PopupMenuItem(
                 value: 'move',
@@ -399,6 +404,10 @@ class _PlanPositionScreenState extends State<PlanPositionScreen> {
               const PopupMenuItem(
                 value: 'copy',
                 child: Text('Kopiuj do budżetu…'),
+              ),
+              PopupMenuItem(
+                value: 'archive',
+                child: Text(p.archived ? 'Przywróć do planu' : 'Ukryj pozycję'),
               ),
               const PopupMenuItem(value: 'delete', child: Text('Usuń pozycję')),
             ],
@@ -445,7 +454,11 @@ class _PlanPositionScreenState extends State<PlanPositionScreen> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(LucideIcons.calendarRange, size: 14, color: c.primary),
+                      Icon(
+                        LucideIcons.calendarRange,
+                        size: 14,
+                        color: c.primary,
+                      ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
@@ -567,8 +580,8 @@ class _PlanPositionScreenState extends State<PlanPositionScreen> {
       color: color,
       isCurrent: key == todayKey,
       selected: _selected.contains(key),
-      onTap: _selecting ? () => _toggle(key) : () => _editMonth(p, key, month),
-      onLongPress: () => _longPress(p, key),
+      onTap: () => _editMonth(p, key, month),
+      onToggle: () => _toggle(key),
     );
   }
 
@@ -611,8 +624,7 @@ class _PlanPositionScreenState extends State<PlanPositionScreen> {
           ),
           Text(
             _selected.isEmpty
-                ? 'Przytrzymaj miesiąc, by go zaznaczyć; kolejne '
-                      'przytrzymanie zaznacza zakres.'
+                ? 'Kółko przy miesiącu zaznacza go do wypełnienia.'
                 : 'Zaznaczone: $selectedLabels',
             style: theme.textTheme.bodySmall?.copyWith(color: c.textSecondary),
           ),
@@ -701,8 +713,10 @@ class _PlanPositionScreenState extends State<PlanPositionScreen> {
   }
 }
 
-/// Kafel miesiąca w siatce roku: skrót miesiąca, kwota i dzień — albo
-/// „brak kwoty", albo (poza okresem pozycji) kłódka z powodem.
+/// Kafel miesiąca w siatce roku. Pierwsza linia: skrót miesiąca i dzień
+/// płatności; druga: kwota albo „brak kwoty". Dwa miejsca dotyku: kwota —
+/// edycja miesiąca, kółko po prawej — zaznaczenie. Poza okresem pozycji:
+/// kłódka zamiast kółka i powód w drugiej linii, a cały kafel tylko wyjaśnia.
 class _MonthTile extends StatelessWidget {
   final String label;
   final PlanMonth? month;
@@ -714,8 +728,12 @@ class _MonthTile extends StatelessWidget {
 
   /// „przed startem" / „po zakończeniu"; `null` = miesiąc w okresie.
   final String? outsideReason;
+
+  /// Dotknięcie kwoty — a poza okresem całego kafla.
   final VoidCallback onTap;
-  final VoidCallback? onLongPress;
+
+  /// Dotknięcie kółka; `null` = kafel bez kółka (poza okresem).
+  final VoidCallback? onToggle;
 
   const _MonthTile({
     required this.label,
@@ -727,7 +745,7 @@ class _MonthTile extends StatelessWidget {
     this.isCurrent = false,
     this.selected = false,
     this.outsideReason,
-    this.onLongPress,
+    this.onToggle,
   });
 
   @override
@@ -737,7 +755,10 @@ class _MonthTile extends StatelessWidget {
     final m = month;
     final outside = outsideReason != null;
     final radius = BorderRadius.circular(AppRadii.control);
-    final day = m?.day ?? defaultDay;
+    final day = m == null ? null : m.day ?? defaultDay;
+    // Miesiąc z własnym dniem (innym niż dzień pozycji) — wyróżniony kolorem
+    // zamiast dopisku „(zm.)", na który obok kółka nie ma miejsca.
+    final ownDay = m?.day != null && m!.day != defaultDay;
 
     final Color? background;
     final BoxBorder? border;
@@ -755,88 +776,142 @@ class _MonthTile extends StatelessWidget {
       border = Border.all(color: c.border);
     }
 
-    final String bottom;
-    if (outside) {
-      bottom = outsideReason!;
-    } else if (m == null) {
-      bottom = 'brak kwoty';
-    } else if (day == null) {
-      bottom = '';
-    } else {
-      bottom = 'dzień $day${m.day == null ? '' : ' (zm.)'}';
-    }
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: radius,
-        onTap: onTap,
-        // Poza okresem przytrzymanie też tylko wyjaśnia — nie zaznacza.
-        onLongPress: onLongPress ?? onTap,
-        child: Ink(
-          padding: const EdgeInsets.fromLTRB(10, 8, 8, 8),
-          decoration: BoxDecoration(
-            color: background,
-            borderRadius: radius,
-            border: border,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+    final muted = theme.textTheme.bodySmall?.copyWith(color: c.textMuted);
+    final content = Padding(
+      padding: const EdgeInsets.fromLTRB(10, 8, 4, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Text(
-                    label,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: outside ? c.textMuted : c.textSecondary,
-                    ),
-                  ),
-                  if (isCurrent) ...[
-                    const SizedBox(width: 4),
-                    Container(
-                      width: 5,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: c.primary,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ],
-                  const Spacer(),
-                  if (selected)
-                    Icon(LucideIcons.checkCircle2, size: 15, color: c.primary),
-                ],
-              ),
-              const SizedBox(height: 2),
-              if (outside)
-                Icon(LucideIcons.lock, size: 14, color: c.textMuted)
-              else
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    m == null
-                        ? '—'
-                        : '${inflow ? '+' : '−'}${budgetNf.format(m.amount)}',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: m == null ? c.textMuted : color,
-                      fontWeight: FontWeight.w600,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 2),
               Text(
-                bottom,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: c.textMuted,
+                label,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: outside ? c.textMuted : c.textSecondary,
                 ),
               ),
+              if (isCurrent) ...[
+                const SizedBox(width: 4),
+                Container(
+                  width: 5,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: c.primary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+              if (day != null)
+                Flexible(
+                  child: Text(
+                    ' · dz. $day',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: ownDay ? c.primary : c.textMuted,
+                      fontWeight: ownDay ? FontWeight.w600 : null,
+                    ),
+                  ),
+                ),
             ],
           ),
+          const SizedBox(height: 2),
+          if (outside || m == null)
+            Text(
+              outsideReason ?? 'brak kwoty',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: muted,
+            )
+          else
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '${inflow ? '+' : '−'}${budgetNf.format(m.amount)}',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+    final decoration = BoxDecoration(
+      color: background,
+      borderRadius: radius,
+      border: border,
+    );
+
+    final toggle = onToggle;
+    if (toggle == null) {
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: radius,
+          onTap: onTap,
+          child: Ink(
+            decoration: decoration,
+            child: Row(
+              children: [
+                Expanded(child: content),
+                Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: Icon(LucideIcons.lock, size: 14, color: c.textMuted),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final corner = Radius.circular(AppRadii.control);
+    return Material(
+      color: Colors.transparent,
+      child: Ink(
+        decoration: decoration,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: InkWell(
+                borderRadius: BorderRadius.horizontal(left: corner),
+                onTap: onTap,
+                child: content,
+              ),
+            ),
+            Tooltip(
+              message: '${selected ? 'Odznacz' : 'Zaznacz'} $label',
+              child: InkWell(
+                borderRadius: BorderRadius.horizontal(right: corner),
+                onTap: toggle,
+                child: SizedBox(
+                  width: 36,
+                  child: Center(
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: selected ? c.primary : null,
+                        border: Border.all(
+                          color: selected ? c.primary : c.textMuted,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: selected
+                          ? Icon(LucideIcons.check, size: 13, color: c.surface)
+                          : null,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

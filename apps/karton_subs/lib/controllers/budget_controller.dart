@@ -8,9 +8,13 @@ import '../services/app_logger.dart';
 import '../services/storage_service.dart';
 import 'subscription_controller.dart';
 
+/// Dopisek w nazwie duplikatu (pozycja, pożyczka, subskrypcja w tym samym
+/// budżecie) — inaczej na liście stałyby dwie identyczne.
+const kCopySuffix = ' (kopia)';
+
 /// Budżety z nazwami (ADR-037): lista, aktywny budżet, ukrywanie, usuwanie,
-/// przenoszenie i kopiowanie zawartości; do tego odhaczenia płatności
-/// i kaskady słowników.
+/// przenoszenie, kopiowanie i duplikowanie zawartości; do tego odhaczenia
+/// płatności i kaskady słowników.
 ///
 /// Po przebudowie na plan roczny (ADR-035) pozycje i obliczenia żyją
 /// w [PlanController] — ten kontroler trzyma to, co wspólne dla planu,
@@ -180,9 +184,7 @@ class BudgetController extends ChangeNotifier {
   /// Pozycje razem z resztą swojej grupy — pożyczka idzie w całości
   /// (wypłata, raty i zakup), bo połowa pary w innym budżecie nie ma sensu.
   Set<String> _withGroups(Iterable<String> ids) {
-    final links = {
-      for (final id in ids) ?_storage.getPlanPosition(id)?.linkId,
-    };
+    final links = {for (final id in ids) ?_storage.getPlanPosition(id)?.linkId};
     return {
       ...ids,
       if (links.isNotEmpty)
@@ -216,32 +218,65 @@ class BudgetController extends ChangeNotifier {
   /// nowe identyfikatory — pożyczka nowe wspólne powiązanie — a odhaczenia
   /// płatności się nie kopiują. Zwraca liczbę skopiowanych pozycji.
   Future<int> copyPositions(Iterable<String> ids, String to) async {
+    final copies = await _copyPositions(ids, to: to);
+    _log.info('Copied ${copies.length} plan positions to $to');
+    return copies.length;
+  }
+
+  /// Duplikaty pozycji (z grupami pożyczek) w ich własnym budżecie, z dopiskiem
+  /// [kCopySuffix] w nazwie — na liście widać, która jest kopią. Reszta jak
+  /// w [copyPositions]. Zwraca identyfikatory: oryginał → kopia (np. żeby od
+  /// razu otworzyć kopię).
+  Future<Map<String, String>> duplicatePositions(Iterable<String> ids) async {
+    final copies = await _copyPositions(ids, nameSuffix: kCopySuffix);
+    _log.info('Duplicated ${copies.length} plan positions');
+    return copies;
+  }
+
+  /// Duplikat całej pożyczki, do której należy pozycja [partId] (wypłata,
+  /// spłata albo raty, zakup). Zwraca powiązanie kopii — żeby otworzyć jej
+  /// formularz.
+  Future<String?> duplicateLoan(String partId) async {
+    final copyId = (await duplicatePositions({partId}))[partId];
+    return copyId == null ? null : _storage.getPlanPosition(copyId)?.linkId;
+  }
+
+  /// Wspólne kopiowanie pozycji: do budżetu [to] albo (`null`) w budżecie
+  /// źródła.
+  Future<Map<String, String>> _copyPositions(
+    Iterable<String> ids, {
+    String? to,
+    String nameSuffix = '',
+  }) async {
     final now = DateTime.now();
     final newLinks = <String, String>{};
-    var count = 0;
+    final copies = <String, String>{};
     for (final id in _withGroups(ids)) {
       final p = _storage.getPlanPosition(id);
       if (p == null) continue;
       final link = p.linkId == null
           ? null
           : newLinks.putIfAbsent(p.linkId!, () => _uuid.v4());
+      final copyId = _uuid.v4();
       final json = p.toJson()
-        ..['id'] = _uuid.v4()
-        ..['budgetId'] = to
+        ..['id'] = copyId
+        ..['budgetId'] = to ?? p.budgetId
+        ..['name'] = '${p.name}$nameSuffix'
         ..['linkId'] = link
         ..['createdAt'] = now.toIso8601String()
         ..['updatedAt'] = now.toIso8601String();
       await _storage.savePlanPosition(PlanPosition.fromJson(json));
-      count++;
+      copies[id] = copyId;
     }
-    _log.info('Copied $count plan positions to $to');
     notifyListeners();
-    return count;
+    return copies;
   }
 
   Future<void> moveSubscriptions(Iterable<Subscription> subs, String to) async {
     for (final s in subs) {
-      if (s.budgetId != to) await _subscriptions.update(s.copyWith(budgetId: to));
+      if (s.budgetId != to) {
+        await _subscriptions.update(s.copyWith(budgetId: to));
+      }
     }
   }
 
@@ -253,9 +288,23 @@ class BudgetController extends ChangeNotifier {
     }
   }
 
+  /// Duplikat subskrypcji w jej budżecie, z dopiskiem [kCopySuffix] — własne
+  /// przypomnienia jak przy kopii. Zwraca kopię (żeby od razu ją otworzyć).
+  Future<Subscription> duplicateSubscription(Subscription s) async {
+    final copy = s.copyWith(
+      id: _uuid.v4(),
+      name: '${s.name}$kCopySuffix',
+      dataDodania: DateTime.now(),
+    );
+    await _subscriptions.add(copy);
+    return copy;
+  }
+
   /// Cała zawartość budżetu [from] — pozycje planu i subskrypcje — do [to].
   Future<void> moveAll(String from, String to) async {
-    await movePositions([for (final p in _storage.getPlanPositions(from)) p.id], to);
+    await movePositions([
+      for (final p in _storage.getPlanPositions(from)) p.id,
+    ], to);
     await moveSubscriptions(subscriptionsOf(from), to);
   }
 
@@ -266,7 +315,9 @@ class BudgetController extends ChangeNotifier {
     String to, {
     bool withSubscriptions = true,
   }) async {
-    await copyPositions([for (final p in _storage.getPlanPositions(from)) p.id], to);
+    await copyPositions([
+      for (final p in _storage.getPlanPositions(from)) p.id,
+    ], to);
     if (withSubscriptions) {
       await copySubscriptions(subscriptionsOf(from), to);
     }
@@ -287,10 +338,8 @@ class BudgetController extends ChangeNotifier {
       .length;
 
   /// Liczba pozycji planu (wszystkie budżety) z daną metodą płatności.
-  int countPaymentMethodUsage(String name) => _storage
-      .getPlanPositions()
-      .where((p) => p.paymentMethod == name)
-      .length;
+  int countPaymentMethodUsage(String name) =>
+      _storage.getPlanPositions().where((p) => p.paymentMethod == name).length;
 
   /// Przenosi pozycje planu z kategorii [fromId] do [toId] (usunięcie
   /// kategorii). Zwraca liczbę zmienionych pozycji.

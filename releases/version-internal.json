@@ -1,9 +1,10 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101000",
-  "version": "0.27.26101000",
-  "releaseNotes": "- Planowanie: start na biezacym miesiacu, Dzisiaj w lewym gornym rogu\n- Pasek miesiecy sam przewija sie do wybranego miesiaca\n- Wydatki i Pozyczki: pigulki Razem i czesci (Razem zapala wszystkie, czesc pokazuje tylko swoja liste)\n- Zaznacz wszystkie: tylko pozycje na widoku",
-  "releaseDate": "2026-10-10T09:00:49Z",
+  "releaseNotes": "- Ekran pozycji: kwota edytuje miesiac, kolko po prawej zaznacza (bez przytrzymania)\n- Kafel miesiaca: dzien w linii miesiaca, brak kwoty zamiast kreski\n- Duplikuj: pozycja, pozyczka, subskrypcja i zaznaczone pozycje (w tym samym budzecie, z dopiskiem kopia)",
   "changelog": [
+    {
+      "version": "0.27.26101001",
+      "notes": "- Ekran pozycji: kwota edytuje miesiac, kolko po prawej zaznacza (bez przytrzymania)\n- Kafel miesiaca: dzien w linii miesiaca, brak kwoty zamiast kreski\n- Duplikuj: pozycja, pozyczka, subskrypcja i zaznaczone pozycje (w tym samym budzecie, z dopiskiem kopia)"
+    },
     {
       "version": "0.27.26101000",
       "notes": "- Planowanie: start na biezacym miesiacu, Dzisiaj w lewym gornym rogu\n- Pasek miesiecy sam przewija sie do wybranego miesiaca\n- Wydatki i Pozyczki: pigulki Razem i czesci (Razem zapala wszystkie, czesc pokazuje tylko swoja liste)\n- Zaznacz wszystkie: tylko pozycje na widoku"
@@ -39,11 +40,10 @@
     {
       "version": "0.26.26100702",
       "notes": "- Planowanie: Subskrypcje i Karta kredytowa wciete pod Wydatkami\n- Minus przy wydatkach w karcie Zostaje\n- Excel: wydatki jako liczby ujemne\n- Usuniety nieuzywany kod starego budzetu"
-    },
-    {
-      "version": "0.26.26100701",
-      "notes": "- Kopia zapasowa niesie plan roczny (wersja 8)\n- Eksport/import planu w Excelu: tabela roku, arkusz na rok\n- Usunieta synchronizacja budzetu domowego\n- Minus przy sumach wydatkow i subskrypcji w naglowkach\n- Naprawa: po odtworzeniu kopii znikaly stare subskrypcje dopiero po restarcie"
     }
   ],
-  "versionCode": 2026101000
+  "versionCode": 2026101001,
+  "releaseDate": "2026-10-10T11:53:15Z",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101001",
+  "version": "0.27.26101001"
 }

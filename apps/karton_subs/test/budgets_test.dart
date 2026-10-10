@@ -191,6 +191,60 @@ void main() {
     });
   });
 
+  group('Duplikowanie (w tym samym budżecie)', () {
+    test('pozycja: kopia obok, z dopiskiem, bez odhaczeń', () async {
+      final b = _controller();
+      await _storage.savePlanPosition(_pos('czynsz', kBudgetHousehold));
+      await _storage.setPaymentDone('household|czynsz|2026-10-05', true);
+
+      final copies = await b.duplicatePositions({'czynsz'});
+      final copy = _storage.getPlanPosition(copies['czynsz']!)!;
+      expect(copy.id, isNot('czynsz'));
+      expect(copy.budgetId, kBudgetHousehold);
+      expect(copy.name, 'czynsz (kopia)');
+      expect(copy.months.keys, ['2026-10']);
+      expect(copy.months['2026-10']!.amount, 100);
+      expect(_storage.getPlanPositions(kBudgetHousehold), hasLength(2));
+      expect(_storage.getAllPaymentDone().keys, [
+        'household|czynsz|2026-10-05',
+      ]);
+    });
+
+    test('pożyczka w całości, z nowym powiązaniem', () async {
+      final b = _controller();
+      await _storage.savePlanPosition(
+        _pos('w', kBudgetPersonal, kind: PlanKind.loan, linkId: 'L'),
+      );
+      await _storage.savePlanPosition(
+        _pos('r', kBudgetPersonal, kind: PlanKind.loanRepayment, linkId: 'L'),
+      );
+
+      final link = await b.duplicateLoan('r');
+      expect(link, isNotNull);
+      expect(link, isNot('L'));
+      final copies = _storage
+          .getPlanPositions(kBudgetPersonal)
+          .where((p) => p.linkId == link)
+          .toList();
+      expect(
+        copies.map((p) => p.kind),
+        unorderedEquals([PlanKind.loan, PlanKind.loanRepayment]),
+      );
+      expect(copies.every((p) => p.name.endsWith(' (kopia)')), isTrue);
+    });
+
+    test('subskrypcja: nowy identyfikator, ten sam budżet', () async {
+      final b = _controller();
+      final original = _sub('netflix', kBudgetHousehold);
+      await _storage.saveSubscription(original);
+
+      final copy = await b.duplicateSubscription(original);
+      expect(copy.id, isNot('netflix'));
+      expect(copy.name, 'netflix (kopia)');
+      expect(b.subscriptionsOf(kBudgetHousehold), hasLength(2));
+    });
+  });
+
   group('Usuwanie', () {
     test('budżet znika razem z pozycjami, subskrypcjami i odhaczeniami',
         () async {

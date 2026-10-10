@@ -192,10 +192,11 @@ class _PlanningScreenState extends State<PlanningScreen> {
     }
   }
 
-  /// Zaznaczone pozycje do innego budżetu (ADR-037): najpierw „przenieś czy
-  /// kopiuj", potem budżet docelowy.
-  Future<void> _bulkToBudget(Set<String> ids) async {
-    final copy = await showModalBottomSheet<bool>(
+  /// Zaznaczone pozycje: duplikat w tym budżecie albo przeniesienie / kopia
+  /// do innego (ADR-037) — najpierw wybór, potem (poza duplikatem) budżet
+  /// docelowy.
+  Future<void> _bulkCopies(Set<String> ids) async {
+    final action = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
       builder: (sheetCtx) => SafeArea(
@@ -203,27 +204,39 @@ class _PlanningScreenState extends State<PlanningScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
+              leading: const Icon(LucideIcons.copyPlus),
+              title: Text('Duplikuj ${ids.length} poz.'),
+              subtitle: const Text('W tym budżecie, z dopiskiem „(kopia)"'),
+              onTap: () => Navigator.pop(sheetCtx, 'duplicate'),
+            ),
+            ListTile(
               leading: const Icon(LucideIcons.arrowRightLeft),
               title: Text('Przenieś ${ids.length} poz. do budżetu…'),
               subtitle: const Text('Razem z odhaczonymi płatnościami'),
-              onTap: () => Navigator.pop(sheetCtx, false),
+              onTap: () => Navigator.pop(sheetCtx, 'move'),
             ),
             ListTile(
               leading: const Icon(LucideIcons.copy),
               title: Text('Kopiuj ${ids.length} poz. do budżetu…'),
               subtitle: const Text('Pozycje zostają też tutaj'),
-              onTap: () => Navigator.pop(sheetCtx, true),
+              onTap: () => Navigator.pop(sheetCtx, 'copy'),
             ),
           ],
         ),
       ),
     );
-    if (copy == null || !mounted) return;
+    if (action == null || !mounted) return;
+    final budgets = context.read<BudgetController>();
+    if (action == 'duplicate') {
+      await budgets.duplicatePositions(ids);
+      if (mounted) _afterBulk('Zduplikowano: ${ids.length} poz.');
+      return;
+    }
     final done = await moveOrCopyPositions(
       context,
       ids,
-      copy: copy,
-      fromBudgetId: context.read<BudgetController>().budgetId,
+      copy: action == 'copy',
+      fromBudgetId: budgets.budgetId,
     );
     if (done && mounted) _endSelection();
   }
@@ -546,9 +559,9 @@ class _PlanningScreenState extends State<PlanningScreen> {
                   onPressed: () => _bulkArchive(selection, anyActiveSelected),
                 ),
                 SelectionAction(
-                  icon: LucideIcons.arrowRightLeft,
-                  tooltip: 'Przenieś lub kopiuj do innego budżetu',
-                  onPressed: () => _bulkToBudget(selection),
+                  icon: LucideIcons.copy,
+                  tooltip: 'Duplikuj, przenieś lub kopiuj',
+                  onPressed: () => _bulkCopies(selection),
                 ),
                 SelectionAction(
                   icon: LucideIcons.trash2,

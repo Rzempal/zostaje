@@ -156,9 +156,12 @@ włącznie):
 Subskrypcje nie potrzebują okresu: ich miesiące liczą się same z daty startu
 i cyklu, bez ręcznego wypełniania.
 
-Ekran pozycji: siatka 3×4 (rząd = kwartał) zamiast listy 12 wierszy;
-tapnięcie edytuje miesiąc, przytrzymanie zaznacza (kolejne — zakres), panel
+Ekran pozycji: siatka 3×4 (rząd = kwartał) zamiast listy 12 wierszy; panel
 „Szybkie wypełnianie" wpisuje kwotę i dzień w zaznaczone albo puste miesiące.
+Kafel ma dwie linie (miesiąc z dniem płatności; kwota albo „brak kwoty") i dwa
+miejsca dotyku: kwota edytuje miesiąc, kółko po prawej go zaznacza. Pierwsza
+wersja zaznaczała przytrzymaniem (kolejne — zakres); zastąpione kółkiem
+(2026-10-10), bo przytrzymania nie było widać — zaznaczanie zakresu odpadło.
 
 ### 6. Synchronizacja budżetu domowego — usunięta
 

@@ -20,11 +20,7 @@ class AddSubscriptionScreen extends StatefulWidget {
   /// i pożyczka: zmiana budżetu to menu ⋮ „Przenieś do / Kopiuj do".
   final String? initialBudgetId;
 
-  const AddSubscriptionScreen({
-    super.key,
-    this.existing,
-    this.initialBudgetId,
-  });
+  const AddSubscriptionScreen({super.key, this.existing, this.initialBudgetId});
 
   @override
   State<AddSubscriptionScreen> createState() => _AddSubscriptionScreenState();
@@ -48,8 +44,8 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   /// „co 2 miesiące" od miesiąca startu, żeby pozycja nie wypadła z kalendarza.
   List<int>? get _effCycleMonths => _cycle == BillingCycle.monthsOfYear
       ? (_cycleMonths.isEmpty
-          ? CycleMonthsPicker.everyN(2, _startDate.month)
-          : _cycleMonths)
+            ? CycleMonthsPicker.everyN(2, _startDate.month)
+            : _cycleMonths)
       : null;
   String? _categoryId;
   DateTime _startDate = DateTime.now();
@@ -57,6 +53,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   String? _paymentMethod;
   bool _isTrial = false;
   DateTime? _trialEndDate;
+
   /// Budżet NOWEJ subskrypcji; edycja budżetu nie zmienia (menu ⋮).
   late final String _budgetId;
   late final TextEditingController _postTrialAmountCtrl;
@@ -94,6 +91,25 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       ),
     );
     Navigator.of(context).pop(true);
+  }
+
+  /// Duplikat w tym samym budżecie (z dopiskiem „(kopia)") i od razu jego
+  /// formularz. Jak przy przeniesieniu — z zapisanej wersji.
+  Future<void> _duplicate() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    final copy = await context.read<BudgetController>().duplicateSubscription(
+      widget.existing!,
+    );
+    if (!mounted) return;
+    navigator.pushReplacement(
+      MaterialPageRoute(builder: (_) => AddSubscriptionScreen(existing: copy)),
+    );
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text('Utworzono kopię: „${copy.name}"')),
+      );
   }
 
   @override
@@ -161,16 +177,19 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
           if (_isEditing)
             PopupMenuButton<String>(
               tooltip: 'Więcej',
-              onSelected: (v) => _moveOrCopy(copy: v == 'copy'),
+              onSelected: (v) => v == 'duplicate'
+                  ? _duplicate()
+                  : _moveOrCopy(copy: v == 'copy'),
               itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: 'duplicate',
+                  child: Text('Duplikuj subskrypcję'),
+                ),
                 PopupMenuItem(
                   value: 'move',
                   child: Text('Przenieś do budżetu…'),
                 ),
-                PopupMenuItem(
-                  value: 'copy',
-                  child: Text('Kopiuj do budżetu…'),
-                ),
+                PopupMenuItem(value: 'copy', child: Text('Kopiuj do budżetu…')),
               ],
             ),
         ],

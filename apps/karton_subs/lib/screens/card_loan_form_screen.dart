@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
+import '../controllers/budget_controller.dart';
 import '../controllers/plan_controller.dart';
 import '../models/subscription.dart';
 import '../services/plan_service.dart';
@@ -163,6 +164,25 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
     if (done && mounted) Navigator.of(context).pop();
   }
 
+  /// Duplikat całej pożyczki w tym samym budżecie (z dopiskiem „(kopia)") i od
+  /// razu jej formularz — z zapisanej wersji, jak przy przeniesieniu.
+  Future<void> _duplicate() async {
+    final loan = context.read<PlanController>().loanPair(widget.linkId!).loan;
+    if (loan == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    final link = await context.read<BudgetController>().duplicateLoan(loan.id);
+    if (link == null || !mounted) return;
+    navigator.pushReplacement(
+      MaterialPageRoute(builder: (_) => CardLoanFormScreen(linkId: link)),
+    );
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text('Utworzono kopię: „${loan.name}$kCopySuffix"')),
+      );
+  }
+
   Future<void> _delete() async {
     final plan = context.read<PlanController>();
     final pair = plan.loanPair(widget.linkId!);
@@ -214,16 +234,19 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
             ),
             PopupMenuButton<String>(
               tooltip: 'Więcej',
-              onSelected: (v) => _toBudget(copy: v == 'copy'),
+              onSelected: (v) => v == 'duplicate'
+                  ? _duplicate()
+                  : _toBudget(copy: v == 'copy'),
               itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: 'duplicate',
+                  child: Text('Duplikuj pożyczkę'),
+                ),
                 PopupMenuItem(
                   value: 'move',
                   child: Text('Przenieś do budżetu…'),
                 ),
-                PopupMenuItem(
-                  value: 'copy',
-                  child: Text('Kopiuj do budżetu…'),
-                ),
+                PopupMenuItem(value: 'copy', child: Text('Kopiuj do budżetu…')),
               ],
             ),
           ],
