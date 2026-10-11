@@ -21,9 +21,9 @@ import '../widgets/budget_picker.dart' show moveOrCopyPositions;
 import '../widgets/plan_widgets.dart';
 import '../widgets/section_info_badge.dart' show SectionInfo;
 import '../widgets/workspace_top_bar.dart';
-import '../widgets/scope_swipe_area.dart';
 import '../widgets/selection_bar.dart';
 import '../widgets/subscription_row.dart';
+import '../widgets/swipe_step_area.dart';
 import 'add_subscription_screen.dart';
 import 'card_loan_form_screen.dart';
 import 'installment_loan_form_screen.dart';
@@ -56,7 +56,8 @@ const _kInstallmentLoans = 'plan_loans_installment';
 /// pokazuje sumy roku, widok „Miesiąc" — kwoty wybranego miesiąca. Pozycja
 /// widoczna w miesiącu to pozycja, która w nim obowiązuje. Ekran startuje na
 /// bieżącym miesiącu; „Dzisiaj" w rogu paska wraca do niego (w widoku
-/// rocznym — do bieżącego roku).
+/// rocznym — do bieżącego roku). Przesunięcie palcem w bok to poprzedni albo
+/// następny miesiąc (w widoku rocznym — rok).
 class PlanningScreen extends StatefulWidget {
   const PlanningScreen({super.key});
 
@@ -67,6 +68,7 @@ class PlanningScreen extends StatefulWidget {
 class _PlanningScreenState extends State<PlanningScreen> {
   String? _filterCategoryId;
   late int _year;
+
   /// Miesiąc widoku miesięcznego (1–12) — zostaje zapamiętany przy
   /// przełączaniu na rok i z powrotem.
   late int _month;
@@ -100,6 +102,19 @@ class _PlanningScreenState extends State<PlanningScreen> {
     });
     context.read<StorageService>().setCollapsedBudgetSections(_collapsed);
   }
+
+  /// Gest przesunięcia: poprzedni albo następny miesiąc — także przez
+  /// granicę roku (grudzień → styczeń); w widoku rocznym — rok. Bez limitu
+  /// lat, jak strzałki w Statystykach; „Dzisiaj" wraca do bieżącego.
+  void _step(int delta) => setState(() {
+    if (_yearView) {
+      _year += delta;
+    } else {
+      final month = DateTime(_year, _month + delta);
+      _year = month.year;
+      _month = month.month;
+    }
+  });
 
   /// Część grupy pokazana sama (pigułka) albo `null` = „Razem". Ukryte obie
   /// (stan sprzed pigułek) też znaczy „Razem" — inaczej grupa byłaby pusta.
@@ -367,8 +382,7 @@ class _PlanningScreenState extends State<PlanningScreen> {
     if (!years.contains(_year)) years.add(_year);
     years.sort();
     final period = PlanPeriod(_year, _yearView ? null : _month);
-    final isToday =
-        _year == today.year && (_yearView || _month == today.month);
+    final isToday = _year == today.year && (_yearView || _month == today.month);
 
     final all = plan.positions;
     final subsAll = plan.subscriptions;
@@ -665,8 +679,8 @@ class _PlanningScreenState extends State<PlanningScreen> {
             ),
           ),
           Expanded(
-            child: ScopeSwipeArea(
-              enabled: budget.canSwitch,
+            child: SwipeStepArea(
+              onStep: _step,
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
                 physics: const AlwaysScrollableScrollPhysics(),

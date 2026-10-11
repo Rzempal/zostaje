@@ -356,6 +356,9 @@ class AppColors {
   sama ikona (`--text-secondary`), aktywna = pozioma pigulka (ikona + etykieta w kolorze
   `--accent-solid` na tincie akcentu @0.16); etykieta rozsuwa/zwija sie animacja (`AnimatedSize`,
   ~220 ms `easeOutCubic`). Pionowy separator oddziela ostatnia pozycje (Ustawienia) od funkcji
+- Gest przesuniecia w bok (od 2026-10-11): Planowanie — poprzedni / nastepny miesiac
+  (w widoku roku — rok), Budzet — zakladki „Statystyki / Kalendarz". Budzet zmienia
+  tylko przelacznik w pasku. Gest jest niewidoczny, wiec opisuje go „i" sekcji
 - Karty: `FrostCard` (`--frost-1`, border `--frost-border`, radius 22) — **bez blur**
 - Kwoty: tabular figures; dodatnie `--positive`, ujemne `--negative`
 - Przelacznik Osobisty/Domowy, chipy, aktywne taby: stan aktywny = `--accent-gradient`

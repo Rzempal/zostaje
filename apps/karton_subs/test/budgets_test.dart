@@ -61,7 +61,7 @@ void main() {
       expect(b.budgets.map((x) => x.name), ['Osobisty', 'Domowy']);
       expect(b.budgets.map((x) => x.icon), ['user', 'home']);
       expect(b.budgetId, kBudgetPersonal);
-      expect(b.canSwitch, isTrue);
+      expect(b.visibleBudgets, hasLength(2));
     });
 
     test('dawny tryb „tylko osobisty" → domowy ukryty', () async {
@@ -69,7 +69,6 @@ void main() {
       final b = _controller();
       expect(b.visibleBudgets.map((x) => x.id), [kBudgetPersonal]);
       expect(b.budgetById(kBudgetHousehold)!.hidden, isTrue);
-      expect(b.canSwitch, isFalse);
     });
 
     test('nowy budżet, nazwa i ikona, kolejność — zapisane', () async {
@@ -90,20 +89,6 @@ void main() {
     test('wybrany budżet pamięta się między uruchomieniami', () {
       _controller().setBudget(kBudgetHousehold);
       expect(_controller().budgetId, kBudgetHousehold);
-    });
-
-    test('gest: kolejny i poprzedni widoczny budżet, bez wyjścia za listę',
-        () async {
-      final b = _controller();
-      await b.addBudget('Firma', 'briefcase');
-      b.stepBudget(1);
-      expect(b.budgetId, kBudgetHousehold);
-      b.stepBudget(1);
-      expect(b.activeBudget.name, 'Firma');
-      b.stepBudget(1);
-      expect(b.activeBudget.name, 'Firma');
-      b.stepBudget(-1);
-      expect(b.budgetId, kBudgetHousehold);
     });
 
     test('ostatniego widocznego nie da się ukryć; ukryty aktywny ustępuje',

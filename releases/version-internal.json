@@ -1,7 +1,11 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101101",
-  "releaseDate": "2026-10-11T16:29:26Z",
+  "releaseNotes": "- Planowanie: przesuniecie palcem w bok zmienia miesiac (w widoku roku - rok)\n- Budzet: przesuniecie palcem przelacza Statystyki i Kalendarz\n- Budzet zmieniasz tylko przelacznikiem w gornym pasku",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101102",
   "changelog": [
+    {
+      "version": "0.27.26101102",
+      "notes": "- Planowanie: przesuniecie palcem w bok zmienia miesiac (w widoku roku - rok)\n- Budzet: przesuniecie palcem przelacza Statystyki i Kalendarz\n- Budzet zmieniasz tylko przelacznikiem w gornym pasku"
+    },
     {
       "version": "0.27.26101101",
       "notes": "- Zakup z pozyczki (z karty i ratalnej) przy tworzeniu dostaje nazwe Wydatek: nazwa pozyczki"
@@ -37,13 +41,9 @@
     {
       "version": "0.27.26101005",
       "notes": "- Kategorie zawsze alfabetycznie (po polsku), bez przeciagania na liscie\n- Ta sama kolejnosc w formularzach, filtrze i podgrupach Planowania"
-    },
-    {
-      "version": "0.27.26101004",
-      "notes": "- Ekran pozycji: budzet pozycji (ikona i nazwa) na poczatku linii pod tytulem"
     }
   ],
-  "versionCode": 2026101101,
-  "releaseNotes": "- Zakup z pozyczki (z karty i ratalnej) przy tworzeniu dostaje nazwe Wydatek: nazwa pozyczki",
-  "version": "0.27.26101101"
+  "versionCode": 2026101102,
+  "releaseDate": "2026-10-11T17:08:47Z",
+  "version": "0.27.26101102"
 }

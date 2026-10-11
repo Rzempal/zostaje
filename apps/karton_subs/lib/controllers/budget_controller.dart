@@ -79,24 +79,11 @@ class BudgetController extends ChangeNotifier {
   Budget? budgetById(String id) =>
       _budgets.where((b) => b.id == id).firstOrNull;
 
-  /// Czy jest między czym przełączać (więcej niż jeden widoczny budżet).
-  bool get canSwitch => visibleBudgets.length > 1;
-
   void setBudget(String id) {
     if (_budgetId == id || budgetById(id) == null) return;
     _budgetId = id;
     _storage.setActiveBudgetId(id);
     notifyListeners();
-  }
-
-  /// Kolejny ([delta] = 1) albo poprzedni (-1) widoczny budżet — gest
-  /// przesunięcia palcem. Na końcu listy nic się nie dzieje.
-  void stepBudget(int delta) {
-    final visible = visibleBudgets;
-    final i = visible.indexWhere((b) => b.id == _budgetId);
-    final j = i + delta;
-    if (i < 0 || j < 0 || j >= visible.length) return;
-    setBudget(visible[j].id);
   }
 
   Future<void> _persistBudgets() async {
@@ -117,7 +104,7 @@ class BudgetController extends ChangeNotifier {
     await _persistBudgets();
   }
 
-  /// Nowa kolejność — przełącznik i gest idą za nią.
+  /// Nowa kolejność — przełącznik idzie za nią.
   Future<void> reorderBudgets(List<String> ids) async {
     final byId = {for (final b in _budgets) b.id: b};
     _budgets = [

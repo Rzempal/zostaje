@@ -97,7 +97,8 @@ const kMonthsShort = [
   'gru',
 ];
 
-/// Filtr czasu: pasek lat, a po wybraniu roku — pasek jego miesięcy.
+/// Filtr czasu: pasek lat, a po wybraniu roku — pasek jego miesięcy. W obu
+/// wybrany chip sam wjeżdża na widok (patrz [_ChipsRow]).
 ///
 /// „Dzisiaj" i przełącznik widoku „Rok / Miesiąc" stoją w pasku ekranu, nie
 /// tutaj. Pasek miesięcy jest tylko w widoku miesięcznym ([showMonths]).
@@ -135,27 +136,20 @@ class TimeFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final yearsRow = SizedBox(
-      height: 48,
-      child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        scrollDirection: Axis.horizontal,
-        children: [
-          if (allowAllYears)
-            _timeChip(
-              'Wszystkie lata',
-              activeYear == null,
-              () => onSelectYear(null),
-            ),
-          ...years.map(
-            (y) => _timeChip(
-              '$y',
-              activeYear == y,
-              () => onSelectYear(allowAllYears && activeYear == y ? null : y),
-            ),
+    final yearsRow = _ChipsRow(
+      // „Wszystkie lata" to chip bez roku — wybrany, gdy roku nie ma.
+      selected: activeYear,
+      chips: [
+        if (allowAllYears)
+          (id: null, label: 'Wszystkie lata', onTap: () => onSelectYear(null)),
+        for (final y in years)
+          (
+            id: y,
+            label: '$y',
+            onTap: () =>
+                onSelectYear(allowAllYears && activeYear == y ? null : y),
           ),
-        ],
-      ),
+      ],
     );
 
     return Column(
@@ -166,10 +160,16 @@ class TimeFilterBar extends StatelessWidget {
         else
           FilterRow(filters: yearsRow, action: action),
         if (activeYear != null && showMonths)
-          _MonthsRow(
-            months: monthsOfYear,
-            active: activeMonth,
-            onSelect: onSelectMonth,
+          _ChipsRow(
+            selected: activeMonth,
+            chips: [
+              for (final m in monthsOfYear)
+                (
+                  id: m,
+                  label: kMonthsShort[m - 1],
+                  onTap: () => onSelectMonth(m),
+                ),
+            ],
           ),
       ],
     );
@@ -185,48 +185,47 @@ Widget _timeChip(String label, bool selected, VoidCallback onTap, {Key? key}) =>
       ),
     );
 
-/// Pasek miesięcy roku — zawsze jeden wybrany (widok roczny ma przełącznik
-/// w pasku ekranu).
-/// Wybrany miesiąc sam wjeżdża na środek paska, gdy nie widać go w całości —
-/// przy starcie na bieżącym miesiącu (np. „paź") stałby inaczej za prawą
-/// krawędzią. Widoczny w całości zostaje, gdzie jest.
-class _MonthsRow extends StatefulWidget {
-  final List<int> months;
-  final int? active;
-  final void Function(int?) onSelect;
+/// Pasek chipów (lata albo miesiące) z jednym wybranym. Wybrany sam wjeżdża
+/// na środek paska, gdy nie widać go w całości — przy starcie na bieżącym
+/// miesiącu („paź" stałby inaczej za prawą krawędzią) i po zmianie spoza
+/// paska (gest przesunięcia, „Dzisiaj"; rok spoza listy dochodzi na końcu).
+/// Widoczny w całości zostaje, gdzie jest.
+class _ChipsRow extends StatefulWidget {
+  final List<({Object? id, String label, VoidCallback onTap})> chips;
 
-  const _MonthsRow({
-    required this.months,
-    required this.active,
-    required this.onSelect,
-  });
+  /// Identyfikator wybranego chipu (rok, miesiąc; `null` — chip bez roku).
+  final Object? selected;
+
+  const _ChipsRow({required this.chips, required this.selected});
 
   @override
-  State<_MonthsRow> createState() => _MonthsRowState();
+  State<_ChipsRow> createState() => _ChipsRowState();
 }
 
-class _MonthsRowState extends State<_MonthsRow> {
+class _ChipsRowState extends State<_ChipsRow> {
   /// Klucz każdego chipu — do odszukania wybranego.
-  final _keys = <int, GlobalKey>{};
+  final _keys = <Object?, GlobalKey>{};
 
-  GlobalKey _keyOf(int month) => _keys.putIfAbsent(month, GlobalKey.new);
+  GlobalKey _keyOf(Object? id) => _keys.putIfAbsent(id, GlobalKey.new);
 
   @override
   void initState() {
     super.initState();
-    _revealActive(animate: false);
+    _revealSelected(animate: false);
   }
 
   @override
-  void didUpdateWidget(_MonthsRow old) {
+  void didUpdateWidget(_ChipsRow old) {
     super.didUpdateWidget(old);
-    if (old.active != widget.active) _revealActive(animate: true);
+    if (old.selected != widget.selected) _revealSelected(animate: true);
   }
 
-  void _revealActive({required bool animate}) {
+  void _revealSelected({required bool animate}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final active = widget.active;
-      final chip = active == null ? null : _keyOf(active).currentContext;
+      final selected = widget.selected;
+      final chip = widget.chips.any((c) => c.id == selected)
+          ? _keyOf(selected).currentContext
+          : null;
       if (!mounted || chip == null) return;
       final box = chip.findRenderObject() as RenderBox?;
       final row = context.findRenderObject() as RenderBox?;
@@ -244,9 +243,8 @@ class _MonthsRowState extends State<_MonthsRow> {
 
   @override
   Widget build(BuildContext context) {
-    final active = widget.active;
     // Wszystkie chipy naraz (nie ListView): wybrany musi istnieć, żeby dało
-    // się go przewinąć na widok, a miesięcy jest tylko 12.
+    // się go przewinąć na widok, a miesięcy jest 12, lat — kilka.
     return SizedBox(
       height: 48,
       child: SingleChildScrollView(
@@ -254,12 +252,12 @@ class _MonthsRowState extends State<_MonthsRow> {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            for (final m in widget.months)
+            for (final chip in widget.chips)
               _timeChip(
-                kMonthsShort[m - 1],
-                active == m,
-                () => widget.onSelect(m),
-                key: _keyOf(m),
+                chip.label,
+                chip.id == widget.selected,
+                chip.onTap,
+                key: _keyOf(chip.id),
               ),
           ],
         ),

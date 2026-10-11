@@ -203,6 +203,42 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Planowanie: przesunięcie palcem zmienia miesiąc, w widoku roku '
+      '— rok', (tester) async {
+    await tester.runAsync(seed);
+    await pump(tester, const PlanningScreen(), height: 1600);
+
+    // Szybkie przesunięcie po treści (nie po paskach przewijanych w bok).
+    Future<void> swipe(double dx) async {
+      await tester.fling(find.textContaining('Zostaje ·'), Offset(dx, 0), 1000);
+      await tester.pumpAndSettle();
+    }
+
+    expect(find.textContaining('Zostaje · paź 2026'), findsOneWidget);
+    await swipe(-300); // palec w lewo → następny miesiąc
+    expect(find.textContaining('Zostaje · lis 2026'), findsOneWidget);
+    await swipe(-300);
+    await swipe(-300); // przez granicę roku
+    expect(find.textContaining('Zostaje · sty 2027'), findsOneWidget);
+    await swipe(300); // palec w prawo → poprzedni
+    expect(find.textContaining('Zostaje · gru 2026'), findsOneWidget);
+
+    // Widok roku: krok o rok, także poza lata z planu — chip roku dochodzi
+    // na końcu paska i wjeżdża na widok.
+    await tester.ensureVisible(find.text('Rok'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Rok'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Zostaje · rok 2026'), findsOneWidget);
+    for (var i = 0; i < 3; i++) {
+      await swipe(-300);
+    }
+    expect(find.textContaining('Zostaje · rok 2029'), findsOneWidget);
+    expect(find.text('2029'), findsOneWidget);
+    expect(onScreen(tester, find.text('2029')), isTrue);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Pusty plan pokazuje zachętę zamiast list', (tester) async {
     await pump(tester, const PlanningScreen());
     expect(find.textContaining('Plan jest pusty'), findsOneWidget);
@@ -605,6 +641,21 @@ void main() {
     // Przełącznik „Statystyki / Kalendarz" (styl jak „Rok / Miesiąc").
     await tester.tap(find.text('Kalendarz'));
     await tester.pumpAndSettle();
+    expect(find.text('Średnio miesięcznie'), findsNothing);
+
+    // Przesunięcie palcem w bok przełącza zakładki (nie budżet ani miesiąc).
+    final nextMonth = find.byTooltip('Następny miesiąc');
+    await tester.fling(nextMonth, const Offset(300, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(find.text('Średnio miesięcznie'), findsOneWidget);
+    expect(find.text('Osobisty'), findsOneWidget);
+    await tester.fling(
+      find.text('Średnio miesięcznie'),
+      const Offset(-300, 0),
+      1000,
+    );
+    await tester.pumpAndSettle();
+    expect(nextMonth, findsOneWidget);
     expect(find.text('Średnio miesięcznie'), findsNothing);
     expect(tester.takeException(), isNull);
   });

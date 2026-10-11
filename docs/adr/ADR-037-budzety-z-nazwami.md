@@ -30,6 +30,10 @@ budżetów z własnymi nazwami.
    rozwija listę widocznych budżetów i „Zarządzaj budżetami" (miejsce stałe
    przy dowolnej liczbie budżetów). Gest przesunięcia: kolejny / poprzedni
    budżet z listy. Ostatnio wybrany budżet pamięta się lokalnie.
+   **Zmiana 2026-10-11:** gest przesunięcia nie zmienia już budżetu — budżet
+   tylko z przełącznika. Gest w Planowaniu to poprzedni / następny miesiąc
+   (w widoku roku — rok, bez limitu lat), w Budżecie — zakładki
+   „Statystyki / Kalendarz" (decyzja właściciela).
 4. **Ukrywanie** zastępuje „tryb budżetu" (ADR-014): ukryty budżet znika
    z przełącznika, dane zostają. Jeden budżet musi zostać widoczny. Stary
    tryb przenosi się sam przy pierwszym uruchomieniu (np. „tylko osobisty" =
