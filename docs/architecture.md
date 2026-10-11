@@ -105,7 +105,7 @@ lib/
 │   ├── planning_screen.dart     # Zakladka „Planowanie": plan roczny — wplywy, wydatki, karta, subskrypcje (ADR-035)
 │   ├── plan_position_screen.dart # Szczegoly pozycji: siatka roku (rzad = kwartal), szybkie wypelnianie, miesiace poza okresem wyszarzone
 │   ├── plan_position_form_screen.dart # Formularz pozycji planu (nowa: kwota + siatka miesiecy; edycja: dane wspolne) + okres od–do
-│   ├── card_loan_form_screen.dart # Pozyczka z karty: para pozyczka–splata po okresie bezodsetkowym
+│   ├── card_loan_form_screen.dart # Pozyczka z karty: para pozyczka–splata po okresie bezodsetkowym, zakup tego dnia (ADR-036)
 │   ├── installment_loan_form_screen.dart # Pozyczka ratalna: wyplata, raty, RRSO (przeliczanie na zywo), zakup tego dnia (ADR-036)
 │   ├── plan_copy_year_screen.dart # „Zaplanuj kolejny rok" na bazie poprzedniego
 │   ├── add_subscription_screen.dart # Formularz subskrypcji (zakres bierze z listy, na ktorej stoi uzytkownik)
@@ -128,6 +128,7 @@ lib/
 │   ├── category_icons.dart      # Slownik ikon kategorii (wspolny dla list i Ustawien)
 │   ├── budget_widgets.dart      # Przelacznik zakresu, sekcje miesiaca w kalendarzu, lista wierszy
 │   ├── plan_widgets.dart        # Planowanie: sekcja z suma, grupa z czesciami (PlanGroup: Wydatki, Pozyczki), wiersz pozycji z paskiem 12 miesiecy (`PlanMonthStrip`, takze dla subskrypcji), „Zostaje", wiersze pozyczek (karta, raty; strzalka w podpisie — `planArrowSpan`)
+│   ├── loan_purchase_card.dart  # Zakup tego dnia — wspolny blok formularzy pozyczki ratalnej i z karty („Dodaj" / „Pokaz") + pytanie o zakup przy usuwaniu pozyczki (ADR-036)
 │   ├── cashflow_calendar.dart   # Siatka miesiaca z kropkami wplyw/wydatek
 │   ├── spending_chart.dart      # Wykres trendu wydatkow (jedna seria lub kilka + chipy legendy)
 │   ├── category_breakdown_chart.dart # Podzial na kategorie (pie)

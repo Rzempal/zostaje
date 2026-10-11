@@ -448,13 +448,13 @@ class PlanPositionRow extends StatelessWidget {
                                   style: theme.textTheme.bodyMedium,
                                 ),
                               ),
-                              // Zakup z pożyczki ratalnej (ADR-036): raty są
-                              // w Pożyczkach, tu — sam zakup.
+                              // Zakup z pożyczki (ADR-036): raty albo spłata
+                              // karty są w Pożyczkach, tu — sam zakup.
                               if (p.linkId != null &&
                                   p.kind == PlanKind.expense) ...[
                                 const SizedBox(width: 4),
                                 Tooltip(
-                                  message: 'Zakup z pożyczki ratalnej',
+                                  message: 'Zakup z pożyczki',
                                   child: Icon(
                                     LucideIcons.link,
                                     size: 13,

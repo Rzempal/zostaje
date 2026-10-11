@@ -54,6 +54,13 @@ spłata po okresie bezodsetkowym", liczona osobno od wpływów i wydatków.
   pożyczkę" (albo „Wróć do pożyczki", gdy przyszło się z niej). Istniejący
   zakup to osobna pozycja: zapis pożyczki go nie nadpisuje ani nie usuwa —
   tylko przesuwa za nową datą wypłaty, gdy stał w dniu wypłaty.
+- **Zakup także przy pożyczce z karty** (2026-10-11): ten sam blok
+  w formularzu karty i te same zasady — zakup w Wydatkach, spłata
+  w Pożyczkach; przesuwa się za datą użycia karty, usunięcie pożyczki pyta
+  o zakup. Metoda płatności zakupu to karta (w ratalnej — konto spłaty).
+  Ekran zakupu otwiera formularz właściwej pożyczki. Uwaga: zakup wpisany
+  wcześniej osobno, obok pożyczki z karty, i dodany drugi raz w jej
+  formularzu liczy się podwójnie — aplikacja tego nie wykrywa.
 
 ### 3. Trzy z czterech — reszta się liczy
 

@@ -16,6 +16,7 @@ import '../widgets/frost_card.dart';
 import '../widgets/plan_widgets.dart'
     show planMonthLabel, planPositionPeriodText;
 import '../widgets/selection_bar.dart';
+import 'card_loan_form_screen.dart';
 import 'installment_loan_form_screen.dart';
 import 'plan_position_form_screen.dart';
 
@@ -366,6 +367,12 @@ class _PlanPositionScreenState extends State<PlanPositionScreen> {
     final inPeriodKeys = _keys.where(p.inPeriod).toList();
     final todayKey = planMonthKey(plan.today.year, plan.today.month);
     final period = planPositionPeriodText(p);
+    // Zakup z pożyczki: spłata jego pożyczki. Pożyczka ratalna ma przy niej
+    // warunki (ADR-036), karta — nie.
+    final loanRepayment = p.kind == PlanKind.expense && p.linkId != null
+        ? plan.loanParts(p.linkId!).repayment
+        : null;
+    final fromCard = loanRepayment?.loanTerms == null;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -507,18 +514,19 @@ class _PlanPositionScreenState extends State<PlanPositionScreen> {
                     ],
                   ),
                 ],
-                // Zakup z pożyczki ratalnej (ADR-036): raty są w Pożyczkach,
-                // tu — sam zakup; warunki zmienia się w pożyczce.
-                if (p.kind == PlanKind.expense &&
-                    p.linkId != null &&
-                    plan.loanParts(p.linkId!).repayment != null)
+                // Zakup z pożyczki (ADR-036): raty albo spłata karty są
+                // w Pożyczkach, tu — sam zakup; pożyczkę zmienia się w jej
+                // formularzu.
+                if (loanRepayment != null)
                   Row(
                     children: [
                       Icon(LucideIcons.link, size: 14, color: c.primary),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          'Zakup z pożyczki ratalnej',
+                          fromCard
+                              ? 'Zakup z pożyczki z karty'
+                              : 'Zakup z pożyczki ratalnej',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: c.primary,
                           ),
@@ -529,9 +537,11 @@ class _PlanPositionScreenState extends State<PlanPositionScreen> {
                             ? () => Navigator.of(context).pop()
                             : () => Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (_) => InstallmentLoanFormScreen(
-                                    linkId: p.linkId,
-                                  ),
+                                  builder: (_) => fromCard
+                                      ? CardLoanFormScreen(linkId: p.linkId)
+                                      : InstallmentLoanFormScreen(
+                                          linkId: p.linkId,
+                                        ),
                                 ),
                               ),
                         child: Text(

@@ -16,9 +16,9 @@ import '../widgets/category_icons.dart'
     show paymentMethodIcon, paymentMethodIconColor;
 import '../widgets/form_action_bar.dart';
 import '../widgets/frost_card.dart';
+import '../widgets/loan_purchase_card.dart';
 import '../widgets/month_picker_dialog.dart';
 import '../widgets/plan_widgets.dart' show planMonthLabel;
-import 'plan_position_screen.dart';
 
 /// Pożyczka ratalna (ADR-036): wypłata jako wpływ, raty jako spłata
 /// w Pożyczkach i — opcjonalnie — zakup tego dnia jako zwykły wydatek
@@ -57,6 +57,7 @@ class _InstallmentLoanFormScreenState extends State<InstallmentLoanFormScreen> {
   bool _firstMonthTouched = false;
   bool _dayTouched = false;
   String? _paymentMethod;
+
   /// Nowy zakup do dodania przy zapisie („Dodaj"). Istniejący zakup to
   /// osobna pozycja — formularz pokazuje go i prowadzi do niego („Pokaż").
   bool _addPurchase = false;
@@ -355,145 +356,6 @@ class _InstallmentLoanFormScreenState extends State<InstallmentLoanFormScreen> {
         : context.read<PlanController>().loanParts(link).purchase;
   }
 
-  /// Zakup tego dnia: bez zakupu — „Dodaj" (pola pojawiają się, zakup
-  /// powstaje przy zapisie), z zakupem — jego kwota i „Pokaż", które prowadzi
-  /// do jego ekranu. Stamtąd „Otwórz pożyczkę" wraca tutaj — w obie strony.
-  Widget _purchaseCard(
-    ThemeData theme,
-    AppSemanticColors c,
-    StorageService storage,
-  ) {
-    final name = _name.text.trim();
-    final link = widget.linkId;
-    final purchase = link == null
-        ? null
-        : context.watch<PlanController>().loanParts(link).purchase;
-    final muted = theme.textTheme.bodySmall?.copyWith(color: c.textMuted);
-
-    Widget header(String title, String subtitle, Widget action) => Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: theme.textTheme.titleSmall),
-              const SizedBox(height: 2),
-              Text(subtitle, style: muted),
-            ],
-          ),
-        ),
-        const SizedBox(width: 8),
-        action,
-      ],
-    );
-
-    if (purchase != null) {
-      final entry = purchase.months.entries.firstOrNull;
-      final category = purchase.categoryId == null
-          ? null
-          : storage.getCategory(purchase.categoryId!);
-      return FrostCard(
-        padding: const EdgeInsets.all(12),
-        child: header(
-          'Zakup „${purchase.name}"',
-          [
-            if (entry != null) '−${budgetNf.format(entry.value.amount)}',
-            category?.name ?? 'bez kategorii',
-            if (entry != null) planMonthLabel(entry.key),
-          ].join(' · '),
-          FilledButton.tonalIcon(
-            icon: const Icon(LucideIcons.arrowRight, size: 16),
-            label: const Text('Pokaż'),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => PlanPositionScreen(
-                  positionId: purchase.id,
-                  initialYear:
-                      int.tryParse(entry?.key.substring(0, 4) ?? '') ??
-                      _drawdown.year,
-                  openedFromLoan: true,
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    final title = name.isEmpty
-        ? 'Zakup tego dnia'
-        : 'Zakup „$name" tego dnia';
-    const why =
-        'Zakup idzie do Wydatków, raty — do Pożyczek, więc ten sam koszt '
-        'nie liczy się dwa razy.';
-    if (!_addPurchase) {
-      return FrostCard(
-        padding: const EdgeInsets.all(12),
-        child: header(
-          title,
-          why,
-          FilledButton.tonalIcon(
-            icon: const Icon(LucideIcons.plus, size: 16),
-            label: const Text('Dodaj'),
-            onPressed: () => setState(() => _addPurchase = true),
-          ),
-        ),
-      );
-    }
-
-    return FrostCard(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          header(
-            title,
-            'Powstanie przy zapisie. $why',
-            TextButton(
-              onPressed: () => setState(() => _addPurchase = false),
-              child: const Text('Nie dodawaj'),
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _purchaseAmount,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Kwota zakupu',
-              hintText: '= kwota pożyczki',
-              isDense: true,
-            ),
-            validator: (v) {
-              if (!_addPurchase || (v ?? '').trim().isEmpty) return null;
-              final a = _num(v!);
-              return a == null || a <= 0 ? 'Nieprawidłowa kwota' : null;
-            },
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              FilterChip(
-                label: const Text('Bez kategorii'),
-                selected: _purchaseCategoryId == null,
-                onSelected: (_) => setState(() => _purchaseCategoryId = null),
-              ),
-              for (final cat in storage.getCategories(_listBudgetId))
-                FilterChip(
-                  label: Text(cat.name),
-                  selected: _purchaseCategoryId == cat.id,
-                  selectedColor: cat.color.withValues(alpha: 0.2),
-                  onSelected: (_) =>
-                      setState(() => _purchaseCategoryId = cat.id),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   /// Cała pożyczka (wypłata, raty i zakup) do innego budżetu (ADR-037) —
   /// w zapisanej wersji; niezapisane zmiany przepadają, więc formularz się
   /// zamyka.
@@ -536,45 +398,13 @@ class _InstallmentLoanFormScreenState extends State<InstallmentLoanFormScreen> {
   Future<void> _delete() async {
     final plan = context.read<PlanController>();
     final link = widget.linkId!;
-    final hasPurchase = plan.loanParts(link).purchase != null;
-    var withPurchase = true;
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (dctx) => StatefulBuilder(
-        builder: (dctx, setDialog) => AlertDialog(
-          title: const Text('Usunąć pożyczkę?'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Zniknie z planu razem z ratami.'),
-              if (hasPurchase)
-                CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: withPurchase,
-                  onChanged: (v) => setDialog(() => withPurchase = v ?? true),
-                  title: const Text('Usuń też zakup z Wydatków'),
-                ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dctx, false),
-              child: const Text('Anuluj'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dctx, true),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.negative,
-              ),
-              child: const Text('Usuń'),
-            ),
-          ],
-        ),
-      ),
+    final withPurchase = await confirmLoanDelete(
+      context,
+      text: 'Zniknie z planu razem z ratami.',
+      hasPurchase: plan.loanParts(link).purchase != null,
     );
-    if (ok != true || !mounted) return;
-    await plan.deleteLoan(link, withPurchase: hasPurchase && withPurchase);
+    if (withPurchase == null || !mounted) return;
+    await plan.deleteLoan(link, withPurchase: withPurchase);
     if (mounted) Navigator.of(context).pop();
   }
 
@@ -779,7 +609,19 @@ class _InstallmentLoanFormScreenState extends State<InstallmentLoanFormScreen> {
               ],
             ),
             const SizedBox(height: 20),
-            _purchaseCard(theme, c, storage),
+            LoanPurchaseCard(
+              linkId: widget.linkId,
+              loanName: _name.text,
+              budgetId: _listBudgetId,
+              repaymentLabel: 'raty',
+              fallbackYear: _drawdown.year,
+              adding: _addPurchase,
+              onAddingChanged: (v) => setState(() => _addPurchase = v),
+              amount: _purchaseAmount,
+              categoryId: _purchaseCategoryId,
+              onCategoryChanged: (id) =>
+                  setState(() => _purchaseCategoryId = id),
+            ),
             const SizedBox(height: 16),
             _summary(theme, c),
             const SizedBox(height: 16),

@@ -1,6 +1,12 @@
 {
-  "releaseDate": "2026-10-10T16:56:08Z",
+  "versionCode": 2026101100,
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101100",
+  "releaseDate": "2026-10-11T13:51:12Z",
   "changelog": [
+    {
+      "version": "0.27.26101100",
+      "notes": "- Pozyczka z karty: zakup tego dnia jak w pozyczce ratalnej (wydatek karta w dniu uzycia, z kategoria)\n- Zakup z karty: Pokaz / Otworz pozyczke w obie strony, usuniecie pozyczki pyta o zakup"
+    },
     {
       "version": "0.27.26101011",
       "notes": "- bug fixes"
@@ -36,14 +42,8 @@
     {
       "version": "0.27.26101003",
       "notes": "- Planowanie: Caly rok obok Dzisiaj w lewym gornym rogu\n- Pasek miesiecy: same miesiace (dotkniecie wybranego wraca do calego roku)"
-    },
-    {
-      "version": "0.27.26101002",
-      "notes": "- Kategorie i metody platnosci osobne dla kazdego budzetu\n- Istniejace dane podzielone: uzywane w kilku budzetach - kopia w kazdym, nieuzywane - do Osobistego\n- Ekrany Kategorie i Metody platnosci: lista wybranego budzetu, Kopiuj i Przenies do budzetu, Kopiuj wszystkie\n- Nowy budzet z pustymi listami (podpowiedz: skopiuj z innego budzetu)\n- Przenoszenie i kopiowanie do budzetu: pytanie o brakujace kategorie i metody (Dodaj je / Bez nich)\n- Kopia zapasowa w wersji 9 (wszystkie kategorie i metody z budzetami)"
     }
   ],
-  "version": "0.27.26101011",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101011",
-  "releaseNotes": "- bug fixes",
-  "versionCode": 2026101011
+  "releaseNotes": "- Pozyczka z karty: zakup tego dnia jak w pozyczce ratalnej (wydatek karta w dniu uzycia, z kategoria)\n- Zakup z karty: Pokaz / Otworz pozyczke w obie strony, usuniecie pozyczki pyta o zakup",
+  "version": "0.27.26101100"
 }

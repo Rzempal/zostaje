@@ -81,9 +81,7 @@ void main() {
         repaymentDate: DateTime(2027, 2, 25),
         repaymentAmount: 3090,
       );
-      final loan = plan.positions.singleWhere(
-        (p) => p.kind == PlanKind.loan,
-      );
+      final loan = plan.positions.singleWhere((p) => p.kind == PlanKind.loan);
       final pair = plan.loanPair(loan.linkId!);
       expect(pair.loan!.amountIn('2027-01'), 3000);
       expect(pair.repayment!.amountIn('2027-02'), 3090);
@@ -108,6 +106,91 @@ void main() {
       expect(plan.positions, isEmpty);
     },
   );
+
+  // Zakup tego dnia jak w pożyczce ratalnej (ADR-036): zwykły wydatek
+  // zapłacony kartą w dniu jej użycia, spięty z pożyczką.
+  group('Pożyczka z karty: zakup tego dnia', () {
+    Future<String> addTv({
+      String? linkId,
+      DateTime? useDate,
+      bool purchase = true,
+    }) => plan.saveCardLoan(
+      linkId: linkId,
+      name: 'Telewizor',
+      card: 'PKO',
+      currency: Currency.PLN,
+      useDate: useDate ?? DateTime(2027, 1, 15),
+      amount: 3000,
+      repaymentDate: DateTime(2027, 2, 25),
+      repaymentAmount: 3000,
+      purchase: purchase ? (amount: 3000, categoryId: 'cat_rtv') : null,
+    );
+
+    test('wydatek kartą w dniu użycia — koszt liczy się raz', () async {
+      final link = await addTv();
+      final purchase = plan.loanParts(link).purchase!;
+      expect(purchase.kind, PlanKind.expense);
+      expect(purchase.name, 'Telewizor');
+      expect(purchase.paymentMethod, 'PKO');
+      expect(purchase.categoryId, 'cat_rtv');
+      expect(purchase.amountIn('2027-01'), 3000);
+      expect(purchase.dayIn('2027-01'), 15);
+
+      // Styczeń: wpływ z karty i zakup się znoszą; luty — sama spłata.
+      final jan = plan.totals(const PlanPeriod(2027, 1));
+      expect(jan.expense, 3000);
+      expect(jan.loansNet, 3000);
+      final feb = plan.totals(const PlanPeriod(2027, 2));
+      expect(feb.expense, 0);
+      expect(feb.loansNet, -3000);
+    });
+
+    test(
+      'zakup w dniu użycia idzie za nową datą, przestawiony zostaje',
+      () async {
+        final link = await addTv();
+        // Zapis pożyczki bez nowego zakupu — istniejący zostaje osobną pozycją.
+        await addTv(
+          linkId: link,
+          useDate: DateTime(2027, 2, 3),
+          purchase: false,
+        );
+        var purchase = plan.loanParts(link).purchase!;
+        expect(purchase.months.keys, ['2027-02']);
+        expect(purchase.dayIn('2027-02'), 3);
+        expect(purchase.categoryId, 'cat_rtv');
+
+        // Przestawiony ręcznie na inny miesiąc — zostaje, gdzie jest.
+        await plan.setMonths(purchase.id, {
+          '2027-02': null,
+          '2027-04': const PlanMonth(amount: 3000, day: 5),
+        });
+        await addTv(
+          linkId: link,
+          useDate: DateTime(2027, 2, 10),
+          purchase: false,
+        );
+        purchase = plan.loanParts(link).purchase!;
+        expect(purchase.months.keys, ['2027-04']);
+        expect(plan.positions.where((p) => p.linkId == link), hasLength(3));
+      },
+    );
+
+    test(
+      'usunięcie pożyczki: zakup zostaje albo znika — na życzenie',
+      () async {
+        final kept = await addTv();
+        await plan.deleteLoan(kept, withPurchase: false);
+        final purchase = plan.positions.single;
+        expect(purchase.kind, PlanKind.expense);
+        expect(purchase.linkId, isNull);
+
+        final gone = await addTv();
+        await plan.deleteLoan(gone, withPurchase: true);
+        expect(plan.positions.where((p) => p.linkId == gone), isEmpty);
+      },
+    );
+  });
 
   test('plan na kolejny rok dopisuje miesiące wybranym pozycjom', () async {
     final a = await addMonthly('A');
@@ -171,7 +254,10 @@ void main() {
     test('kopiowanie roku nie wydłuża raty poza jej koniec', () async {
       final p = await addRata();
       await plan.copyYear(2026, 2027, {p.id});
-      final keys2027 = plan.position(p.id)!.monthsOfYear(2027).map((e) => e.key);
+      final keys2027 = plan
+          .position(p.id)!
+          .monthsOfYear(2027)
+          .map((e) => e.key);
       // Wrzesień–grudzień 2026 przeniesione na 2027 tylko w okresie
       // (do lipca) — w 2027 nic z tego nie mieści się w okresie.
       expect(keys2027, isEmpty);
@@ -216,92 +302,100 @@ void main() {
       expect(parts.purchase!.amountIn('2026-09'), 2000);
     });
 
-    test('raty w Pożyczkach, zakup w Wydatkach — koszt liczy się raz', () async {
-      await addDreamy();
-      final sep = plan.totals(const PlanPeriod(2026, 9));
-      expect(sep.expense, 2000);
-      expect(sep.loansNet, 2000);
-      final oct = plan.totals(const PlanPeriod(2026, 10));
-      expect(oct.expense, 0);
-      expect(oct.loansNet, -166.67);
-    });
+    test(
+      'raty w Pożyczkach, zakup w Wydatkach — koszt liczy się raz',
+      () async {
+        await addDreamy();
+        final sep = plan.totals(const PlanPeriod(2026, 9));
+        expect(sep.expense, 2000);
+        expect(sep.loansNet, 2000);
+        final oct = plan.totals(const PlanPeriod(2026, 10));
+        expect(oct.expense, 0);
+        expect(oct.loansNet, -166.67);
+      },
+    );
 
-    test('edycja warunków przelicza raty; zakup zostaje osobną pozycją',
-        () async {
-      final link = await addDreamy();
-      await plan.saveInstallmentLoan(
-        linkId: link,
-        name: 'Odkurzacz',
-        currency: Currency.PLN,
-        terms: terms(count: 10, installment: 200),
-      );
-      final parts = plan.loanParts(link);
-      expect(parts.repayment!.months, hasLength(10));
-      expect(parts.repayment!.periodEnd, '2027-07');
-      // Zakup zmienia się i usuwa na jego ekranie — zapis pożyczki go nie rusza.
-      expect(parts.purchase!.amountIn('2026-09'), 2000);
-      expect(plan.positions.where((p) => p.linkId == link), hasLength(3));
-    });
+    test(
+      'edycja warunków przelicza raty; zakup zostaje osobną pozycją',
+      () async {
+        final link = await addDreamy();
+        await plan.saveInstallmentLoan(
+          linkId: link,
+          name: 'Odkurzacz',
+          currency: Currency.PLN,
+          terms: terms(count: 10, installment: 200),
+        );
+        final parts = plan.loanParts(link);
+        expect(parts.repayment!.months, hasLength(10));
+        expect(parts.repayment!.periodEnd, '2027-07');
+        // Zakup zmienia się i usuwa na jego ekranie — zapis pożyczki go nie rusza.
+        expect(parts.purchase!.amountIn('2026-09'), 2000);
+        expect(plan.positions.where((p) => p.linkId == link), hasLength(3));
+      },
+    );
 
-    test('zakup w dniu wypłaty idzie za jej nową datą, przestawiony zostaje',
-        () async {
-      final link = await addDreamy();
-      PlanLoanTerms drawnOn(DateTime day) => PlanLoanTerms(
-        principal: 2000,
-        count: 12,
-        installment: 166.67,
-        rrso: 0,
-        drawdown: day,
-        firstMonth: '2026-11',
-        day: 13,
-      );
+    test(
+      'zakup w dniu wypłaty idzie za jej nową datą, przestawiony zostaje',
+      () async {
+        final link = await addDreamy();
+        PlanLoanTerms drawnOn(DateTime day) => PlanLoanTerms(
+          principal: 2000,
+          count: 12,
+          installment: 166.67,
+          rrso: 0,
+          drawdown: day,
+          firstMonth: '2026-11',
+          day: 13,
+        );
 
-      await plan.saveInstallmentLoan(
-        linkId: link,
-        name: 'Odkurzacz',
-        currency: Currency.PLN,
-        terms: drawnOn(DateTime(2026, 10, 2)),
-      );
-      var purchase = plan.loanParts(link).purchase!;
-      expect(purchase.months.keys, ['2026-10']);
-      expect(purchase.dayIn('2026-10'), 2);
+        await plan.saveInstallmentLoan(
+          linkId: link,
+          name: 'Odkurzacz',
+          currency: Currency.PLN,
+          terms: drawnOn(DateTime(2026, 10, 2)),
+        );
+        var purchase = plan.loanParts(link).purchase!;
+        expect(purchase.months.keys, ['2026-10']);
+        expect(purchase.dayIn('2026-10'), 2);
 
-      // Przestawiony ręcznie na inny miesiąc — zostaje, gdzie jest.
-      await plan.setMonths(purchase.id, {
-        '2026-10': null,
-        '2026-12': const PlanMonth(amount: 2000, day: 5),
-      });
-      await plan.saveInstallmentLoan(
-        linkId: link,
-        name: 'Odkurzacz',
-        currency: Currency.PLN,
-        terms: drawnOn(DateTime(2026, 10, 20)),
-      );
-      purchase = plan.loanParts(link).purchase!;
-      expect(purchase.months.keys, ['2026-12']);
-    });
+        // Przestawiony ręcznie na inny miesiąc — zostaje, gdzie jest.
+        await plan.setMonths(purchase.id, {
+          '2026-10': null,
+          '2026-12': const PlanMonth(amount: 2000, day: 5),
+        });
+        await plan.saveInstallmentLoan(
+          linkId: link,
+          name: 'Odkurzacz',
+          currency: Currency.PLN,
+          terms: drawnOn(DateTime(2026, 10, 20)),
+        );
+        purchase = plan.loanParts(link).purchase!;
+        expect(purchase.months.keys, ['2026-12']);
+      },
+    );
 
     test('ręcznie poprawiona rata jest wykrywana przed nadpisaniem', () async {
       final link = await addDreamy();
       expect(plan.loanInstallmentsEdited(link), isFalse);
       final rep = plan.loanParts(link).repayment!;
-      await plan.setMonths(rep.id, {
-        '2026-12': const PlanMonth(amount: 180),
-      });
+      await plan.setMonths(rep.id, {'2026-12': const PlanMonth(amount: 180)});
       expect(plan.loanInstallmentsEdited(link), isTrue);
     });
 
-    test('usunięcie pożyczki: zakup zostaje albo znika — na życzenie', () async {
-      final kept = await addDreamy();
-      await plan.deleteLoan(kept, withPurchase: false);
-      final purchase = plan.positions.single;
-      expect(purchase.kind, PlanKind.expense);
-      expect(purchase.linkId, isNull);
+    test(
+      'usunięcie pożyczki: zakup zostaje albo znika — na życzenie',
+      () async {
+        final kept = await addDreamy();
+        await plan.deleteLoan(kept, withPurchase: false);
+        final purchase = plan.positions.single;
+        expect(purchase.kind, PlanKind.expense);
+        expect(purchase.linkId, isNull);
 
-      final gone = await addDreamy();
-      await plan.deleteLoan(gone, withPurchase: true);
-      expect(plan.positions.where((p) => p.linkId == gone), isEmpty);
-    });
+        final gone = await addDreamy();
+        await plan.deleteLoan(gone, withPurchase: true);
+        expect(plan.positions.where((p) => p.linkId == gone), isEmpty);
+      },
+    );
 
     test('usunięcie samego zakupu nie kasuje pożyczki', () async {
       final link = await addDreamy();

@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../controllers/budget_controller.dart';
 import '../controllers/plan_controller.dart';
+import '../models/plan_position.dart';
 import '../models/subscription.dart';
 import '../services/plan_service.dart';
 import '../services/storage_service.dart';
@@ -11,12 +12,17 @@ import '../theme/app_theme.dart';
 import '../widgets/budget_picker.dart' show moveOrCopyPositions;
 import '../widgets/budget_widgets.dart' show budgetNf;
 import '../widgets/form_action_bar.dart';
+import '../widgets/loan_purchase_card.dart';
 
 /// Pożyczka z karty kredytowej w planie (ADR-035 §4): pieniądze przychodzą
 /// w miesiącu użycia karty, a spłata wychodzi po okresie bezodsetkowym.
 ///
 /// Spłata ma osobną kwotę, bo bywa wyższa (prowizja, odsetki — w wielu
 /// bankach wypłata gotówki z karty nie ma okresu bezodsetkowego).
+///
+/// Zakup tego dnia jak w pożyczce ratalnej (ADR-036): zwykły wydatek
+/// zapłacony kartą w dniu jej użycia — zakup w Wydatkach, spłata
+/// w Pożyczkach, więc ten sam koszt nie liczy się dwa razy.
 class CardLoanFormScreen extends StatefulWidget {
   /// Istniejąca para do edycji; `null` = nowa pożyczka.
   final String? linkId;
@@ -32,6 +38,7 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
   final _name = TextEditingController(text: 'Pożyczka z karty');
   final _amount = TextEditingController();
   final _repaymentAmount = TextEditingController();
+  final _purchaseAmount = TextEditingController();
   final _note = TextEditingController();
   late List<PaymentMethod> _cards;
   String? _card;
@@ -39,8 +46,16 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
   late DateTime _useDate;
   late DateTime _repaymentDate;
 
+  /// Budżet pożyczki — jego karty i kategorie zakupu (ADR-038).
+  late String _budgetId;
+
   /// Czy kwotę spłaty zmieniono ręcznie — wtedy przestaje iść za pożyczką.
   bool _repaymentEdited = false;
+
+  /// Nowy zakup do dodania przy zapisie („Dodaj"). Istniejący zakup to
+  /// osobna pozycja — formularz pokazuje go i prowadzi do niego („Pokaż").
+  bool _addPurchase = false;
+  String? _purchaseCategoryId;
   bool _saving = false;
 
   final _df = DateFormat('d MMMM yyyy', 'pl');
@@ -50,12 +65,12 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
     super.initState();
     final plan = context.read<PlanController>();
     // Karty budżetu pożyczki (ADR-038): edytowanej albo aktywnego.
-    final budgetId = widget.linkId == null
+    _budgetId = widget.linkId == null
         ? plan.budgetId
         : plan.loanPair(widget.linkId!).loan?.budgetId ?? plan.budgetId;
     _cards = context
         .read<StorageService>()
-        .getPaymentMethods(budgetId)
+        .getPaymentMethods(_budgetId)
         .where((pm) => pm.isCreditCard)
         .toList();
     _currency = plan.target;
@@ -93,6 +108,7 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
     _name.dispose();
     _amount.dispose();
     _repaymentAmount.dispose();
+    _purchaseAmount.dispose();
     _note.dispose();
     super.dispose();
   }
@@ -150,11 +166,26 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
       repaymentDate: _repaymentDate,
       repaymentAmount: repayment,
       note: _note.text.trim().isEmpty ? null : _note.text.trim(),
+      // Tylko nowy zakup — istniejący zmienia się na jego ekranie.
+      purchase: _addPurchase && _existingPurchase == null
+          ? (
+              amount: _parse(_purchaseAmount.text) ?? amount,
+              categoryId: _purchaseCategoryId,
+            )
+          : null,
     );
     if (mounted) Navigator.of(context).pop();
   }
 
-  /// Cała pożyczka (pożyczka i spłata) do innego budżetu (ADR-037).
+  /// Zakup tej pożyczki, o ile już jest (pozycja w Wydatkach, ADR-036).
+  PlanPosition? get _existingPurchase {
+    final link = widget.linkId;
+    return link == null
+        ? null
+        : context.read<PlanController>().loanParts(link).purchase;
+  }
+
+  /// Cała pożyczka (pożyczka, spłata i zakup) do innego budżetu (ADR-037).
   Future<void> _toBudget({required bool copy}) async {
     final loan = context.read<PlanController>().loanPair(widget.linkId!).loan;
     if (loan == null) return;
@@ -189,27 +220,14 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
 
   Future<void> _delete() async {
     final plan = context.read<PlanController>();
-    final pair = plan.loanPair(widget.linkId!);
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (dctx) => AlertDialog(
-        title: const Text('Usunąć pożyczkę?'),
-        content: const Text('Zniknie z planu razem ze spłatą.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dctx, false),
-            child: const Text('Anuluj'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dctx, true),
-            style: FilledButton.styleFrom(backgroundColor: AppColors.negative),
-            child: const Text('Usuń'),
-          ),
-        ],
-      ),
+    final link = widget.linkId!;
+    final withPurchase = await confirmLoanDelete(
+      context,
+      text: 'Zniknie z planu razem ze spłatą.',
+      hasPurchase: plan.loanParts(link).purchase != null,
     );
-    if (ok != true || !mounted) return;
-    await plan.deleteAll({?pair.loan?.id, ?pair.repayment?.id});
+    if (withPurchase == null || !mounted) return;
+    await plan.deleteLoan(link, withPurchase: withPurchase);
     if (mounted) Navigator.of(context).pop();
   }
 
@@ -303,6 +321,9 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
             TextFormField(
               controller: _name,
               decoration: const InputDecoration(labelText: 'Nazwa *'),
+              // Nazwa jest w tytule bloku zakupu — widać, jak zakup będzie
+              // się nazywał.
+              onChanged: (_) => setState(() {}),
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'Wymagane' : null,
             ),
@@ -385,6 +406,20 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
                   return x == null || x < 0 ? 'Nieprawidłowa kwota' : null;
                 },
               ),
+            const SizedBox(height: 20),
+            LoanPurchaseCard(
+              linkId: widget.linkId,
+              loanName: _name.text,
+              budgetId: _budgetId,
+              repaymentLabel: 'spłata',
+              fallbackYear: _useDate.year,
+              adding: _addPurchase,
+              onAddingChanged: (v) => setState(() => _addPurchase = v),
+              amount: _purchaseAmount,
+              categoryId: _purchaseCategoryId,
+              onCategoryChanged: (id) =>
+                  setState(() => _purchaseCategoryId = id),
+            ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _note,

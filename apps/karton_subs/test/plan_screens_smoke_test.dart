@@ -324,6 +324,71 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Pożyczka z karty: zakup tego dnia w obie strony', (
+    tester,
+  ) async {
+    await tester.runAsync(seed);
+    // Zakup do pożyczki z karty L1 z przykładowych danych — w dniu użycia.
+    await tester.runAsync(
+      () => storage.savePlanPosition(
+        PlanPosition(
+          id: 'zak',
+          budgetId: kBudgetPersonal,
+          name: 'Telewizor',
+          kind: PlanKind.expense,
+          currency: Currency.PLN,
+          paymentMethod: 'Revolut',
+          months: const {'2026-10': PlanMonth(amount: 3000, day: 7)},
+          linkId: 'L1',
+          createdAt: DateTime(2026, 10, 7),
+        ),
+      ),
+    );
+    // Nowa pożyczka z karty: „Dodaj" pokazuje pola zakupu.
+    await pump(tester, const CardLoanFormScreen(), height: 1400);
+    expect(find.text('Zakup „Pożyczka z karty" tego dnia'), findsOneWidget);
+    expect(find.textContaining('spłata — do Pożyczek'), findsOneWidget);
+    await tester.ensureVisible(find.text('Dodaj'));
+    await tester.tap(find.text('Dodaj'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(TextFormField, 'Kwota zakupu'), findsOneWidget);
+    expect(find.text('Nie dodawaj'), findsOneWidget);
+
+    // Zakup otwarty z planu: „Otwórz pożyczkę" prowadzi do formularza karty,
+    // nie pożyczki ratalnej.
+    await pump(
+      tester,
+      const PlanPositionScreen(positionId: 'zak', initialYear: 2026),
+      height: 1400,
+    );
+    expect(find.text('Zakup z pożyczki z karty'), findsOneWidget);
+    await tester.tap(find.text('Otwórz pożyczkę'));
+    await tester.pumpAndSettle();
+    expect(find.text('Edytuj pożyczkę'), findsOneWidget);
+    expect(find.text('Zakup „Telewizor"'), findsOneWidget);
+
+    // „Pokaż" prowadzi do zakupu, a stamtąd „Wróć do pożyczki".
+    await tester.ensureVisible(find.text('Pokaż'));
+    await tester.tap(find.text('Pokaż'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Wróć do pożyczki'));
+    await tester.pumpAndSettle();
+    expect(find.text('Pokaż'), findsOneWidget);
+
+    // Usunięcie pożyczki pyta o zakup.
+    await tester.tap(find.byTooltip('Usuń'));
+    await tester.pumpAndSettle();
+    expect(find.text('Usuń też zakup z Wydatków'), findsOneWidget);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text('Anuluj'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Formularz subskrypcji: budżet zmienia tylko menu ⋮', (
     tester,
   ) async {

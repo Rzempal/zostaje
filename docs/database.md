@@ -136,7 +136,7 @@ wszystkie budzety w jednym pudelku.
 | `categoryId`, `paymentMethod`, `day`, `note` | — | nie | Metoda platnosci po NAZWIE; `day` = domyslny dzien platnosci |
 | `archived` | bool | nie | Ukryta, poza sumami |
 | `months` | Map | tak | „RRRR-MM" → `{amount, day?}`. Brak miesiaca = pozycja wtedy nie obowiazuje |
-| `linkId` | String | nie | Pozyczka: wplyw + splata, a przy pozyczce ratalnej takze zakup (zwykly `expense`). Usuniecie zakupu nie usuwa pozyczki |
+| `linkId` | String | nie | Pozyczka: wplyw + splata, opcjonalnie takze zakup (zwykly `expense`) — przy pozyczce ratalnej i z karty. Usuniecie zakupu nie usuwa pozyczki |
 | `loan` | obiekt | nie | Warunki pozyczki ratalnej — tylko na splacie: `principal`, `count`, `installment`, `rrso` (%), `drawdown` („RRRR-MM-DD"), `firstMonth` („RRRR-MM"), `day`. Raty (miesiace) powstaja z warunkow; wersja 0.27 klucz pomija |
 | `periodStart`, `periodEnd` | String „RRRR-MM" | nie | Okres obowiazywania (oba konce wlacznie): rata — oba, pozycja ze startem — samo `periodStart`. Poza okresem pozycja nie ma miesiecy (kontroler pilnuje przy kazdym zapisie). Wersja 0.27 tych kluczy nie zna i je pomija |
 | `createdAt`, `updatedAt` | ISO8601 | — | |
@@ -472,4 +472,4 @@ karty nie wracaja z arkusza (para powstaje w aplikacji). Dawny arkusz „Budzet"
 
 ---
 
-> **Ostatnia aktualizacja:** 2026-10-07
+> **Ostatnia aktualizacja:** 2026-10-11
