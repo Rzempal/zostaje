@@ -1,5 +1,13 @@
 {
+  "releaseDate": "2026-10-11T17:02:28Z",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026101101",
+  "version": "0.27.26101101",
+  "releaseNotes": "- Zakup z pozyczki (z karty i ratalnej) przy tworzeniu dostaje nazwe Wydatek: nazwa pozyczki",
   "changelog": [
+    {
+      "version": "0.27.26101101",
+      "notes": "- Zakup z pozyczki (z karty i ratalnej) przy tworzeniu dostaje nazwe Wydatek: nazwa pozyczki"
+    },
     {
       "version": "0.27.26101100",
       "notes": "- Pozyczka z karty: zakup tego dnia jak w pozyczce ratalnej (wydatek karta w dniu uzycia, z kategoria)\n- Zakup z karty: Pokaz / Otworz pozyczke w obie strony, usuniecie pozyczki pyta o zakup"
@@ -35,15 +43,7 @@
     {
       "version": "0.27.26100903",
       "notes": "- Budzety z nazwami i ikonami: dowolnie wiele, przelacznik z lista u gory\n- Ukrywanie budzetu zamiast trybu budzetu\n- Przenies i kopiuj do innego budzetu: caly budzet, zaznaczone pozycje, pozycja, pozyczka, subskrypcja\n- Usuwanie budzetu z ostrzezeniem i opcja przeniesienia\n- Budzet: zakladki Statystyki i Kalendarz w jednej linii z budzetem\n- Wydatki i Pozyczki: chevron grupy zwija calosc, pilsy tylko swoje listy\n- Pozyczki: osobno Karta kredytowa i Kredyty ratalne\n- Subskrypcja: zmiana budzetu tylko w menu (Przenies / Kopiuj)"
-    },
-    {
-      "version": "0.27.26100902",
-      "notes": "- Sekcja Pozyczki: pozyczka z karty i pozyczki ratalne\n- Pozyczka ratalna: wyplata jako wplyw, raty, RRSO; z trzech wartosci liczy czwarta i sprawdza zgodnosc\n- Opcjonalny zakup tego dnia jako wydatek (raty nie licza sie drugi raz)\n- Pozyczki netto zamiast karty netto\n- Formularz pozycji: bez gotowego ustawienia Raty"
     }
   ],
-  "version": "0.27.26101100",
-  "releaseDate": "2026-10-11T15:48:58Z",
-  "releaseNotes": "- Pozyczka z karty: zakup tego dnia jak w pozyczce ratalnej (wydatek karta w dniu uzycia, z kategoria)\n- Zakup z karty: Pokaz / Otworz pozyczke w obie strony, usuniecie pozyczki pyta o zakup",
-  "versionCode": 2026101100,
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026101100"
+  "versionCode": 2026101101
 }
