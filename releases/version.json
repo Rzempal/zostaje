@@ -1,6 +1,10 @@
 {
   "changelog": [
     {
+      "version": "0.27.26101100",
+      "notes": "- Pozyczka z karty: zakup tego dnia jak w pozyczce ratalnej (wydatek karta w dniu uzycia, z kategoria)\n- Zakup z karty: Pokaz / Otworz pozyczke w obie strony, usuniecie pozyczki pyta o zakup"
+    },
+    {
       "version": "0.27.26101007",
       "notes": "- bug fixes"
     },
@@ -35,15 +39,11 @@
     {
       "version": "0.27.26100902",
       "notes": "- Sekcja Pozyczki: pozyczka z karty i pozyczki ratalne\n- Pozyczka ratalna: wyplata jako wplyw, raty, RRSO; z trzech wartosci liczy czwarta i sprawdza zgodnosc\n- Opcjonalny zakup tego dnia jako wydatek (raty nie licza sie drugi raz)\n- Pozyczki netto zamiast karty netto\n- Formularz pozycji: bez gotowego ustawienia Raty"
-    },
-    {
-      "version": "0.27.26100901",
-      "notes": "- Wydatki: przelacznik czesci stoi nad jej lista, przy prawej krawedzi (bez powtorzonego podtytulu)"
     }
   ],
-  "releaseNotes": "- bug fixes",
-  "version": "0.27.26101007",
-  "versionCode": 2026101007,
-  "releaseDate": "2026-10-10T16:59:57Z",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026101007"
+  "version": "0.27.26101100",
+  "releaseDate": "2026-10-11T15:48:58Z",
+  "releaseNotes": "- Pozyczka z karty: zakup tego dnia jak w pozyczce ratalnej (wydatek karta w dniu uzycia, z kategoria)\n- Zakup z karty: Pokaz / Otworz pozyczke w obie strony, usuniecie pozyczki pyta o zakup",
+  "versionCode": 2026101100,
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026101100"
 }
