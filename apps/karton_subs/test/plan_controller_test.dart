@@ -130,7 +130,8 @@ void main() {
       final link = await addTv();
       final purchase = plan.loanParts(link).purchase!;
       expect(purchase.kind, PlanKind.expense);
-      expect(purchase.name, 'Telewizor');
+      // Nazwa nadana przy tworzeniu — jak „Spłata: …" przy karcie.
+      expect(purchase.name, 'Wydatek: Telewizor');
       expect(purchase.paymentMethod, 'PKO');
       expect(purchase.categoryId, 'cat_rtv');
       expect(purchase.amountIn('2027-01'), 3000);
@@ -298,6 +299,7 @@ void main() {
       expect(rep.periodEnd, '2027-09');
       expect(rep.loanTerms!.count, 12);
       expect(parts.purchase!.kind, PlanKind.expense);
+      expect(parts.purchase!.name, 'Wydatek: Odkurzacz');
       expect(parts.purchase!.categoryId, 'cat_dom');
       expect(parts.purchase!.amountIn('2026-09'), 2000);
     });

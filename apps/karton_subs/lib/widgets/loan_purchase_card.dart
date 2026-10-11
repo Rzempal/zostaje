@@ -21,7 +21,7 @@ class LoanPurchaseCard extends StatelessWidget {
   /// Zapisana pożyczka; `null` = nowa, zakupu jeszcze nie ma.
   final String? linkId;
 
-  /// Nazwa pożyczki — zakup dostaje tę samą.
+  /// Nazwa pożyczki — z niej nazwa nowego zakupu ([loanPurchaseName]).
   final String loanName;
 
   /// Budżet, którego kategorie są do wyboru (ADR-038).
@@ -122,8 +122,11 @@ class LoanPurchaseCard extends StatelessWidget {
       );
     }
 
+    // Tytuł pokazuje nazwę, z jaką zakup powstanie.
     final name = loanName.trim();
-    final title = name.isEmpty ? 'Zakup tego dnia' : 'Zakup „$name" tego dnia';
+    final title = name.isEmpty
+        ? 'Zakup tego dnia'
+        : 'Zakup „${loanPurchaseName(name)}" tego dnia';
     final why =
         'Zakup idzie do Wydatków, $repaymentLabel — do Pożyczek, więc ten sam '
         'koszt nie liczy się dwa razy.';

@@ -346,7 +346,11 @@ void main() {
     );
     // Nowa pożyczka z karty: „Dodaj" pokazuje pola zakupu.
     await pump(tester, const CardLoanFormScreen(), height: 1400);
-    expect(find.text('Zakup „Pożyczka z karty" tego dnia'), findsOneWidget);
+    // Tytuł pokazuje nazwę, z jaką zakup powstanie.
+    expect(
+      find.text('Zakup „Wydatek: Pożyczka z karty" tego dnia'),
+      findsOneWidget,
+    );
     expect(find.textContaining('spłata — do Pożyczek'), findsOneWidget);
     await tester.ensureVisible(find.text('Dodaj'));
     await tester.tap(find.text('Dodaj'));

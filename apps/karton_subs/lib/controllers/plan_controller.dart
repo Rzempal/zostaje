@@ -10,6 +10,11 @@ import '../services/plan_service.dart';
 import '../services/storage_service.dart';
 import 'budget_controller.dart';
 
+/// Nazwa zakupu z pożyczki nadawana przy jego tworzeniu (ADR-036) —
+/// „Wydatek: nazwa pożyczki", jak „Spłata: nazwa" przy karcie. Potem to
+/// zwykła nazwa pozycji: zmiana nazwy pożyczki jej nie rusza.
+String loanPurchaseName(String loanName) => 'Wydatek: $loanName';
+
 /// Stan planu rocznego aktywnego budżetu (ADR-035) — pozycje z miesiącami
 /// i subskrypcje jako osobna sekcja.
 ///
@@ -327,8 +332,8 @@ class PlanController extends ChangeNotifier {
   /// Zapisuje pożyczkę ratalną (nową albo istniejącą, gdy podano [linkId]):
   /// wpływ w dniu wypłaty, raty z warunków (z okresem od pierwszej do
   /// ostatniej raty) i — gdy podano [purchase] — zakup tego dnia jako zwykły
-  /// wydatek. Raty są w Pożyczkach, zakup w Wydatkach, więc ten sam koszt
-  /// nie liczy się dwa razy.
+  /// wydatek nazwany [loanPurchaseName]. Raty są w Pożyczkach, zakup
+  /// w Wydatkach, więc ten sam koszt nie liczy się dwa razy.
   ///
   /// Istniejący zakup to osobna pozycja (zmienia się ją i usuwa na jej
   /// ekranie): bez [purchase] zostaje, a gdy stał w dniu wypłaty — idzie za
@@ -359,20 +364,21 @@ class PlanController extends ChangeNotifier {
       String? periodEnd,
       PlanLoanTerms? loanTerms,
       String? categoryId,
+      String? sideName,
     }) {
       final base =
           old ??
           PlanPosition(
             id: _uuid.v4(),
             budgetId: budgetId,
-            name: name,
+            name: sideName ?? name,
             kind: kind,
             currency: currency,
             linkId: link,
             createdAt: now,
           );
       return base.copyWith(
-        name: name,
+        name: sideName ?? name,
         currency: currency,
         paymentMethod: paymentMethod,
         clearPaymentMethod: paymentMethod == null,
@@ -406,9 +412,18 @@ class PlanController extends ChangeNotifier {
     );
     if (purchase != null) {
       await _save(
-        side(existing.purchase, PlanKind.expense, {
-          drawKey: PlanMonth(amount: purchase.amount, day: terms.drawdown.day),
-        }, categoryId: purchase.categoryId),
+        side(
+          existing.purchase,
+          PlanKind.expense,
+          {
+            drawKey: PlanMonth(
+              amount: purchase.amount,
+              day: terms.drawdown.day,
+            ),
+          },
+          categoryId: purchase.categoryId,
+          sideName: loanPurchaseName(name),
+        ),
       );
     } else if (existing.purchase case final p?) {
       await _followDrawdown(
@@ -470,8 +485,8 @@ class PlanController extends ChangeNotifier {
   ///
   /// Zakup tego dnia jak w pożyczce ratalnej ([saveInstallmentLoan]): nowy
   /// ([purchase]) to zwykły wydatek zapłacony kartą w dniu jej użycia,
-  /// a istniejący zostaje osobną pozycją — idzie tylko za nową datą użycia,
-  /// gdy stał w dawnej.
+  /// nazwany [loanPurchaseName], a istniejący zostaje osobną pozycją — idzie
+  /// tylko za nową datą użycia, gdy stał w dawnej.
   Future<String> saveCardLoan({
     String? linkId,
     required String name,
@@ -545,7 +560,7 @@ class PlanController extends ChangeNotifier {
       final bought = side(
         existing.purchase,
         PlanKind.expense,
-        name,
+        loanPurchaseName(name),
         useDate,
         purchase.amount,
       );

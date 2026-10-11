@@ -61,6 +61,10 @@ spłata po okresie bezodsetkowym", liczona osobno od wpływów i wydatków.
   Ekran zakupu otwiera formularz właściwej pożyczki. Uwaga: zakup wpisany
   wcześniej osobno, obok pożyczki z karty, i dodany drugi raz w jej
   formularzu liczy się podwójnie — aplikacja tego nie wykrywa.
+- **Nazwa zakupu** (2026-10-11): nowy zakup dostaje nazwę „Wydatek: <nazwa
+  pożyczki>", jak spłata karty „Spłata: <nazwa>" — nie nazywa się już tak
+  samo jak wpływ pożyczki (kalendarz, Excel). Tylko przy tworzeniu: zmiana
+  nazwy pożyczki zakupu nie rusza, wcześniejsze zakupy zostają bez zmian.
 
 ### 3. Trzy z czterech — reszta się liczy
 

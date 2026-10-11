@@ -1,8 +1,11 @@
 {
-  "versionCode": 2026101100,
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101100",
-  "releaseDate": "2026-10-11T13:51:12Z",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101101",
+  "releaseDate": "2026-10-11T16:29:26Z",
   "changelog": [
+    {
+      "version": "0.27.26101101",
+      "notes": "- Zakup z pozyczki (z karty i ratalnej) przy tworzeniu dostaje nazwe Wydatek: nazwa pozyczki"
+    },
     {
       "version": "0.27.26101100",
       "notes": "- Pozyczka z karty: zakup tego dnia jak w pozyczce ratalnej (wydatek karta w dniu uzycia, z kategoria)\n- Zakup z karty: Pokaz / Otworz pozyczke w obie strony, usuniecie pozyczki pyta o zakup"
@@ -38,12 +41,9 @@
     {
       "version": "0.27.26101004",
       "notes": "- Ekran pozycji: budzet pozycji (ikona i nazwa) na poczatku linii pod tytulem"
-    },
-    {
-      "version": "0.27.26101003",
-      "notes": "- Planowanie: Caly rok obok Dzisiaj w lewym gornym rogu\n- Pasek miesiecy: same miesiace (dotkniecie wybranego wraca do calego roku)"
     }
   ],
-  "releaseNotes": "- Pozyczka z karty: zakup tego dnia jak w pozyczce ratalnej (wydatek karta w dniu uzycia, z kategoria)\n- Zakup z karty: Pokaz / Otworz pozyczke w obie strony, usuniecie pozyczki pyta o zakup",
-  "version": "0.27.26101100"
+  "versionCode": 2026101101,
+  "releaseNotes": "- Zakup z pozyczki (z karty i ratalnej) przy tworzeniu dostaje nazwe Wydatek: nazwa pozyczki",
+  "version": "0.27.26101101"
 }
