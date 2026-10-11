@@ -98,6 +98,10 @@ zostawia repozytorium w połowie drogi, a brak tokenu wyszedłby dopiero po kilk
 minutach kompilacji. Testy i analiza są jedyną bramką jakości przed telefonem —
 gdy nie przechodzą, wydania nie ma.
 
+**W trakcie wydania nie edytuj plików projektu.** Build bierze pliki z dysku w tej
+chwili, a commit zabiera cały katalog roboczy — zmiana zaczęta w trakcie trafia
+do APK i do commita pod cudzym opisem (lessons-learned 2026-10-10).
+
 | Parametr | Po co |
 | --- | --- |
 | `-BumpType patch\|minor\|major\|changelog` | domyślnie `patch` |

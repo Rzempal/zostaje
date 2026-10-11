@@ -4,6 +4,28 @@
 
 ---
 
+## 2026-10-10: Wydanie to zdjecie katalogu roboczego, nie zmiany z opisu
+
+### Problem
+DEV 0.27.26101007 („zakup pozyczki — Dodaj i Pokaz") zawieral niedokonczone
+przenoszenie filtrow kategorii. W trakcie wydania puszczonego w tle zaczela sie
+edycja kolejnej zmiany — i weszla do APK oraz do commita pod opisem poprzedniej.
+
+### Przyczyna
+`ship.ps1` buduje APK z plikow na dysku w chwili budowania, a commit robi z
+CALEGO katalogu roboczego. Analiza i testy przeszly wczesniej, wiec nic nie
+zatrzymalo polowicznej zmiany.
+
+### Rozwiazanie
+Kolejne wydanie DEV z kompletna zmiana (0.27.26101008) i informacja dla
+uzytkownika, co bylo w wersji posredniej.
+
+### Wniosek
+Gdy wydanie trwa (takze w tle) — tylko czytanie i planowanie, edycja dopiero
+po zakonczeniu. Nowa prosba w trakcie wydania czeka na jego koniec.
+
+---
+
 ## 2026-10-10: Znak spoza fontu telefonu stoi krzywo („→")
 
 ### Problem

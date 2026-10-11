@@ -15,8 +15,8 @@ Aplikacja mobilna do zarzadzania domowymi finansami: subskrypcje cyfrowe + budze
   (wplyw albo wydatek), kolumny = 12 miesiecy. Kazdy miesiac ma wlasna kwote,
   edytowana pojedynczo albo dla kilku zaznaczonych miesiecy naraz. Pozycja nie jest
   przypieta do roku (rata 09.2026–08.2027 to jedna pozycja); nowy rok powstaje
-  z kopii poprzedniego. Filtr na rok pokazuje srednia miesieczna, na miesiac —
-  kwoty tego miesiaca
+  z kopii poprzedniego. Widok „Rok / Miesiac": rok pokazuje sumy roczne, miesiac —
+  kwoty tego miesiaca (srednie miesieczne sa w Statystykach)
 - **Subskrypcje:** osobny modul z okresami probnymi, przypomnieniami i limitem;
   w planie sa sekcja liczona z ich cyklu (miesiac odnowienia = pelna kwota)
 - **Pozyczki:** z karty kredytowej (wplyw w dniu uzycia, splata po okresie
@@ -26,14 +26,15 @@ Aplikacja mobilna do zarzadzania domowymi finansami: subskrypcje cyfrowe + budze
 - **Budzet:** zakladka ze statystykami roku (srednio miesiecznie, wykres 12 miesiecy,
   kategorie, limity subskrypcji) i kalendarzem platnosci do odhaczania
 - **Budzety z nazwami i ikonami:** dowolnie wiele oddzielnych budzetow (domyslnie
-  Osobisty i Domowy) — kazdy z wlasnym planem i subskrypcjami; przelacznik u gory
-  i gest przesuniecia; ukrywanie, przenoszenie i kopiowanie zawartosci (ADR-037)
+  Osobisty i Domowy) — kazdy z wlasnym planem, subskrypcjami, kategoriami
+  i metodami platnosci; przelacznik u gory i gest przesuniecia; ukrywanie,
+  przenoszenie, kopiowanie i duplikowanie zawartosci (ADR-037, ADR-038)
 - Przypomnienia o odnowieniach i trialach
 - **Excel (.xlsx):** subskrypcje oraz plan jako tabela roku (zakladka na rok,
   wydatki jako liczby ujemne) — tak udostepnia sie budzet drugiej osobie;
   import dokleja pozycje
-- Szyfrowany backup `.zostaje` (format v8: plan roczny + subskrypcje + stan
-  platnosci); import pyta, czy **odtworzyc stan z pliku** czy **scalic** (ADR-021).
+- Szyfrowany backup `.zostaje` (format v9: plan roczny + subskrypcje + kategorie
+  i metody platnosci budzetow + stan platnosci); import pyta, czy **odtworzyc stan z pliku** czy **scalic** (ADR-021).
   Kopia automatycznie raz na dobe na koncie Google (ADR-024)
 
 **Usuniete w przebudowie (ADR-035):** dziennik wydatkow "Biezace", skan paragonow
@@ -114,9 +115,9 @@ flutter build apk --debug
 |----------|------|
 | [Design System](docs/design.md) | Paleta "Aurora", typografia, komponenty, reguly wydajnosci |
 | [Architektura](docs/architecture.md) | Stack, warstwy, przeplywy danych |
-| [Baza Danych](docs/database.md) | Model subskrypcji, kategorie, usage tracking |
+| [Baza Danych](docs/database.md) | Plan roczny, subskrypcje, budzety, kategorie i metody platnosci |
 | [Bezpieczenstwo](docs/security.md) | Prywatnosc danych, szyfrowanie backupow |
-| [Roadmap](docs/roadmap.md) | Plan rozwoju (MVP -> Analytics -> Notifications) |
+| [Roadmap](docs/roadmap.md) | Fazy rozwoju i nastepne kroki |
 | [Wdrozenie](docs/deployment.md) | OTA pipeline, deploy script |
 
 ---
@@ -128,4 +129,4 @@ Reusable infrastructure: ~40% kodu (serwisy, kontrolery, konfiguracja).
 
 ---
 
-> **Ostatnia aktualizacja:** 2026-08-01
+> **Ostatnia aktualizacja:** 2026-10-11

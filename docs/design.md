@@ -381,7 +381,7 @@ stylu wiersza co pozycje budzetu.
 
 | Element | Realizacja Aurora |
 |---------|-------------------|
-| Wiersz subskrypcji | jak wiersz pozycji budzetu: ikona kategorii (lub `repeat`) + nazwa + kwota/cykl `--negative`; druga linia: `Subskrypcja · data · okres probny · /os. · metoda · kategoria` |
+| Wiersz subskrypcji | jak wiersz pozycji planu: ikona kategorii (lub `repeat`) + „Subskrypcja · " (wyszarzone) i nazwa + kwota okresu `--negative`; druga linia: `metoda · dzień N · okres probny · 1/N os. · anulowana · kategoria` (cykl tygodniowy: „co tydzień", co N dni: „co N dni"), z prawej pasek 12 miesiecy z platnoscia (miesieczna — caly rok, roczna — jedna kratka) |
 | Okres probny | kwota w kolorze `--trial`, w drugiej linii „probny · N dni"; koszty po okresie probnym w karcie na „Planie" |
 | Anulowana | wiersz przygaszony (opacity 0.5) + token „anulowana"; domyslnie ukryta, odslania ja przelacznik przy filtrze czasu |
 | Przypieta | ikona `pin` przed nazwa; zostaje na gorze sekcji niezaleznie od sortowania |
@@ -411,4 +411,4 @@ stylu wiersza co pozycje budzetu.
 
 ---
 
-> **Ostatnia aktualizacja:** 2026-08-01
+> **Ostatnia aktualizacja:** 2026-10-11

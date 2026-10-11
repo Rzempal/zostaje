@@ -28,6 +28,7 @@
 | 17 | Pozyczki ratalne (ADR-036) | ✅ PROD (2026-10-09) — sekcja Pozyczki, raty z RRSO, zakup jako wydatek |
 | 18 | Budzety z nazwami i ikonami (ADR-037) | ✅ PROD (2026-10-09) — dowolnie wiele budzetow z ikonami, ukrywanie, przenoszenie i kopiowanie miedzy budzetami |
 | 19 | Etykiety i metody platnosci osobne dla budzetow (ADR-038); duplikowanie, kolka w siatce miesiecy | ✅ PROD (2026-10-10) — etap 1: duplikowanie, kolka w siatce miesiecy; etap 2: osobne kategorie i metody platnosci, przenies/kopiuj z pytaniem o brakujace, nowy budzet z pustymi listami |
+| 20 | Dopracowanie Planowania i Budzetu | ✅ PROD (2026-10-10, do 0.27.26101007) — „Dzisiaj" i widok „Rok / Miesiac" w rogu (rok = sumy roczne, start na biezacym miesiacu); pigulki „Razem" i czesci w grupach Wydatki i Pozyczki; filtry kategorii w grupie Wydatki; kategorie zawsze alfabetycznie; budzet na ekranie pozycji; zakup pozyczki ratalnej „Dodaj" / „Pokaz" w obie strony; przelacznik „Statystyki / Kalendarz"; subskrypcje w ukladzie pozycji z paskiem miesiecy; strzalka w podpisach pozyczek jako ikona |
 
 > **Stan na 2026-10-08:** przebudowa scalona do `main` i wydana na PROD (0.27).
 > Ostatnia wersja sprzed przebudowy to `v0.26.26100600` — punkt powrotu (zbudowac
@@ -509,7 +510,7 @@ Przejscie oznacza instalacje od zera (inny podpis), wiec kolejnosc krokow chroni
 
 ---
 
-## Nastepne kroki (stan na 2026-10-08)
+## Nastepne kroki (stan na 2026-10-11)
 
 Po przebudowie (Faza 16). Zadania o synchronizacji, skanie paragonow, korektach
 i porownaniu planu z rzeczywistoscia usuniete — tych funkcji juz nie ma.
@@ -529,10 +530,13 @@ i porownaniu planu z rzeczywistoscia usuniete — tych funkcji juz nie ma.
 8. Sprawdzenie Material You + paska stanu na telefonie w obu trybach.
 9. Dostepnosc: wiersz listy ~44 px vs zalecane 48 px; audyt WCAG (Faza 4).
 10. Onboarding — ekran powitalny (Faza 4).
+11. Strzalki „→" w menu i podpowiedziach („Sortuj: A→Z", „Ustawienia → Metody
+    platnosci", raport konwersji) — znaku nie ma w foncie telefonu, stoi nizej
+    (lessons-learned 2026-10-10). Propozycja: „A–Z" przy sortowaniu, „›" w sciezkach.
 
 **Publikacja**
-11. Strona `/aplikacje/zostaje` w repo `com` ze zrzutami ekranu.
-12. Przejscie na Google Play (Faza 15).
+12. Strona `/aplikacje/zostaje` w repo `com` ze zrzutami ekranu.
+13. Przejscie na Google Play (Faza 15).
 
 ---
 
@@ -553,4 +557,4 @@ i porownaniu planu z rzeczywistoscia usuniete — tych funkcji juz nie ma.
 
 ---
 
-> **Ostatnia aktualizacja:** 2026-10-08
+> **Ostatnia aktualizacja:** 2026-10-11

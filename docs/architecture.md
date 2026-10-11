@@ -73,8 +73,8 @@ lib/
 │   ├── budget_controller.dart   # Budzety z nazwami (ADR-037): lista, aktywny, ukrywanie, usuwanie, przenies/kopiuj/duplikuj z etykietami; slowniki osobne dla budzetow (ADR-038); odhaczenia platnosci
 │   ├── plan_controller.dart     # Plan roczny aktywnego budzetu (ADR-035): pozycje, miesiace, karta, plan na kolejny rok
 ├── models/
-│   ├── subscription.dart        # Glowna encja + PaymentMethod
-│   ├── category.dart            # Kategorie subskrypcji
+│   ├── subscription.dart        # Glowna encja + PaymentMethod (osobne dla budzetow, `budgetId` — ADR-038)
+│   ├── category.dart            # Kategorie (osobne dla budzetow, `budgetId` — ADR-038)
 │   ├── usage_event.dart         # Logowanie uzycia
 │   ├── budget_entry.dart        # Stara pozycja budzetu — archiwum i zrodlo konwersji (ADR-035); BudgetScope, BudgetMode
 │   ├── cashflow.dart            # Przeplywy dnia kalendarza (CalendarItem, DayCashflow)
@@ -82,6 +82,7 @@ lib/
 │   ├── budget.dart              # Budzet z nazwa i ikona (ADR-037); domyslne „Osobisty", „Domowy"
 ├── utils/
 │   ├── cycle_math.dart          # Wspolna normalizacja cyklu -> kwota/mies + projekcja wystapien (ADR-020)
+│   ├── text_sort.dart           # Polska kolejnosc alfabetyczna (`plSortKey`): kategorie, podgrupy listy
 ├── services/
 │   ├── app_logger.dart          # Circular log buffer
 │   ├── backup_crypto_service.dart # Szyfrowanie kopii (AES-256-GCM) + kod odzyskiwania (ADR-024)
@@ -111,6 +112,8 @@ lib/
 │   ├── data_export_screen.dart  # Eksport/import XLSX (subskrypcje, plan biezacego budzetu) + raport PDF — Ustawienia -> Dane
 │   ├── settings_screen.dart     # Ustawienia, backup, OTA
 │   ├── budgets_screen.dart      # Ustawienia → Budzety: kolejnosc, ukrywanie, nazwa i ikona, przenies/kopiuj wszystko, usun z ostrzezeniem (ADR-037)
+│   ├── category_management_screen.dart # Kategorie budzetu (alfabetycznie): kopiuj/przenies do innego budzetu, usun (ADR-038)
+│   ├── payment_method_management_screen.dart # Metody platnosci budzetu: kolejnosc, kopiuj/przenies, usun (ADR-038)
 │   ├── dev_tools_screen.dart    # Developer Tools (tylko DEV): override daty, testy powiadomien, podglad surowego odczytu OCR
 │   └── plan_conversion_report_screen.dart # Developer Tools: raport konwersji na plan roczny (stary model vs nowy plan)
 ├── widgets/
@@ -118,21 +121,22 @@ lib/
 │   ├── frost_card.dart           # Karta „frost" (przezroczystosc + border, BEZ blur)
 │   ├── glass_nav_bar.dart        # Plywajaca pigulka nawigacji — jedyny BackdropFilter
 │   ├── aurora_chip.dart          # Chip filtra (frost / gradient aktywny)
+│   ├── aurora_segmented.dart     # Przelacznik segmentowy; tryb `compact` w gornym pasku („Rok / Miesiac", „Statystyki / Kalendarz")
 │   ├── aurora_add_menu.dart      # Przycisk „Dodaj" + menu wysuwane w gore (zamiast bottom sheet)
-│   ├── subscription_row.dart    # Wiersz subskrypcji w stylu listy budzetu (ADR-027)
+│   ├── subscription_row.dart    # Wiersz subskrypcji w ukladzie wiersza pozycji planu: „Subskrypcja · nazwa", dzien platnosci, pasek miesiecy
 │   ├── subscription_stats_view.dart # Limit subskrypcji + koszty okresow probnych („Plan" -> „Limity i okresy probne")
 │   ├── category_icons.dart      # Slownik ikon kategorii (wspolny dla list i Ustawien)
 │   ├── budget_widgets.dart      # Przelacznik zakresu, sekcje miesiaca w kalendarzu, lista wierszy
-│   ├── plan_widgets.dart        # Planowanie: sekcja z suma, grupa z czesciami (PlanGroup: Wydatki, Pozyczki), wiersz pozycji z paskiem 12 miesiecy, „Zostaje", wiersze pozyczek (karta, raty)
+│   ├── plan_widgets.dart        # Planowanie: sekcja z suma, grupa z czesciami (PlanGroup: Wydatki, Pozyczki), wiersz pozycji z paskiem 12 miesiecy (`PlanMonthStrip`, takze dla subskrypcji), „Zostaje", wiersze pozyczek (karta, raty; strzalka w podpisie — `planArrowSpan`)
 │   ├── cashflow_calendar.dart   # Siatka miesiaca z kropkami wplyw/wydatek
 │   ├── spending_chart.dart      # Wykres trendu wydatkow (jedna seria lub kilka + chipy legendy)
 │   ├── category_breakdown_chart.dart # Podzial na kategorie (pie)
 │   ├── budget_progress_bar.dart # Pasek limitu budzetu (karta z opisem)
 │   ├── plan_progress_bar.dart   # Wspolny pasek plan/realny — po przekroczeniu dzieli sie na plan i nadwyzke (ADR-030)
-│   ├── filter_bars.dart         # Wspolne paski filtrow list: kategorie i czas (ze skrotem „Dzisiaj")
+│   ├── filter_bars.dart         # Wspolne paski filtrow list: kategorie i czas (lata + miesiace; wybrany miesiac sam wjezdza na widok)
 │   ├── selection_bar.dart       # Tryb zaznaczania wielu pozycji: pasek akcji zbiorczych + wiersz z kolkiem
 │   ├── month_picker_dialog.dart # Wybor miesiaca (rok + siatka 12 miesiecy, „Dzisiaj")
-│   ├── workspace_top_bar.dart   # Pasek ekranow Budzet i Planowanie: po lewej zakladki albo „Dzisiaj", po prawej przelacznik budzetu + opis sekcji
+│   ├── workspace_top_bar.dart   # Pasek ekranow Budzet i Planowanie: po lewej „Statystyki / Kalendarz" albo „Dzisiaj" + „Rok / Miesiac", po prawej przelacznik budzetu + opis sekcji
 │   ├── budget_picker.dart       # Przelacznik budzetu (lista rozwijana), wybor budzetu docelowego, przenies/kopiuj pozycje (ADR-037)
 │   ├── flow_view_controls.dart  # Sortowanie i grupowanie w naglowkach sekcji miesiaca
 │   └── import_summary_dialog.dart # Wspolny dialog podsumowania importu Excel
@@ -282,4 +286,4 @@ Z czesci natywnej zostal tylko sejf na kod odzyskiwania kopii (`KeyVaultBridge`)
 
 ---
 
-> **Ostatnia aktualizacja:** 2026-10-07
+> **Ostatnia aktualizacja:** 2026-10-11
