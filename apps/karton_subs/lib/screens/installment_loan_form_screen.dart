@@ -32,7 +32,12 @@ class InstallmentLoanFormScreen extends StatefulWidget {
   /// Istniejąca pożyczka do edycji; `null` = nowa.
   final String? linkId;
 
-  const InstallmentLoanFormScreen({super.key, this.linkId});
+  /// Data wypłaty nowej pożyczki — z oglądanego w Planowaniu okresu
+  /// (`PlanService.newItemDate`); domyślnie dziś. Pierwsza rata i dzień raty
+  /// idą za nią jak za każdą zmianą daty wypłaty.
+  final DateTime? initialDate;
+
+  const InstallmentLoanFormScreen({super.key, this.linkId, this.initialDate});
 
   @override
   State<InstallmentLoanFormScreen> createState() =>
@@ -87,7 +92,7 @@ class _InstallmentLoanFormScreenState extends State<InstallmentLoanFormScreen> {
     super.initState();
     final plan = context.read<PlanController>();
     _currency = plan.target;
-    _drawdown = plan.today;
+    _drawdown = widget.initialDate ?? plan.today;
     _firstMonth = _monthAfter(_drawdown);
     _day.text = '${_drawdown.day}';
 

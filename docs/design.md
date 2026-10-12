@@ -361,6 +361,10 @@ class AppColors {
 - Gest przesuniecia w bok (od 2026-10-11): Planowanie — poprzedni / nastepny miesiac
   (w widoku roku — rok), Budzet — zakladki „Statystyki / Kalendarz". Budzet zmienia
   tylko przelacznik w pasku. Gest jest niewidoczny, wiec opisuje go „i" sekcji
+- Data nowej subskrypcji i pozyczki dodawanej z Planowania (od 2026-10-12): z ogladanego
+  okresu — 1. dzien ogladanego miesiaca, w widoku roku 1 stycznia; biezacy miesiac
+  i biezacy rok — dzisiejsza data (dodanie „na teraz" nie cofa daty). Nowa pozycja
+  planu bierze sam miesiac (zaznaczony w siatce)
 - Karty: `FrostCard` (`--frost-1`, border `--frost-border`, radius 22) — **bez blur**
 - Kwoty: tabular figures; dodatnie `--positive`, ujemne `--negative`
 - Przelacznik Osobisty/Domowy, chipy, aktywne taby: stan aktywny = `--accent-gradient`

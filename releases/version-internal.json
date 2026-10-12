@@ -1,7 +1,12 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101200",
-  "versionCode": 2026101200,
+  "releaseDate": "2026-10-12T16:27:42Z",
+  "releaseNotes": "- Pozyczka z karty: wlasne nazwy pozyczki, splaty i wydatku (Splata: i Wydatek: ida za nazwa pozyczki, dopoki ich nie zmienisz)\n- Nowa subskrypcja i pozyczka z Planowania: data z ogladanego miesiaca (1. dzien; biezacy miesiac - dzis; widok roku - dzis albo 1 stycznia)",
+  "versionCode": 2026101201,
   "changelog": [
+    {
+      "version": "0.27.26101201",
+      "notes": "- Pozyczka z karty: wlasne nazwy pozyczki, splaty i wydatku (Splata: i Wydatek: ida za nazwa pozyczki, dopoki ich nie zmienisz)\n- Nowa subskrypcja i pozyczka z Planowania: data z ogladanego miesiaca (1. dzien; biezacy miesiac - dzis; widok roku - dzis albo 1 stycznia)"
+    },
     {
       "version": "0.27.26101200",
       "notes": "- Metody platnosci zawsze alfabetycznie, jak kategorie\n- Formularze subskrypcji i pozyczek: na gorze linia z budzetem\n- Podpowiedzi bez krzywych strzalek; poprawiony opis Planowania pod i"
@@ -37,13 +42,8 @@
     {
       "version": "0.27.26101007",
       "notes": "- Pozyczka ratalna: zakup przyciskiem Dodaj (zamiast checkboxa), istniejacy z kwota i przyciskiem Pokaz\n- Z zakupu Otworz pozyczke, a gdy przyszlo sie z pozyczki - Wroc do pozyczki\n- Zapis pozyczki nie nadpisuje ani nie usuwa zakupu, tylko przesuwa go za data wyplaty"
-    },
-    {
-      "version": "0.27.26101006",
-      "notes": "- Planowanie: Dzisiaj i przelacznik Miesiac / Rok w lewym gornym rogu\n- Widok roczny: sumy roku (pozycje, grupy, Zostaje), bez paska miesiecy\n- Dzisiaj: biezacy miesiac w widoku miesiecznym, biezacy rok w rocznym\n- Inny rok w widoku miesiecznym zachowuje miesiac"
     }
   ],
-  "releaseNotes": "- Metody platnosci zawsze alfabetycznie, jak kategorie\n- Formularze subskrypcji i pozyczek: na gorze linia z budzetem\n- Podpowiedzi bez krzywych strzalek; poprawiony opis Planowania pod i",
-  "version": "0.27.26101200",
-  "releaseDate": "2026-10-12T14:19:17Z"
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101201",
+  "version": "0.27.26101201"
 }

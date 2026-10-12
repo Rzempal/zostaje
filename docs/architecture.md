@@ -102,10 +102,10 @@ lib/
 │   └── app_theme.dart           # Aurora: AppColors/AppRadii/AppSemanticColors + ThemeData (ADR-005/007)
 ├── screens/
 │   ├── dashboard_screen.dart    # Zakladka „Budzet": pod-zakladki Statystyki (rok planu) / Kalendarz (platnosci) — ADR-035
-│   ├── planning_screen.dart     # Zakladka „Planowanie": plan roczny — wplywy, wydatki, karta, subskrypcje (ADR-035)
+│   ├── planning_screen.dart     # Zakladka „Planowanie": plan roczny — wplywy, wydatki, karta, subskrypcje (ADR-035); nowa subskrypcja i pozyczka z data ogladanego okresu (`PlanService.newItemDate`)
 │   ├── plan_position_screen.dart # Szczegoly pozycji: siatka roku (rzad = kwartal), szybkie wypelnianie, miesiace poza okresem wyszarzone
 │   ├── plan_position_form_screen.dart # Formularz pozycji planu (nowa: kwota + siatka miesiecy; edycja: dane wspolne) + okres od–do
-│   ├── card_loan_form_screen.dart # Pozyczka z karty: para pozyczka–splata po okresie bezodsetkowym, zakup tego dnia (ADR-036)
+│   ├── card_loan_form_screen.dart # Pozyczka z karty: para pozyczka–splata po okresie bezodsetkowym, zakup tego dnia, trzy nazwy (pozyczka, splata, wydatek) (ADR-036)
 │   ├── installment_loan_form_screen.dart # Pozyczka ratalna: wyplata, raty, RRSO (przeliczanie na zywo), zakup tego dnia (ADR-036)
 │   ├── plan_copy_year_screen.dart # „Zaplanuj kolejny rok" na bazie poprzedniego
 │   ├── add_subscription_screen.dart # Formularz subskrypcji (zakres bierze z listy, na ktorej stoi uzytkownik)

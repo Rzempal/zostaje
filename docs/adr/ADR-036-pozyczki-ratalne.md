@@ -65,6 +65,12 @@ spłata po okresie bezodsetkowym", liczona osobno od wpływów i wydatków.
   pożyczki>", jak spłata karty „Spłata: <nazwa>" — nie nazywa się już tak
   samo jak wpływ pożyczki (kalendarz, Excel). Tylko przy tworzeniu: zmiana
   nazwy pożyczki zakupu nie rusza, wcześniejsze zakupy zostają bez zmian.
+- **Trzy nazwy w pożyczce z karty** (2026-10-12): pożyczka, spłata
+  i wydatek mają w formularzu własne pola nazw. „Spłata: <nazwa>"
+  i „Wydatek: <nazwa>" idą za nazwą pożyczki, dopóki ich nie zmienić; puste
+  pole wraca do nazwy domyślnej. Formularz pożyczki zmienia też nazwę
+  istniejącego zakupu (nic poza nazwą — kwota i kategoria na ekranie
+  zakupu). Na razie tylko karta — w pożyczce ratalnej bez zmian.
 
 ### 3. Trzy z czterech — reszta się liczy
 

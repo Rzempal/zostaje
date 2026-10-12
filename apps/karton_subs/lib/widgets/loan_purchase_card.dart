@@ -40,6 +40,12 @@ class LoanPurchaseCard extends StatelessWidget {
   final String? categoryId;
   final ValueChanged<String?> onCategoryChanged;
 
+  /// Pole „Nazwa wydatku" (pożyczka z karty): gdy podane, nazwę ustawia się
+  /// w bloku — nowego zakupu i istniejącego; formularz zapisuje ją razem
+  /// z pożyczką. Bez niego nazwa stoi w tytule (pożyczka ratalna).
+  final TextEditingController? name;
+  final ValueChanged<String>? onNameChanged;
+
   const LoanPurchaseCard({
     super.key,
     required this.linkId,
@@ -52,6 +58,8 @@ class LoanPurchaseCard extends StatelessWidget {
     required this.amount,
     required this.categoryId,
     required this.onCategoryChanged,
+    this.name,
+    this.onNameChanged,
   });
 
   /// Liczba z pola (spacje grupujące, przecinek dziesiętny); `null` dla
@@ -89,44 +97,65 @@ class LoanPurchaseCard extends StatelessWidget {
       ],
     );
 
+    final nameCtrl = name;
+    final nameField = nameCtrl == null
+        ? null
+        : TextFormField(
+            controller: nameCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Nazwa wydatku',
+              isDense: true,
+            ),
+            textCapitalization: TextCapitalization.sentences,
+            onChanged: onNameChanged,
+          );
+
     if (purchase != null) {
       final entry = purchase.months.entries.firstOrNull;
       final category = purchase.categoryId == null
           ? null
           : storage.getCategory(purchase.categoryId!);
-      return FrostCard(
-        padding: const EdgeInsets.all(12),
-        child: header(
-          'Zakup „${purchase.name}"',
-          [
-            if (entry != null) '−${budgetNf.format(entry.value.amount)}',
-            category?.name ?? 'bez kategorii',
-            if (entry != null) planMonthLabel(entry.key),
-          ].join(' · '),
-          FilledButton.tonalIcon(
-            icon: const Icon(LucideIcons.arrowRight, size: 16),
-            label: const Text('Pokaż'),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => PlanPositionScreen(
-                  positionId: purchase.id,
-                  initialYear:
-                      int.tryParse(entry?.key.substring(0, 4) ?? '') ??
-                      fallbackYear,
-                  openedFromLoan: true,
-                ),
+      final summary = header(
+        // Z polem nazwy nazwa stoi w polu, nie w tytule.
+        nameField == null ? 'Zakup „${purchase.name}"' : 'Zakup tego dnia',
+        [
+          if (entry != null) '−${budgetNf.format(entry.value.amount)}',
+          category?.name ?? 'bez kategorii',
+          if (entry != null) planMonthLabel(entry.key),
+        ].join(' · '),
+        FilledButton.tonalIcon(
+          icon: const Icon(LucideIcons.arrowRight, size: 16),
+          label: const Text('Pokaż'),
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => PlanPositionScreen(
+                positionId: purchase.id,
+                initialYear:
+                    int.tryParse(entry?.key.substring(0, 4) ?? '') ??
+                    fallbackYear,
+                openedFromLoan: true,
               ),
             ),
           ),
         ),
       );
+      return FrostCard(
+        padding: const EdgeInsets.all(12),
+        child: nameField == null
+            ? summary
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [summary, const SizedBox(height: 12), nameField],
+              ),
+      );
     }
 
-    // Tytuł pokazuje nazwę, z jaką zakup powstanie.
-    final name = loanName.trim();
-    final title = name.isEmpty
+    // Tytuł pokazuje nazwę, z jaką zakup powstanie — chyba że jest pole
+    // nazwy (karta): wtedy nazwa stoi w nim.
+    final loan = loanName.trim();
+    final title = loan.isEmpty || nameField != null
         ? 'Zakup tego dnia'
-        : 'Zakup „${loanPurchaseName(name)}" tego dnia';
+        : 'Zakup „${loanPurchaseName(loan)}" tego dnia';
     final why =
         'Zakup idzie do Wydatków, $repaymentLabel — do Pożyczek, więc ten sam '
         'koszt nie liczy się dwa razy.';
@@ -158,6 +187,7 @@ class LoanPurchaseCard extends StatelessWidget {
               child: const Text('Nie dodawaj'),
             ),
           ),
+          if (nameField != null) ...[const SizedBox(height: 12), nameField],
           const SizedBox(height: 12),
           TextFormField(
             controller: amount,

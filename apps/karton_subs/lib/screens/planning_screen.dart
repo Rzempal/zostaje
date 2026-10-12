@@ -103,6 +103,14 @@ class _PlanningScreenState extends State<PlanningScreen> {
     context.read<StorageService>().setCollapsedBudgetSections(_collapsed);
   }
 
+  /// Data nowej subskrypcji i pożyczki — z oglądanego okresu
+  /// ([PlanService.newItemDate]); nowa pozycja planu bierze sam miesiąc.
+  DateTime get _newItemDate => PlanService.newItemDate(
+    context.read<PlanController>().today,
+    _year,
+    _yearView ? null : _month,
+  );
+
   /// Gest przesunięcia: poprzedni albo następny miesiąc — także przez
   /// granicę roku (grudzień → styczeń); w widoku rocznym — rok. Bez limitu
   /// lat, jak strzałki w Statystykach; „Dzisiaj" wraca do bieżącego.
@@ -525,18 +533,20 @@ class _PlanningScreenState extends State<PlanningScreen> {
             onTap: () => _push(
               AddSubscriptionScreen(
                 initialBudgetId: context.read<BudgetController>().budgetId,
+                initialStartDate: _newItemDate,
               ),
             ),
           ),
           AuroraAddAction(
             icon: LucideIcons.creditCard,
             label: 'Pożyczka z karty',
-            onTap: () => _push(const CardLoanFormScreen()),
+            onTap: () => _push(CardLoanFormScreen(initialDate: _newItemDate)),
           ),
           AuroraAddAction(
             icon: LucideIcons.landmark,
             label: 'Pożyczka ratalna',
-            onTap: () => _push(const InstallmentLoanFormScreen()),
+            onTap: () =>
+                _push(InstallmentLoanFormScreen(initialDate: _newItemDate)),
           ),
           AuroraAddAction(
             icon: LucideIcons.copy,

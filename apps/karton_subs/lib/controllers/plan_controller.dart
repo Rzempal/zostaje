@@ -10,10 +10,15 @@ import '../services/plan_service.dart';
 import '../services/storage_service.dart';
 import 'budget_controller.dart';
 
-/// Nazwa zakupu z pożyczki nadawana przy jego tworzeniu (ADR-036) —
-/// „Wydatek: nazwa pożyczki", jak „Spłata: nazwa" przy karcie. Potem to
-/// zwykła nazwa pozycji: zmiana nazwy pożyczki jej nie rusza.
+/// Domyślna nazwa zakupu z pożyczki (ADR-036) — „Wydatek: nazwa pożyczki",
+/// jak [cardRepaymentName]. W pożyczce ratalnej nadawana przy tworzeniu
+/// zakupu (potem zmiana nazwy pożyczki jej nie rusza); w formularzu karty
+/// idzie za nazwą pożyczki, dopóki jej nie zmienić.
 String loanPurchaseName(String loanName) => 'Wydatek: $loanName';
+
+/// Domyślna nazwa spłaty pożyczki z karty — „Spłata: nazwa pożyczki";
+/// w formularzu idzie za nazwą pożyczki, dopóki jej nie zmienić.
+String cardRepaymentName(String loanName) => 'Spłata: $loanName';
 
 /// Stan planu rocznego aktywnego budżetu (ADR-035) — pozycje z miesiącami
 /// i subskrypcje jako osobna sekcja.
@@ -485,8 +490,12 @@ class PlanController extends ChangeNotifier {
   ///
   /// Zakup tego dnia jak w pożyczce ratalnej ([saveInstallmentLoan]): nowy
   /// ([purchase]) to zwykły wydatek zapłacony kartą w dniu jej użycia,
-  /// nazwany [loanPurchaseName], a istniejący zostaje osobną pozycją — idzie
-  /// tylko za nową datą użycia, gdy stał w dawnej.
+  /// a istniejący zostaje osobną pozycją — dostaje tylko nazwę z formularza
+  /// i idzie za nową datą użycia, gdy stał w dawnej.
+  ///
+  /// Nazwy trzech części ustawia formularz: [name] (pożyczka),
+  /// [repaymentName] i [purchaseName] — domyślnie [cardRepaymentName]
+  /// i [loanPurchaseName].
   Future<String> saveCardLoan({
     String? linkId,
     required String name,
@@ -497,6 +506,8 @@ class PlanController extends ChangeNotifier {
     required DateTime repaymentDate,
     required double repaymentAmount,
     String? note,
+    String? repaymentName,
+    String? purchaseName,
     ({double amount, String? categoryId})? purchase,
   }) async {
     final link = linkId ?? _uuid.v4();
@@ -551,7 +562,7 @@ class PlanController extends ChangeNotifier {
       side(
         existing.repayment,
         PlanKind.loanRepayment,
-        'Spłata: $name',
+        repaymentName ?? cardRepaymentName(name),
         repaymentDate,
         repaymentAmount,
       ),
@@ -560,7 +571,7 @@ class PlanController extends ChangeNotifier {
       final bought = side(
         existing.purchase,
         PlanKind.expense,
-        loanPurchaseName(name),
+        purchaseName ?? loanPurchaseName(name),
         useDate,
         purchase.amount,
       );
@@ -570,7 +581,11 @@ class PlanController extends ChangeNotifier {
             : bought.copyWith(categoryId: purchase.categoryId),
       );
     } else if (existing.purchase case final p?) {
-      await _followDrawdown(p, from: oldUseDate, to: useDate);
+      final renamed = purchaseName == null || purchaseName == p.name
+          ? p
+          : p.copyWith(name: purchaseName);
+      if (!identical(renamed, p)) await _save(renamed);
+      await _followDrawdown(renamed, from: oldUseDate, to: useDate);
     }
     _log.info('Saved card loan: $name ($card)');
     notifyListeners();

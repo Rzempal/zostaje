@@ -23,11 +23,19 @@ import '../widgets/loan_purchase_card.dart';
 /// Zakup tego dnia jak w pożyczce ratalnej (ADR-036): zwykły wydatek
 /// zapłacony kartą w dniu jej użycia — zakup w Wydatkach, spłata
 /// w Pożyczkach, więc ten sam koszt nie liczy się dwa razy.
+///
+/// Każda z trzech części ma własną nazwę: pożyczka, spłata i wydatek. Nazwy
+/// spłaty i wydatku idą za nazwą pożyczki („Spłata: …", „Wydatek: …"),
+/// dopóki ich nie zmienić; puste pole wraca do nazwy domyślnej.
 class CardLoanFormScreen extends StatefulWidget {
   /// Istniejąca para do edycji; `null` = nowa pożyczka.
   final String? linkId;
 
-  const CardLoanFormScreen({super.key, this.linkId});
+  /// Data użycia karty nowej pożyczki — z oglądanego w Planowaniu okresu
+  /// (`PlanService.newItemDate`); domyślnie dziś.
+  final DateTime? initialDate;
+
+  const CardLoanFormScreen({super.key, this.linkId, this.initialDate});
 
   @override
   State<CardLoanFormScreen> createState() => _CardLoanFormScreenState();
@@ -38,8 +46,15 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
   final _name = TextEditingController(text: 'Pożyczka z karty');
   final _amount = TextEditingController();
   final _repaymentAmount = TextEditingController();
+  final _repaymentName = TextEditingController();
   final _purchaseAmount = TextEditingController();
+  final _purchaseName = TextEditingController();
   final _note = TextEditingController();
+
+  /// Czy nazwę spłaty / wydatku zmieniono ręcznie — wtedy przestaje iść za
+  /// nazwą pożyczki.
+  bool _repaymentNameEdited = false;
+  bool _purchaseNameEdited = false;
   late List<PaymentMethod> _cards;
   String? _card;
   late Currency _currency;
@@ -74,7 +89,7 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
         .where((pm) => pm.isCreditCard)
         .toList();
     _currency = plan.target;
-    _useDate = plan.today;
+    _useDate = widget.initialDate ?? plan.today;
     _card = _cards.firstOrNull?.name;
     _repaymentDate = PlanService.repaymentDateFor(_useDate, _grace(_card));
 
@@ -101,6 +116,15 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
         _repaymentEdited = true;
       }
     }
+
+    // Nazwy zapisane w domyślnym schemacie dalej idą za nazwą pożyczki,
+    // zmienione ręcznie zostają.
+    final loanName = _name.text.trim();
+    final parts = link == null ? null : plan.loanParts(link);
+    _repaymentName.text = parts?.repayment?.name ?? cardRepaymentName(loanName);
+    _repaymentNameEdited = _repaymentName.text != cardRepaymentName(loanName);
+    _purchaseName.text = parts?.purchase?.name ?? loanPurchaseName(loanName);
+    _purchaseNameEdited = _purchaseName.text != loanPurchaseName(loanName);
   }
 
   @override
@@ -108,10 +132,20 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
     _name.dispose();
     _amount.dispose();
     _repaymentAmount.dispose();
+    _repaymentName.dispose();
     _purchaseAmount.dispose();
+    _purchaseName.dispose();
     _note.dispose();
     super.dispose();
   }
+
+  /// Nazwa pożyczki zmienia też nazwy spłaty i wydatku, dopóki ich nie
+  /// zmieniono ręcznie.
+  void _onNameChanged(String value) => setState(() {
+    final name = value.trim();
+    if (!_repaymentNameEdited) _repaymentName.text = cardRepaymentName(name);
+    if (!_purchaseNameEdited) _purchaseName.text = loanPurchaseName(name);
+  });
 
   DateTime _dateOf(String monthKey, int? day) => DateTime(
     int.parse(monthKey.substring(0, 4)),
@@ -155,10 +189,17 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
     final repayment = _repaymentEdited
         ? (_parse(_repaymentAmount.text) ?? amount)
         : amount;
+    final name = _name.text.trim();
+    // Puste pole nazwy wraca do nazwy domyślnej.
+    String nameOr(TextEditingController field, String fallback) {
+      final value = field.text.trim();
+      return value.isEmpty ? fallback : value;
+    }
+
     setState(() => _saving = true);
     await context.read<PlanController>().saveCardLoan(
       linkId: widget.linkId,
-      name: _name.text.trim(),
+      name: name,
       card: card,
       currency: _currency,
       useDate: _useDate,
@@ -166,7 +207,10 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
       repaymentDate: _repaymentDate,
       repaymentAmount: repayment,
       note: _note.text.trim().isEmpty ? null : _note.text.trim(),
-      // Tylko nowy zakup — istniejący zmienia się na jego ekranie.
+      repaymentName: nameOr(_repaymentName, cardRepaymentName(name)),
+      purchaseName: nameOr(_purchaseName, loanPurchaseName(name)),
+      // Kwota i kategoria tylko nowego zakupu — istniejący zmienia się na
+      // jego ekranie (stąd dostaje tylko nazwę).
       purchase: _addPurchase && _existingPurchase == null
           ? (
               amount: _parse(_purchaseAmount.text) ?? amount,
@@ -323,10 +367,9 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _name,
-              decoration: const InputDecoration(labelText: 'Nazwa *'),
-              // Nazwa jest w tytule bloku zakupu — widać, jak zakup będzie
-              // się nazywał.
-              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(labelText: 'Nazwa pożyczki *'),
+              textCapitalization: TextCapitalization.sentences,
+              onChanged: _onNameChanged,
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'Wymagane' : null,
             ),
@@ -385,6 +428,14 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
               trailing: const Icon(LucideIcons.chevronRight),
               onTap: () => _pickDate(repayment: true),
             ),
+            // Spłatę widać w Kalendarzu (do odhaczenia) i w Excelu.
+            TextFormField(
+              controller: _repaymentName,
+              decoration: const InputDecoration(labelText: 'Nazwa spłaty'),
+              textCapitalization: TextCapitalization.sentences,
+              onChanged: (v) => _repaymentNameEdited = v.trim().isNotEmpty,
+            ),
+            const SizedBox(height: 4),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Inna kwota spłaty'),
@@ -422,6 +473,8 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
               categoryId: _purchaseCategoryId,
               onCategoryChanged: (id) =>
                   setState(() => _purchaseCategoryId = id),
+              name: _purchaseName,
+              onNameChanged: (v) => _purchaseNameEdited = v.trim().isNotEmpty,
             ),
             const SizedBox(height: 16),
             TextFormField(

@@ -313,6 +313,26 @@ void main() {
     });
   });
 
+  // Data nowej subskrypcji i pożyczki dodawanej z Planowania.
+  group('Data nowej rzeczy z oglądanego okresu', () {
+    final today = DateTime(2026, 10, 11);
+
+    test('inny miesiąc → jego 1. dzień', () {
+      expect(PlanService.newItemDate(today, 2026, 7), DateTime(2026, 7));
+      expect(PlanService.newItemDate(today, 2027, 10), DateTime(2027, 10));
+    });
+
+    test('bieżący miesiąc → dziś (bez cofania na początek miesiąca)', () {
+      expect(PlanService.newItemDate(today, 2026, 10), today);
+    });
+
+    test('widok roku: bieżący → dziś, inny → 1 stycznia', () {
+      expect(PlanService.newItemDate(today, 2026, null), today);
+      expect(PlanService.newItemDate(today, 2027, null), DateTime(2027));
+      expect(PlanService.newItemDate(today, 2025, null), DateTime(2025));
+    });
+  });
+
   group('Plan na kolejny rok', () {
     test('pełny rok i pozycja roczna — domyślnie do przeniesienia', () {
       expect(

@@ -381,20 +381,37 @@ void main() {
       ),
     );
     // Nowa pożyczka z karty: „Dodaj" pokazuje pola zakupu.
-    await pump(tester, const CardLoanFormScreen(), height: 1400);
+    await pump(tester, const CardLoanFormScreen(), height: 1600);
     // Na górze budżet, do którego trafi pożyczka.
     expect(find.textContaining('Osobisty · Pożyczka z karty'), findsOneWidget);
-    // Tytuł pokazuje nazwę, z jaką zakup powstanie.
-    expect(
-      find.text('Zakup „Wydatek: Pożyczka z karty" tego dnia'),
-      findsOneWidget,
-    );
+    expect(find.text('Zakup tego dnia'), findsOneWidget);
     expect(find.textContaining('spłata — do Pożyczek'), findsOneWidget);
     await tester.ensureVisible(find.text('Dodaj'));
     await tester.tap(find.text('Dodaj'));
     await tester.pumpAndSettle();
     expect(find.widgetWithText(TextFormField, 'Kwota zakupu'), findsOneWidget);
     expect(find.text('Nie dodawaj'), findsOneWidget);
+
+    // Trzy nazwy: spłata i wydatek idą za nazwą pożyczki, dopóki ich nie
+    // zmienić.
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Nazwa pożyczki *'),
+      'Telewizor',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Spłata: Telewizor'), findsOneWidget);
+    expect(find.text('Wydatek: Telewizor'), findsOneWidget);
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Nazwa spłaty'),
+      'Spłata karty',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Nazwa pożyczki *'),
+      'TV',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Spłata karty'), findsOneWidget);
+    expect(find.text('Wydatek: TV'), findsOneWidget);
 
     // Zakup otwarty z planu: „Otwórz pożyczkę" prowadzi do formularza karty,
     // nie pożyczki ratalnej.
@@ -407,7 +424,9 @@ void main() {
     await tester.tap(find.text('Otwórz pożyczkę'));
     await tester.pumpAndSettle();
     expect(find.text('Edytuj pożyczkę'), findsOneWidget);
-    expect(find.text('Zakup „Telewizor"'), findsOneWidget);
+    // Nazwa istniejącego zakupu w polu „Nazwa wydatku" (spoza schematu —
+    // nie idzie za nazwą pożyczki).
+    expect(find.widgetWithText(TextFormField, 'Telewizor'), findsOneWidget);
 
     // „Pokaż" prowadzi do zakupu, a stamtąd „Wróć do pożyczki".
     await tester.ensureVisible(find.text('Pokaż'));
@@ -428,6 +447,51 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Nowa subskrypcja i pożyczki: data z oglądanego miesiąca', (
+    tester,
+  ) async {
+    await tester.runAsync(seed);
+    // Ratalna: wypłata 1 lipca, pierwsza rata w kolejnym miesiącu.
+    await pump(
+      tester,
+      InstallmentLoanFormScreen(initialDate: DateTime(2026, 7)),
+      height: 1800,
+    );
+    expect(find.text('1 lipca 2026'), findsOneWidget);
+    expect(find.text('sie 2026'), findsOneWidget);
+
+    // Subskrypcja z dalszego miesiąca: kalendarz daty startu ją przyjmuje
+    // (dawniej sięgał tylko rok od dziś).
+    await pump(
+      tester,
+      AddSubscriptionScreen(initialStartDate: DateTime(2027, 12)),
+      width: 600,
+      height: 1600,
+    );
+    expect(find.text('1 grudnia 2027'), findsOneWidget);
+    await tester.tap(find.text('1 grudnia 2027'));
+    await tester.pumpAndSettle();
+    expect(find.byType(DatePickerDialog), findsOneWidget);
+    Navigator.of(tester.element(find.byType(DatePickerDialog))).pop();
+    await tester.pumpAndSettle();
+
+    // Planowanie na lipcu → „Dodaj" › „Pożyczka z karty" dostaje 1 lipca
+    // (na końcu: formularz zostaje na wierzchu nawigacji). Szerzej niż
+    // telefon: menu „Dodaj" („Zaplanuj 2027 na bazie 2026") w czcionce
+    // testowej (litery jak kwadraty) nie mieści się w 360 px.
+    await pump(tester, const PlanningScreen(), width: 600, height: 1600);
+    await tester.ensureVisible(find.text('lip'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('lip'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Dodaj'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pożyczka z karty'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 lipca 2026'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

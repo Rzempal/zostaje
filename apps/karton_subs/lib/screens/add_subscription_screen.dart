@@ -22,7 +22,16 @@ class AddSubscriptionScreen extends StatefulWidget {
   /// i pożyczka: zmiana budżetu to menu ⋮ „Przenieś do / Kopiuj do".
   final String? initialBudgetId;
 
-  const AddSubscriptionScreen({super.key, this.existing, this.initialBudgetId});
+  /// Data startu nowej subskrypcji — z oglądanego w Planowaniu okresu
+  /// (`PlanService.newItemDate`); domyślnie dziś.
+  final DateTime? initialStartDate;
+
+  const AddSubscriptionScreen({
+    super.key,
+    this.existing,
+    this.initialBudgetId,
+    this.initialStartDate,
+  });
 
   @override
   State<AddSubscriptionScreen> createState() => _AddSubscriptionScreenState();
@@ -145,6 +154,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
           ? s!.postTrialAmount!.toStringAsFixed(2)
           : '',
     );
+    _startDate = widget.initialStartDate ?? _startDate;
     if (s != null) {
       _currency = s.currency;
       _cycle = s.billingCycle;
@@ -573,11 +583,17 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   }
 
   Future<void> _pickDate() async {
+    // Rok naprzód — od dziś albo od daty startu, gdy ta jest dalej (nowa
+    // subskrypcja z dalszego miesiąca w Planowaniu); inaczej kalendarz nie
+    // przyjąłby własnej daty startowej.
+    const ahead = Duration(days: 365);
+    final fromToday = DateTime.now().add(ahead);
+    final fromStart = _startDate.add(ahead);
     final picked = await showDatePicker(
       context: context,
       initialDate: _startDate,
       firstDate: DateTime(2000),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      lastDate: fromStart.isAfter(fromToday) ? fromStart : fromToday,
     );
     if (picked != null) setState(() => _startDate = picked);
   }

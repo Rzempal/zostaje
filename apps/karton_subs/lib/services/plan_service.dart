@@ -8,7 +8,8 @@ import '../models/budget_entry.dart';
 import '../models/plan_position.dart';
 import '../models/subscription.dart';
 import '../utils/cycle_math.dart';
-import '../models/cashflow.dart' show CalendarItem, CalendarItemKind, DayCashflow;
+import '../models/cashflow.dart'
+    show CalendarItem, CalendarItemKind, DayCashflow;
 import 'currency_service.dart';
 
 /// Okres widoku planu: cały rok (sumy roku) albo jeden miesiąc.
@@ -388,8 +389,7 @@ class PlanService {
 
   /// Czy okres pozycji kończy się przed rokiem [year] (bez końca — nie).
   static bool endsBefore(PlanPosition p, int year) =>
-      p.periodEnd != null &&
-      p.periodEnd!.compareTo(planMonthKey(year, 1)) < 0;
+      p.periodEnd != null && p.periodEnd!.compareTo(planMonthKey(year, 1)) < 0;
 
   /// Miesiące pozycji z dopisanym rokiem [toYear] — te same miesiące, kwoty
   /// i dni co w [fromYear]. Miesiąc, który już jest w roku docelowym, zostaje,
@@ -426,4 +426,16 @@ class PlanService {
   /// datę i tak można poprawić w formularzu).
   static DateTime repaymentDateFor(DateTime use, int? graceDays) =>
       DateTime(use.year, use.month, use.day + (graceDays ?? 30));
+
+  /// Domyślna data nowej subskrypcji i pożyczki dodawanej z Planowania —
+  /// z oglądanego okresu: 1. dzień oglądanego miesiąca ([month]), a w widoku
+  /// roku ([month] = `null`) — 1 stycznia [year]. Bieżący miesiąc i bieżący
+  /// rok dają dzisiejszą datę — ekran startuje na nich, a dodanie „na teraz"
+  /// nie powinno cofać daty na początek miesiąca.
+  static DateTime newItemDate(DateTime today, int year, int? month) {
+    final current =
+        year == today.year && (month == null || month == today.month);
+    if (current) return today;
+    return DateTime(year, month ?? 1);
+  }
 }

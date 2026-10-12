@@ -191,6 +191,43 @@ void main() {
         expect(plan.positions.where((p) => p.linkId == gone), isEmpty);
       },
     );
+
+    test('trzy własne nazwy: pożyczka, spłata i wydatek', () async {
+      Future<String> save({String? linkId, required String purchaseName}) =>
+          plan.saveCardLoan(
+            linkId: linkId,
+            name: 'Gastropaczka',
+            card: 'PKO',
+            currency: Currency.PLN,
+            useDate: DateTime(2027, 1, 15),
+            amount: 3500,
+            repaymentDate: DateTime(2027, 2, 25),
+            repaymentAmount: 3500,
+            repaymentName: 'Karta PKO: spłata',
+            purchaseName: purchaseName,
+            purchase: linkId == null ? (amount: 3500, categoryId: null) : null,
+          );
+
+      final link = await save(purchaseName: 'Telewizor');
+      var parts = plan.loanParts(link);
+      expect(parts.loan!.name, 'Gastropaczka');
+      expect(parts.repayment!.name, 'Karta PKO: spłata');
+      expect(parts.purchase!.name, 'Telewizor');
+
+      // Istniejący zakup dostaje z formularza pożyczki tylko nową nazwę.
+      await save(linkId: link, purchaseName: 'Telewizor 55"');
+      parts = plan.loanParts(link);
+      expect(parts.purchase!.name, 'Telewizor 55"');
+      expect(parts.purchase!.amountIn('2027-01'), 3500);
+      expect(plan.positions.where((p) => p.linkId == link), hasLength(3));
+    });
+
+    test('bez własnych nazw: „Spłata: …" i „Wydatek: …"', () async {
+      final link = await addTv();
+      final parts = plan.loanParts(link);
+      expect(parts.repayment!.name, 'Spłata: Telewizor');
+      expect(parts.purchase!.name, 'Wydatek: Telewizor');
+    });
   });
 
   test('plan na kolejny rok dopisuje miesiące wybranym pozycjom', () async {
