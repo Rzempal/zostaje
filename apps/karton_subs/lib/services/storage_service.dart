@@ -201,15 +201,26 @@ class StorageService {
 
   /// Wszystkie metody płatności, każdego budżetu — do kopii zapasowej
   /// i podziału. Ekrany biorą listę swojego budżetu z [getPaymentMethods].
+  ///
+  /// Zawsze alfabetycznie (po polsku), jak kategorie — bez ręcznej
+  /// kolejności: metodę znajduje się po nazwie.
   List<PaymentMethod> getAllPaymentMethods() {
     final cached = _paymentMethodsSorted;
     if (cached != null) return cached;
     final items = _paymentMethodsCache.values.toList()
-      ..sort((a, b) => a.order.compareTo(b.order));
+      ..sort((a, b) {
+        final byName = plSortKey(a.name).compareTo(plSortKey(b.name));
+        if (byName != 0) return byName;
+        // Ta sama nazwa w budżecie (np. kopia z podziału słowników obok
+        // domyślnej) — jak dawniej wygrywa wcześniejsza na dawnej liście,
+        // bo [paymentMethodNamed] bierze pierwszą.
+        final byOrder = a.order.compareTo(b.order);
+        return byOrder != 0 ? byOrder : a.id.compareTo(b.id);
+      });
     return _paymentMethodsSorted = List.unmodifiable(items);
   }
 
-  /// Metody płatności budżetu [budgetId] (ADR-038), w kolejności z listy.
+  /// Metody płatności budżetu [budgetId] (ADR-038), alfabetycznie.
   List<PaymentMethod> getPaymentMethods(String budgetId) =>
       _paymentMethodsByBudget[budgetId] ??= List.unmodifiable([
         for (final m in getAllPaymentMethods())

@@ -82,11 +82,11 @@ class _PaymentMethodManagementScreenState
                     text: 'Ten budżet nie ma jeszcze metod płatności.',
                     onCopyFrom: () => _copyFrom(budget),
                   )
-                : ReorderableListView.builder(
+                // Zawsze alfabetycznie (bez przeciągania), jak kategorie —
+                // metodę znajduje się po nazwie.
+                : ListView.builder(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                     itemCount: methods.length,
-                    onReorder: (oldIndex, newIndex) =>
-                        _reorder(storage, methods, oldIndex, newIndex),
                     itemBuilder: (context, index) {
                       final pm = methods[index];
                       final subsCount = budget.countPaymentMethodSubscriptions(
@@ -168,7 +168,6 @@ class _PaymentMethodManagementScreenState
                                   ),
                                 ],
                               ),
-                              const Icon(LucideIcons.gripVertical, size: 18),
                             ],
                           ),
                         ),
@@ -179,22 +178,6 @@ class _PaymentMethodManagementScreenState
         ],
       ),
     );
-  }
-
-  Future<void> _reorder(
-    StorageService storage,
-    List<PaymentMethod> methods,
-    int oldIndex,
-    int newIndex,
-  ) async {
-    if (newIndex > oldIndex) newIndex--;
-    final list = List<PaymentMethod>.from(methods);
-    final item = list.removeAt(oldIndex);
-    list.insert(newIndex, item);
-    for (int i = 0; i < list.length; i++) {
-      await storage.savePaymentMethod(list[i].copyWith(order: i));
-    }
-    if (mounted) context.read<SubscriptionController>().refresh();
   }
 
   /// Podpis licznika użycia: „X subskrypcji · Y w budżecie" (pomija zerowe

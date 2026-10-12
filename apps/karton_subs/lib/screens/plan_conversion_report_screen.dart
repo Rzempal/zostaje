@@ -122,7 +122,7 @@ class _PlanConversionReportScreenState
           ),
           for (final budgetId in budgets) ...[
             SettingsSectionLabel(
-              '${_budgetLabel(budgetId)} — średnio miesięcznie (stary → nowy)',
+              '${_budgetLabel(budgetId)} — średnio miesięcznie (stary / nowy)',
             ),
             SettingsGroup(
               children: [
@@ -130,15 +130,17 @@ class _PlanConversionReportScreenState
                   ListTile(
                     title: Text('${y.year}'),
                     subtitle: Text(
-                      'Wpływy: ${_avg(y.oldIncome)} → ${_avg(y.newIncome)}\n'
-                      'Wydatki: ${_avg(y.oldExpense)} → ${_avg(y.newExpense)}',
+                      'Wpływy: ${_avg(y.oldIncome)} / ${_avg(y.newIncome)}\n'
+                      'Wydatki: ${_avg(y.oldExpense)} / ${_avg(y.newExpense)}',
                     ),
                     isThreeLine: true,
                   ),
               ],
             ),
           ],
-          SettingsSectionLabel('Różne sumy roku (${r.mismatches.length})'),
+          SettingsSectionLabel(
+            'Różne sumy roku (${r.mismatches.length}) — stara / nowa',
+          ),
           SettingsGroup(
             children: [
               if (r.mismatches.isEmpty)
@@ -152,7 +154,7 @@ class _PlanConversionReportScreenState
                 ListTile(
                   title: Text('${m.name} (${_budgetLabel(m.budgetId)})'),
                   subtitle: Text(
-                    '${m.year}: ${budgetNf.format(m.oldTotal)} → '
+                    '${m.year}: ${budgetNf.format(m.oldTotal)} / '
                     '${budgetNf.format(m.newTotal)}'
                     '${curLabelSuffix(m.currency.label)}\n${m.detail}',
                   ),

@@ -9,7 +9,7 @@ import '../models/subscription.dart';
 import '../services/plan_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/budget_picker.dart' show moveOrCopyPositions;
+import '../widgets/budget_picker.dart' show BudgetLine, moveOrCopyPositions;
 import '../widgets/budget_widgets.dart' show budgetNf;
 import '../widgets/form_action_bar.dart';
 import '../widgets/loan_purchase_card.dart';
@@ -279,6 +279,9 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, kFormActionBarSpace),
           children: [
+            // Budżet pożyczki (nowej — ten, do którego trafi).
+            BudgetLine(budgetId: _budgetId, details: 'Pożyczka z karty'),
+            const SizedBox(height: 12),
             if (_cards.isEmpty)
               Card(
                 child: ListTile(
@@ -286,7 +289,7 @@ class _CardLoanFormScreenState extends State<CardLoanFormScreen> {
                   title: const Text('Brak karty kredytowej'),
                   subtitle: const Text(
                     'Oznacz metodę płatności jako kartę kredytową (z okresem '
-                    'bezodsetkowym) w Ustawieniach → Metody płatności.',
+                    'bezodsetkowym) w Ustawieniach, w „Metodach płatności".',
                   ),
                 ),
               )

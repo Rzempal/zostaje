@@ -530,9 +530,9 @@ i porownaniu planu z rzeczywistoscia usuniete — tych funkcji juz nie ma.
 8. Sprawdzenie Material You + paska stanu na telefonie w obu trybach.
 9. Dostepnosc: wiersz listy ~44 px vs zalecane 48 px; audyt WCAG (Faza 4).
 10. Onboarding — ekran powitalny (Faza 4).
-11. Strzalki „→" w menu i podpowiedziach („Sortuj: A→Z", „Ustawienia → Metody
-    platnosci", raport konwersji) — znaku nie ma w foncie telefonu, stoi nizej
-    (lessons-learned 2026-10-10). Propozycja: „A–Z" przy sortowaniu, „›" w sciezkach.
+11. ✅ Strzalki „→" w menu i podpowiedziach — zastapione „A–Z" przy sortowaniu
+    i slowami w podpowiedziach („w Ustawieniach, w „Metodach platnosci""), raport
+    konwersji „stary / nowy" (2026-10-12; lessons-learned 2026-10-10).
 
 **Publikacja**
 12. Strona `/aplikacje/zostaje` w repo `com` ze zrzutami ekranu.

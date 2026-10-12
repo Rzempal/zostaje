@@ -113,7 +113,7 @@ lib/
 │   ├── settings_screen.dart     # Ustawienia, backup, OTA
 │   ├── budgets_screen.dart      # Ustawienia → Budzety: kolejnosc, ukrywanie, nazwa i ikona, przenies/kopiuj wszystko, usun z ostrzezeniem (ADR-037)
 │   ├── category_management_screen.dart # Kategorie budzetu (alfabetycznie): kopiuj/przenies do innego budzetu, usun (ADR-038)
-│   ├── payment_method_management_screen.dart # Metody platnosci budzetu: kolejnosc, kopiuj/przenies, usun (ADR-038)
+│   ├── payment_method_management_screen.dart # Metody platnosci budzetu (alfabetycznie): kopiuj/przenies, usun (ADR-038)
 │   ├── dev_tools_screen.dart    # Developer Tools (tylko DEV): override daty, testy powiadomien, podglad surowego odczytu OCR
 │   └── plan_conversion_report_screen.dart # Developer Tools: raport konwersji na plan roczny (stary model vs nowy plan)
 ├── widgets/
@@ -139,7 +139,7 @@ lib/
 │   ├── selection_bar.dart       # Tryb zaznaczania wielu pozycji: pasek akcji zbiorczych + wiersz z kolkiem
 │   ├── month_picker_dialog.dart # Wybor miesiaca (rok + siatka 12 miesiecy, „Dzisiaj")
 │   ├── workspace_top_bar.dart   # Pasek ekranow Budzet i Planowanie: po lewej „Statystyki / Kalendarz" albo „Dzisiaj" + „Rok / Miesiac", po prawej przelacznik budzetu + opis sekcji
-│   ├── budget_picker.dart       # Przelacznik budzetu (lista rozwijana), wybor budzetu docelowego, przenies/kopiuj pozycje (ADR-037)
+│   ├── budget_picker.dart       # Przelacznik budzetu (lista rozwijana), wybor budzetu docelowego, przenies/kopiuj pozycje (ADR-037); `BudgetLine` — linia „budzet · szczegoly" na ekranie pozycji i w formularzach subskrypcji i pozyczek
 │   ├── flow_view_controls.dart  # Sortowanie i grupowanie w naglowkach sekcji miesiaca
 │   └── import_summary_dialog.dart # Wspolny dialog podsumowania importu Excel
 └── main.dart                    # Entry point, provider setup (3 zakladki, GlassNavBar; AuroraBackground raz w MaterialApp.builder)

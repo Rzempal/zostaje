@@ -97,7 +97,7 @@ class CycleMonthsPicker extends StatelessWidget {
           selected.length == 1
               ? 'Płatność raz w roku, w wybranym miesiącu. Dzień bierze się z daty startu.'
               : 'Płatność ${selected.length}× w roku. Dzień bierze się z daty startu '
-                  '(31 → ostatni dzień krótszego miesiąca).',
+                  '(31 oznacza ostatni dzień krótszego miesiąca).',
           style: theme.textTheme.bodySmall?.copyWith(
             color: AppColors.textSecondary,
           ),

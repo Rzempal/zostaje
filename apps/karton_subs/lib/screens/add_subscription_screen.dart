@@ -8,7 +8,7 @@ import '../models/quick_add_templates.dart';
 import '../controllers/budget_controller.dart';
 import '../controllers/subscription_controller.dart';
 import '../widgets/budget_picker.dart'
-    show askAddMissingLabels, showBudgetTargetSheet;
+    show BudgetLine, askAddMissingLabels, showBudgetTargetSheet;
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/cycle_months_picker.dart';
@@ -219,6 +219,9 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, kFormActionBarSpace),
           children: [
+            // Budżet subskrypcji (nowej — ten, do którego trafi).
+            BudgetLine(budgetId: _listBudgetId, details: 'Subskrypcja'),
+            const SizedBox(height: 12),
             if (!_isEditing) ...[
               _QuickAddBar(onSelected: _applyTemplate),
               const SizedBox(height: 16),

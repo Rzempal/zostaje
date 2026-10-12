@@ -23,7 +23,9 @@ class SectionInfo {
     'Przy pozycji zaznaczasz miesiące, w których obowiązuje — każdy ma własną kwotę',
     'Rok = sumy roku, miesiąc = kwoty tego miesiąca',
     'Przesunięcie palcem w bok: poprzedni albo następny miesiąc (w widoku roku — rok)',
-    'Pozycja → miesiące: przytrzymaj, by zmienić kilka naraz',
+    'Przytrzymaj pozycję na liście, by zaznaczyć kilka i zmienić je naraz',
+    'W pozycji miesiące zaznaczasz kółkiem — szybkie wypełnianie wpisze w nie '
+        'kwotę',
     'Nowy rok: „Zaplanuj kolejny rok" przenosi miesiące i kwoty',
   ]);
 

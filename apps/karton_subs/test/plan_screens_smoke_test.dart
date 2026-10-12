@@ -382,6 +382,8 @@ void main() {
     );
     // Nowa pożyczka z karty: „Dodaj" pokazuje pola zakupu.
     await pump(tester, const CardLoanFormScreen(), height: 1400);
+    // Na górze budżet, do którego trafi pożyczka.
+    expect(find.textContaining('Osobisty · Pożyczka z karty'), findsOneWidget);
     // Tytuł pokazuje nazwę, z jaką zakup powstanie.
     expect(
       find.text('Zakup „Wydatek: Pożyczka z karty" tego dnia'),
@@ -439,6 +441,8 @@ void main() {
     // formularz nie ma wyboru budżetu (ADR-037)…
     await pump(tester, const AddSubscriptionScreen(), width: 600, height: 1600);
     expect(find.text('BUDŻET'), findsNothing);
+    // Na górze tylko linia z budżetem, do którego trafi subskrypcja.
+    expect(find.textContaining('Osobisty · Subskrypcja'), findsOneWidget);
 
     // …a w edycji przeniesienie i kopia są w menu ⋮ — jedno miejsce.
     final netflix = storage.getSubscription('netflix')!;
@@ -449,6 +453,7 @@ void main() {
       height: 1600,
     );
     expect(find.text('BUDŻET'), findsNothing);
+    expect(find.textContaining('Osobisty · Subskrypcja'), findsOneWidget);
     await tester.tap(find.byTooltip('Więcej'));
     await tester.pumpAndSettle();
     expect(find.text('Przenieś do budżetu…'), findsOneWidget);
@@ -541,6 +546,7 @@ void main() {
   testWidgets('Pożyczka ratalna: trzy wartości liczą czwartą, cztery — '
       'sprawdzane', (tester) async {
     await pump(tester, const InstallmentLoanFormScreen(), height: 1800);
+    expect(find.textContaining('Osobisty · Pożyczka ratalna'), findsOneWidget);
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Kwota wypłacona'),
       '2000',
@@ -616,6 +622,8 @@ void main() {
     expect(find.byIcon(LucideIcons.gripVertical), findsNothing);
     await pump(tester, const PaymentMethodManagementScreen(), width: 480);
     expect(find.text('Gotówka'), findsOneWidget);
+    // Metody też zawsze alfabetycznie — bez uchwytu do przeciągania.
+    expect(find.byIcon(LucideIcons.gripVertical), findsNothing);
 
     // Nowy budżet startuje z pustymi listami (ADR-038).
     await tester.runAsync(() async {

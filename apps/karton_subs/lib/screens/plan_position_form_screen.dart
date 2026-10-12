@@ -439,8 +439,8 @@ class _PlanPositionFormScreenState extends State<PlanPositionFormScreen> {
               Padding(
                 padding: const EdgeInsets.only(top: 6),
                 child: Text(
-                  'Kupujesz na raty? Dodaj → „Pożyczka ratalna" — z kwotą, '
-                  'liczbą rat i RRSO.',
+                  'Kupujesz na raty? W menu „Dodaj" wybierz „Pożyczka '
+                  'ratalna" — z kwotą, liczbą rat i RRSO.',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: c.textMuted,
                   ),

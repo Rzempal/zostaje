@@ -7,6 +7,50 @@ import '../models/budget.dart';
 import '../theme/app_theme.dart';
 import 'category_icons.dart' show categoryIcon;
 
+/// Linia „budżet · szczegóły" na górze ekranu pozycji i formularzy
+/// subskrypcji i pożyczek: ikona i nazwa budżetu w kolorze akcentu, po kropce
+/// — [details]. Przy kilku budżetach widać, w którym jest pozycja (nowa —
+/// do którego trafi); kategorie i metody płatności są jego własne (ADR-038).
+class BudgetLine extends StatelessWidget {
+  final String budgetId;
+  final String details;
+
+  const BudgetLine({super.key, required this.budgetId, required this.details});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = context.semanticColors;
+    final budget = context.watch<BudgetController>().budgetById(budgetId);
+    return Text.rich(
+      TextSpan(
+        children: [
+          if (budget != null) ...[
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Icon(
+                  categoryIcon(budget.icon),
+                  size: 14,
+                  color: c.primary,
+                ),
+              ),
+            ),
+            TextSpan(
+              text: budget.name,
+              style: TextStyle(color: c.primary, fontWeight: FontWeight.w600),
+            ),
+            if (details.isNotEmpty) const TextSpan(text: ' · '),
+          ],
+          TextSpan(text: details),
+        ],
+      ),
+      style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted),
+    );
+  }
+}
+
 /// Przełącznik budżetu (ADR-037): przycisk z ikoną i nazwą aktywnego
 /// budżetu; dotknięcie rozwija listę widocznych budżetów i „Zarządzaj
 /// budżetami". Miejsce zawsze to samo, niezależnie od liczby budżetów.
@@ -156,8 +200,8 @@ Future<({Budget budget, bool withSubscriptions})?> showBudgetTargetSheet(
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Text(
-                      'Nie ma innego budżetu. Dodaj go w Ustawieniach → '
-                      'Budżety.',
+                      'Nie ma innego budżetu. Dodaj go w Ustawieniach, '
+                      'w „Budżetach".',
                       style: theme.textTheme.bodyMedium,
                     ),
                   ),

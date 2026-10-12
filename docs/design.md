@@ -138,7 +138,9 @@ Skala bez zmian względem Ledger Glass. Kwoty finansowe nadal używają **tabula
 (np. strzałka „→"), telefon szuka w foncie zastępczym — wychodzi mniejszy i niżej
 niż reszta linii. W Roboto są i stoją na jednej wysokości (środek cyfr): półpauza
 „–", minus „−", plus, „·", „×". Strzałka w podpisie to ikona `planArrowSpan`
-(Lucide `moveRight`, środek linii), nie znak.
+(Lucide `moveRight`, środek linii), nie znak. W tekstach podpowiedzi i menu
+zamiast „→" — słowa („w Ustawieniach, w „Metodach płatności""), przy
+sortowaniu „A–Z".
 
 ### Kwota-bohater (gradientowa)
 

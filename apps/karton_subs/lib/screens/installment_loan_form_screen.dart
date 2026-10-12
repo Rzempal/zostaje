@@ -10,7 +10,7 @@ import '../models/subscription.dart';
 import '../services/loan_math.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/budget_picker.dart' show moveOrCopyPositions;
+import '../widgets/budget_picker.dart' show BudgetLine, moveOrCopyPositions;
 import '../widgets/budget_widgets.dart' show budgetNf;
 import '../widgets/category_icons.dart'
     show paymentMethodIcon, paymentMethodIconColor;
@@ -473,6 +473,9 @@ class _InstallmentLoanFormScreenState extends State<InstallmentLoanFormScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, kFormActionBarSpace),
           children: [
+            // Budżet pożyczki (nowej — ten, do którego trafi).
+            BudgetLine(budgetId: _listBudgetId, details: 'Pożyczka ratalna'),
+            const SizedBox(height: 12),
             TextFormField(
               controller: _name,
               decoration: const InputDecoration(

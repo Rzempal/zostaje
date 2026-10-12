@@ -1,5 +1,3 @@
-import 'dart:math' show max;
-
 import 'package:flutter/foundation.dart' hide Category;
 import 'package:uuid/uuid.dart';
 
@@ -554,15 +552,11 @@ class BudgetController extends ChangeNotifier {
     return n;
   }
 
-  /// Niezależna kopia metody płatności w budżecie [to] — jak [copyCategoryTo].
+  /// Niezależna kopia metody płatności w budżecie [to] — jak [copyCategoryTo]
+  /// (lista też jest alfabetyczna).
   Future<bool> copyPaymentMethodTo(PaymentMethod m, String to) async {
     if (_methodNamed(to, m.name) != null) return false;
-    final order = _storage
-        .getPaymentMethods(to)
-        .fold(-1, (o, x) => max(o, x.order));
-    await _storage.savePaymentMethod(
-      m.copyWith(id: _uuid.v4(), budgetId: to, order: order + 1),
-    );
+    await _storage.savePaymentMethod(m.copyWith(id: _uuid.v4(), budgetId: to));
     notifyListeners();
     return true;
   }

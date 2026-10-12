@@ -648,7 +648,7 @@ class _PlanningScreenState extends State<PlanningScreen> {
                 IconButton(
                   visualDensity: VisualDensity.compact,
                   tooltip: _sort == _PlanSort.alpha
-                      ? 'Sortuj: A→Z'
+                      ? 'Sortuj: A–Z'
                       : 'Sortuj: kwota malejąco',
                   icon: Icon(
                     _sort == _PlanSort.alpha

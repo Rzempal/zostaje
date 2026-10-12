@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:karton_subs/models/plan_position.dart' show kBudgetPersonal;
 import 'package:karton_subs/models/subscription.dart';
 import 'package:karton_subs/services/storage_service.dart';
+import 'package:karton_subs/utils/text_sort.dart';
 
 import 'support/hive_test_env.dart';
 
@@ -30,10 +31,14 @@ void main() {
     );
   });
 
-  test('lista jest posortowana po `order`', () {
+  // Zawsze alfabetycznie, jak kategorie (od 2026-10-12 bez ręcznej kolejności).
+  test('lista jest alfabetyczna (po polsku)', () {
     final list = storage.getPaymentMethods(kBudgetPersonal);
     for (var i = 1; i < list.length; i++) {
-      expect(list[i - 1].order <= list[i].order, isTrue);
+      expect(
+        plSortKey(list[i - 1].name).compareTo(plSortKey(list[i].name)) <= 0,
+        isTrue,
+      );
     }
   });
 

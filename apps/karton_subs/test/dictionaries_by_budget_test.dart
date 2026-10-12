@@ -348,6 +348,22 @@ void main() {
       ]);
     });
 
+    test('metody płatności też alfabetycznie — dawna kolejność się nie liczy',
+        () async {
+      final b = _controller();
+      final firma = (await b.addBudget('Firma', 'briefcase')).id;
+      for (final (i, name) in ['Revolut', 'Ślązak', 'BLIK'].indexed) {
+        await _storage.savePaymentMethod(
+          PaymentMethod(id: 'm$i', name: name, order: i, budgetId: firma),
+        );
+      }
+      expect(_storage.getPaymentMethods(firma).map((m) => m.name), [
+        'BLIK',
+        'Revolut',
+        'Ślązak',
+      ]);
+    });
+
     test('nowy budżet startuje z pustymi listami', () async {
       final b = _controller();
       final firma = (await b.addBudget('Firma', 'briefcase')).id;

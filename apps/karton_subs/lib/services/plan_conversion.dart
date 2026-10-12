@@ -114,7 +114,7 @@ class PlanConversion {
           entryId: p.id,
           name: p.name,
           kind: PlanNoteKind.remark,
-          message: 'Planner → pozycja planu, ta sama kwota co miesiąc',
+          message: 'Planner jako pozycja planu, ta sama kwota co miesiąc',
         ),
     ]);
 
@@ -324,8 +324,8 @@ class PlanConversion {
         note(
           PlanNoteKind.remark,
           e.cycle == BillingCycle.weekly
-              ? 'Cykl tygodniowy → średnia miesięczna w każdym miesiącu'
-              : 'Cykl co ${e.customCycleDays ?? 30} dni → średnia miesięczna '
+              ? 'Cykl tygodniowy: średnia miesięczna w każdym miesiącu'
+              : 'Cykl co ${e.customCycleDays ?? 30} dni: średnia miesięczna '
                     'w każdym miesiącu',
         );
       case BillingCycle.quarterly:

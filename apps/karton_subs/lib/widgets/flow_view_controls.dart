@@ -53,7 +53,7 @@ class FlowViewControls extends StatelessWidget {
           visualDensity: VisualDensity.compact,
           tooltip: switch (sort) {
             MonthFlowSort.byDate => 'Sortuj: po dacie',
-            MonthFlowSort.byName => 'Sortuj: A→Z (nazwa)',
+            MonthFlowSort.byName => 'Sortuj: A–Z (nazwa)',
             MonthFlowSort.amountDesc => 'Sortuj: od największej kwoty',
           },
           icon: Icon(switch (sort) {
