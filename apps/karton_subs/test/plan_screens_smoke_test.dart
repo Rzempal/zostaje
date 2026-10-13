@@ -156,8 +156,10 @@ void main() {
     // Pigułki grupy Wydatki: „Razem" i części z sumami (bez podtytułów
     // z tą samą nazwą).
     expect(find.text('Razem'), findsOneWidget);
-    expect(find.textContaining('Subskrypcje -'), findsOneWidget);
-    expect(find.textContaining('Pozycje -'), findsOneWidget);
+    // Minus „−" jak w wierszach, nie krótki łącznik „-".
+    expect(find.textContaining('Subskrypcje −'), findsOneWidget);
+    expect(find.textContaining('Pozycje −'), findsOneWidget);
+    expect(find.textContaining(' -'), findsNothing);
     expect(find.text('Subskrypcje'), findsNothing);
     // Subskrypcja w układzie pozycji: przedrostek przy nazwie, dzień płatności
     // zamiast daty startu.

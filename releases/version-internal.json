@@ -1,8 +1,13 @@
 {
-  "releaseDate": "2026-10-12T16:27:42Z",
-  "releaseNotes": "- Pozyczka z karty: wlasne nazwy pozyczki, splaty i wydatku (Splata: i Wydatek: ida za nazwa pozyczki, dopoki ich nie zmienisz)\n- Nowa subskrypcja i pozyczka z Planowania: data z ogladanego miesiaca (1. dzien; biezacy miesiac - dzis; widok roku - dzis albo 1 stycznia)",
-  "versionCode": 2026101201,
+  "releaseNotes": "- Pozyczka, ktorej wplyw i splata wypadaja w ogladanym miesiacu: szare 0,00 zamiast zielonego +0,00\n- Sumy grup, pigulki i Zostaje z prawdziwym minusem, na tej samej wysokosci co w wierszach",
+  "version": "0.27.26101300",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101300",
+  "releaseDate": "2026-10-13T15:09:27Z",
   "changelog": [
+    {
+      "version": "0.27.26101300",
+      "notes": "- Pozyczka, ktorej wplyw i splata wypadaja w ogladanym miesiacu: szare 0,00 zamiast zielonego +0,00\n- Sumy grup, pigulki i Zostaje z prawdziwym minusem, na tej samej wysokosci co w wierszach"
+    },
     {
       "version": "0.27.26101201",
       "notes": "- Pozyczka z karty: wlasne nazwy pozyczki, splaty i wydatku (Splata: i Wydatek: ida za nazwa pozyczki, dopoki ich nie zmienisz)\n- Nowa subskrypcja i pozyczka z Planowania: data z ogladanego miesiaca (1. dzien; biezacy miesiac - dzis; widok roku - dzis albo 1 stycznia)"
@@ -38,12 +43,7 @@
     {
       "version": "0.27.26101008",
       "notes": "- Filtry kategorii (z podgrupami) w grupie Wydatki, pod pigulkami Razem / Pozycje / Subskrypcje - dotycza tylko wydatkow; Wplywy, Pozyczki i Zostaje bez filtra\n- Przelacznik widoku w kolejnosci Rok / Miesiac\n- (z 0.27.26101007) Pozyczka ratalna: zakup przyciskiem Dodaj, istniejacy - Pokaz; z zakupu Otworz / Wroc do pozyczki"
-    },
-    {
-      "version": "0.27.26101007",
-      "notes": "- Pozyczka ratalna: zakup przyciskiem Dodaj (zamiast checkboxa), istniejacy z kwota i przyciskiem Pokaz\n- Z zakupu Otworz pozyczke, a gdy przyszlo sie z pozyczki - Wroc do pozyczki\n- Zapis pozyczki nie nadpisuje ani nie usuwa zakupu, tylko przesuwa go za data wyplaty"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026101201",
-  "version": "0.27.26101201"
+  "versionCode": 2026101300
 }

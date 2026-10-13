@@ -100,4 +100,28 @@ void main() {
     expect(find.text('Razem'), findsNothing);
     expect(find.text('Czynsz'), findsOneWidget);
   });
+
+  // Kreski na jednej wysokości: sumy z minusem „−" (jak wiersze), nie
+  // z łącznikiem „-", który w Roboto stoi niżej.
+  test('suma ujemna z minusem „−"; zero bez znaku', () {
+    expect(planTotal(-226), '−226,00');
+    expect(planTotal(12.5), '12,50');
+    expect(planTotal(-0.001), '0,00');
+  });
+
+  test('saldo pożyczki: zero bez plusa — wpływ i spłata się znoszą', () {
+    expect(planNetAmount(0), '0,00');
+    expect(planNetAmount(999), '+999,00');
+    expect(planNetAmount(-999), '−999,00');
+  });
+
+  testWidgets('nagłówek grupy i pigułki z minusem „−"', (tester) async {
+    await pump(tester, [
+      part('pos', 'Pozycje', -100, 'Czynsz'),
+      part('sub', 'Subskrypcje', -50, 'Netflix'),
+    ]);
+    expect(find.text('−150,00'), findsOneWidget);
+    expect(find.textContaining('Pozycje −100,00'), findsOneWidget);
+    expect(find.textContaining('-'), findsNothing);
+  });
 }

@@ -138,7 +138,11 @@ Skala bez zmian względem Ledger Glass. Kwoty finansowe nadal używają **tabula
 (np. strzałka „→"), telefon szuka w foncie zastępczym — wychodzi mniejszy i niżej
 niż reszta linii. W Roboto są i stoją na jednej wysokości (środek cyfr): półpauza
 „–", minus „−", plus, „·", „×". Strzałka w podpisie to ikona `planArrowSpan`
-(Lucide `moveRight`, środek linii), nie znak. W tekstach podpowiedzi i menu
+(Lucide `moveRight`, środek linii), nie znak. Krótki łącznik „-" stoi niżej
+niż minus, więc liczby ujemne mają zawsze „−" — także sumy grup, pigułki
+i „Zostaje" (`planTotal`), nie tylko wiersze (`planSignedAmount`). Saldo
+pożyczki równe zero (wpływ i spłata w jednym okresie) to szare „0,00" bez
+znaku (`planNetAmount`). W tekstach podpowiedzi i menu
 zamiast „→" — słowa („w Ustawieniach, w „Metodach płatności""), przy
 sortowaniu „A–Z".
 

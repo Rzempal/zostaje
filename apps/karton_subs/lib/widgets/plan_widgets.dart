@@ -24,6 +24,20 @@ String planSignedAmount(
 }) =>
     '${inflow ? '+' : '−'}${budgetNf.format(amount)}${curLabelSuffix(currency)}';
 
+/// Suma ze znakiem (sekcje, grupy, pigułki, „Zostaje"): ujemna z minusem
+/// „−" jak w wierszach, a nie z krótkim łącznikiem „-" z formatu liczb —
+/// łącznik stoi niżej niż cyfry i pozostałe kreski (design.md, Typografia).
+/// Zero bez znaku.
+String planTotal(double value) =>
+    budgetNf.format(value.abs() < 0.005 ? 0 : value).replaceFirst('-', '−');
+
+/// Saldo pożyczki w okresie (wpływ − spłata): „+1 000,00" / „−1 000,00".
+/// Zero — samo „0,00": wpływ i spłata znoszą się w okresie, a „+0,00"
+/// udawałoby wpływ.
+String planNetAmount(double net) => net.abs() < 0.005
+    ? budgetNf.format(0)
+    : planSignedAmount(net.abs(), inflow: net > 0);
+
 /// Etykieta okresu: „rok 2026" (sumy roku) albo nazwa miesiąca.
 String planPeriodLabel(PlanPeriod period) => period.isYear
     ? 'rok ${period.year}'
@@ -98,7 +112,7 @@ class PlanSection extends StatelessWidget {
                   child: Text(title, style: theme.textTheme.titleMedium),
                 ),
                 Text(
-                  budgetNf.format(total),
+                  planTotal(total),
                   style: theme.textTheme.titleSmall?.copyWith(
                     color: c.textSecondary,
                     fontFeatures: const [FontFeature.tabularFigures()],
@@ -188,7 +202,6 @@ class PlanGroup extends StatelessWidget {
     this.emptyText,
   });
 
-  static String _signed(double v) => budgetNf.format(v.abs() < 0.005 ? 0 : v);
 
   @override
   Widget build(BuildContext context) {
@@ -217,7 +230,7 @@ class PlanGroup extends StatelessWidget {
                   child: Text(title, style: theme.textTheme.titleMedium),
                 ),
                 Text(
-                  _signed(total),
+                  planTotal(total),
                   style: theme.textTheme.titleSmall?.copyWith(
                     color: c.textSecondary,
                     fontFeatures: const [FontFeature.tabularFigures()],
@@ -275,7 +288,7 @@ class PlanGroup extends StatelessWidget {
                       for (final p in parts) ...[
                         const SizedBox(width: 8),
                         AuroraChip(
-                          label: '${p.label} ${_signed(p.amount)}',
+                          label: '${p.label} ${planTotal(p.amount)}',
                           selected: shownId == null || shownId == p.id,
                           accent: p.color,
                           onTap: () => onShow(p.id),
@@ -544,7 +557,7 @@ class PlanSummaryCard extends StatelessWidget {
             style: theme.textTheme.labelSmall?.copyWith(color: c.textMuted),
           ),
           Text(
-            budgetNf.format(value),
+            planTotal(value),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: color,
               fontWeight: FontWeight.w600,
@@ -574,7 +587,7 @@ class PlanSummaryCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  budgetNf.format(left),
+                  planTotal(left),
                   style: theme.textTheme.titleLarge?.copyWith(
                     color: left >= 0 ? c.positive : c.negative,
                     fontWeight: FontWeight.w700,
@@ -677,7 +690,10 @@ class InstallmentLoanRow extends StatelessWidget {
           : 'bez raty';
     }
 
-    final color = net >= 0 ? c.positive : c.negative;
+    // Zero (wpływ i spłata znoszą się w okresie) — szare, bez znaku.
+    final color = net.abs() < 0.005
+        ? c.textSecondary
+        : (net > 0 ? c.positive : c.negative);
     final small = theme.textTheme.labelSmall?.copyWith(color: c.textMuted);
     final rrso = NumberFormat('0.##', 'pl_PL').format(t.rrso);
     final drawMonth = kMonthsShort[t.drawdown.month - 1];
@@ -712,7 +728,7 @@ class InstallmentLoanRow extends StatelessWidget {
                         ),
                         const SizedBox(width: 10),
                         Text(
-                          planSignedAmount(net.abs(), inflow: net >= 0),
+                          planNetAmount(net),
                           style: theme.textTheme.bodyLarge?.copyWith(
                             color: color,
                             fontWeight: FontWeight.w600,
@@ -843,7 +859,10 @@ class CardLoanRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final c = context.semanticColors;
-    final color = net >= 0 ? c.positive : c.negative;
+    // Zero (wpływ i spłata znoszą się w okresie) — szare, bez znaku.
+    final color = net.abs() < 0.005
+        ? c.textSecondary
+        : (net > 0 ? c.positive : c.negative);
     final caption = theme.textTheme.labelSmall?.copyWith(color: c.textMuted);
     return InkWell(
       onTap: onTap,
@@ -871,7 +890,7 @@ class CardLoanRow extends StatelessWidget {
                         ),
                         const SizedBox(width: 10),
                         Text(
-                          planSignedAmount(net.abs(), inflow: net >= 0),
+                          planNetAmount(net),
                           style: theme.textTheme.bodyLarge?.copyWith(
                             color: color,
                             fontWeight: FontWeight.w600,
