@@ -1,7 +1,11 @@
 {
-  "releaseDate": "2026-10-11T17:17:27Z",
-  "releaseNotes": "- Planowanie: przesuniecie palcem w bok zmienia miesiac (w widoku roku - rok)\n- Budzet: przesuniecie palcem przelacza Statystyki i Kalendarz\n- Budzet zmieniasz tylko przelacznikiem w gornym pasku",
+  "releaseDate": "2026-10-13T17:13:06Z",
+  "version": "0.27.26101300",
   "changelog": [
+    {
+      "version": "0.27.26101300",
+      "notes": "- Pozyczka z karty: wlasne nazwy pozyczki, splaty i wydatku\n- Nowa subskrypcja i pozyczka z Planowania: data z ogladanego miesiaca\n- Metody platnosci zawsze alfabetycznie; formularze subskrypcji i pozyczek z linia budzetu\n- Saldo pozyczki zero bez plusa; sumy z prawdziwym minusem; podpowiedzi bez krzywych strzalek"
+    },
     {
       "version": "0.27.26101102",
       "notes": "- Planowanie: przesuniecie palcem w bok zmienia miesiac (w widoku roku - rok)\n- Budzet: przesuniecie palcem przelacza Statystyki i Kalendarz\n- Budzet zmieniasz tylko przelacznikiem w gornym pasku"
@@ -37,13 +41,9 @@
     {
       "version": "0.27.26101001",
       "notes": "- Ekran pozycji: kwota edytuje miesiac, kolko po prawej zaznacza (bez przytrzymania)\n- Kafel miesiaca: dzien w linii miesiaca, brak kwoty zamiast kreski\n- Duplikuj: pozycja, pozyczka, subskrypcja i zaznaczone pozycje (w tym samym budzecie, z dopiskiem kopia)"
-    },
-    {
-      "version": "0.27.26101000",
-      "notes": "- Planowanie: start na biezacym miesiacu, Dzisiaj w lewym gornym rogu\n- Pasek miesiecy sam przewija sie do wybranego miesiaca\n- Wydatki i Pozyczki: pigulki Razem i czesci (Razem pokazuje obie listy, czesc tylko swoja)\n- Zaznacz wszystkie: tylko pozycje na widoku"
     }
   ],
-  "version": "0.27.26101102",
-  "versionCode": 2026101102,
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026101102"
+  "versionCode": 2026101300,
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026101300",
+  "releaseNotes": "- Pozyczka z karty: wlasne nazwy pozyczki, splaty i wydatku\n- Nowa subskrypcja i pozyczka z Planowania: data z ogladanego miesiaca\n- Metody platnosci zawsze alfabetycznie; formularze subskrypcji i pozyczek z linia budzetu\n- Saldo pozyczki zero bez plusa; sumy z prawdziwym minusem; podpowiedzi bez krzywych strzalek"
 }
